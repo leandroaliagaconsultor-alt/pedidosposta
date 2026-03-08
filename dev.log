@@ -1,0 +1,20 @@
+
+> pedidoposta@0.1.0 dev
+> next dev -p 3133
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3133
+- Network:       http://172.20.10.10:3133
+- Environments: .env.local
+
+✓ Starting...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 1292ms
+✓ Compiled in 58ms
+○ Compiling /[tenant]/manager/brand ...
+ GET /leandro/manager/brand 200 in 4.6s (compile: 4.4s, render: 198ms)
+✓ Compiled in 7ms
+✓ Compiled in 78ms
+✓ Compiled in 18ms
+✓ Compiled in 71ms
+[?25h
