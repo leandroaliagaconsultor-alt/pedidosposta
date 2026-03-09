@@ -2,7 +2,8 @@
 
 import React, { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
-import { registerTenant, slugify, type RegisterState } from "./actions";
+import { registerTenant, type RegisterState } from "./actions";
+import { slugify } from "@/utils/slugify";
 import { Store, Mail, Lock, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 
 // ── Submit Button con estado de pending ──────────────────────────────────────
