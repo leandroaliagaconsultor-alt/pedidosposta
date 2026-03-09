@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     ListOrdered, Palette, LayoutDashboard, LogOut,
-    Loader2, Settings, BarChart, Menu, X,
+    Loader2, Settings, BarChart, Menu, X, ExternalLink,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
@@ -90,6 +90,16 @@ export default function ManagerShell({
                         Manager <span className="text-primary">Portal</span>
                     </h2>
                     <p className="mt-1 text-xs text-zinc-500 font-mono">{tenant}.pedidoposta</p>
+
+                    <Link
+                        href={`/${tenant}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[11px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        <ExternalLink size={16} />
+                        VER MI TIENDA
+                    </Link>
                 </div>
 
                 <nav className="flex-1 space-y-2 px-4 py-4">
@@ -128,12 +138,23 @@ export default function ManagerShell({
                     </h2>
                     <p className="text-[10px] text-zinc-500 font-mono">{tenant}.pedidoposta</p>
                 </div>
-                <button
-                    onClick={() => setMobileMenuOpen(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white active:scale-95"
-                >
-                    <Menu size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <Link
+                        href={`/${tenant}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-[10px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all active:scale-95"
+                    >
+                        <ExternalLink size={14} />
+                        TIENDA
+                    </Link>
+                    <button
+                        onClick={() => setMobileMenuOpen(true)}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white active:scale-95"
+                    >
+                        <Menu size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Drawer Overlay */}
