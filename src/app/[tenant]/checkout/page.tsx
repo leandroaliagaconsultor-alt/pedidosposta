@@ -58,6 +58,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<"CASH" | "TRANSFER" | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [tenantAlias, setTenantAlias] = useState<string | null>(null);
 
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
@@ -91,10 +92,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot")
+                    .select("id, schedule, max_orders_per_slot, transfer_alias")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
+
+                setTenantAlias(tenantData.transfer_alias);
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -371,27 +374,56 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         <input type="hidden" {...register("paymentMethod")} />
 
                         {/* Receipt upload — only for TRANSFER */}
-                        {selectedPayment === "TRANSFER" && (
-                            <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
-                                <p className="mb-2 text-xs font-bold text-zinc-300">Comprobante de transferencia</p>
-                                <p className="mb-3 text-[11px] text-zinc-500">Opcional: Adjuntá una foto o PDF del comprobante para agilizar la verificación.</p>
-                                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
-                                    <Upload size={16} />
-                                    {receiptFile ? receiptFile.name : "Elegir archivo"}
-                                    <input
-                                        type="file"
-                                        accept="image/*,.pdf"
-                                        className="sr-only"
-                                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                                    />
-                                </label>
-                                {receiptFile && (
-                                    <div className="mt-2 flex items-center gap-2 text-xs text-primary">
-                                        <FileText size={14} />
-                                        <span className="truncate">{receiptFile.name}</span>
-                                        <span className="text-zinc-600">({(receiptFile.size / 1024).toFixed(0)} KB)</span>
-                                    </div>
-                                )}
+                        {selectedPayment === "TRANSFER" && tenantAlias && (
+                            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 animate-in fade-in slide-in-from-top-4">
+                                <h4 className="mb-2 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
+                                <p className="mb-4 text-xs text-zinc-400 leading-relaxed">
+                                    Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU:
+                                </p>
+
+                                <div className="mb-5 flex items-center justify-between rounded-lg bg-zinc-950/50 p-3 ring-1 ring-zinc-800">
+                                    <span className="font-mono text-sm font-bold text-white tracking-wider">{tenantAlias}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(tenantAlias);
+                                            toast.success("Alias copiado al portapapeles");
+                                        }}
+                                        className="text-[10px] font-bold uppercase tracking-widest text-amber-500 hover:text-amber-400"
+                                    >
+                                        Copiar
+                                    </button>
+                                </div>
+
+                                <div className="rounded-xl border border-dashed border-amber-500/30 p-4">
+                                    <p className="mb-2 text-xs font-bold text-zinc-300">Comprobante de transferencia <span className="text-red-400">*</span></p>
+                                    <p className="mb-3 text-[11px] text-zinc-500">Es obligatorio adjuntar una foto o PDF del comprobante para verificar el pago.</p>
+                                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
+                                        <Upload size={16} />
+                                        {receiptFile ? receiptFile.name : "Subir comprobante"}
+                                        <input
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            className="sr-only"
+                                            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                                        />
+                                    </label>
+                                    {receiptFile && (
+                                        <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                                            <FileText size={14} />
+                                            <span className="truncate">{receiptFile.name}</span>
+                                            <span className="shrink-0 text-amber-500/50">({(receiptFile.size / 1024).toFixed(0)} KB)</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedPayment === "TRANSFER" && !tenantAlias && (
+                            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 animate-in fade-in">
+                                <p className="text-xs text-red-400 text-center font-medium">
+                                    El local no ha configurado un alias para transferencias. Por favor, elegí Efectivo o contactá al local.
+                                </p>
                             </div>
                         )}
                     </Section>
@@ -428,7 +460,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     {/* ── CTA ── */}
                     <button
                         type="submit"
-                        disabled={items.length === 0 || isSubmitting}
+                        disabled={
+                            items.length === 0 ||
+                            isSubmitting ||
+                            (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
+                        }
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-primary-foreground shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {isSubmitting ? (

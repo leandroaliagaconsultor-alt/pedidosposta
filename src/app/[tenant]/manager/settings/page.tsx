@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock } from "lucide-react";
+import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft } from "lucide-react";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ const settingsSchema = z.object({
     is_mp_active: z.boolean().default(false),
     mp_access_token: z.string().optional().nullable(),
     mp_public_key: z.string().optional().nullable(),
+    transfer_alias: z.string().optional().nullable(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -48,6 +49,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             is_mp_active: false,
             mp_access_token: "",
             mp_public_key: "",
+            transfer_alias: "",
         },
     });
 
@@ -70,6 +72,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     is_mp_active: !!data.is_mp_active,
                     mp_access_token: data.mp_access_token || "",
                     mp_public_key: data.mp_public_key || "",
+                    transfer_alias: data.transfer_alias || "",
                 });
             }
             setLoading(false);
@@ -95,6 +98,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     is_mp_active: data.is_mp_active,
                     mp_access_token: data.mp_access_token,
                     mp_public_key: data.mp_public_key,
+                    transfer_alias: data.transfer_alias,
                 })
                 .eq("id", tenantId);
 
@@ -371,6 +375,30 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Transfer Integration ── */}
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                            <ArrowRightLeft className="text-amber-500" size={24} /> Transferencia Bancaria
+                        </h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá el Alias, CBU o CVU donde los clientes deben realizar las transferencias.</p>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Alias / CBU / CVU para Transferencias</label>
+                        <div className="relative">
+                            <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                            <input
+                                type="text"
+                                {...form.register("transfer_alias")}
+                                placeholder="Ej: PEDIDO.POSTA.MP o 00000031000..."
+                                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
+                            />
                         </div>
                     </div>
                 </div>
