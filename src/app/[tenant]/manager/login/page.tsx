@@ -16,8 +16,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function ManagerLoginPage({ params }: { params: Promise<{ tenant: string }> }) {
-    const { tenant } = React.use(params);
+export default function ManagerLoginPage({ params: _params }: { params: Promise<{ tenant: string }> }) {
     const router = useRouter();
     const supabase = createClient();
     const [loading, setLoading] = useState(false);
@@ -32,20 +31,52 @@ export default function ManagerLoginPage({ params }: { params: Promise<{ tenant:
 
     const onSubmit = async (data: LoginForm) => {
         setLoading(true);
-        const { error } = await supabase.auth.signInWithPassword({
+
+        // 1. Autenticar al usuario
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: data.email,
             password: data.password,
         });
 
-        if (error) {
+        if (authError || !authData.user) {
             toast.error("Error al iniciar sesión", { description: "Revisá tu email o contraseña e intentá nuevamente." });
             setLoading(false);
-        } else {
-            toast.success("¡Bienvenido de vuelta!");
-            // Redirect to dashboard
-            router.push(`/${tenant}/manager`);
-            router.refresh();
+            return;
         }
+
+        // 2. Consultar a qué tenant pertenece este usuario
+        const { data: tenantData, error: tenantError } = await supabase
+            .from("tenant_users")
+            .select("tenants(slug)")
+            .eq("user_id", authData.user.id)
+            .single();
+
+        if (tenantError || !tenantData?.tenants) {
+            // Usuario autenticado pero sin tenant asignado
+            toast.error("Sin acceso a ningún local", {
+                description: "Tu cuenta no tiene un local asignado. Contactá al administrador.",
+            });
+            await supabase.auth.signOut();
+            setLoading(false);
+            return;
+        }
+
+        // 3. Redirigir al dashboard del tenant real (no el de la URL)
+        const tenantRel = tenantData.tenants as unknown as { slug: string } | { slug: string }[];
+        const slug = Array.isArray(tenantRel) ? tenantRel[0]?.slug : tenantRel.slug;
+
+        if (!slug) {
+            toast.error("Sin acceso a ningún local", {
+                description: "Tu cuenta no tiene un local asignado. Contactá al administrador.",
+            });
+            await supabase.auth.signOut();
+            setLoading(false);
+            return;
+        }
+
+        toast.success("¡Bienvenido de vuelta!");
+        router.push(`/${slug}/manager`);
+        router.refresh();
     };
 
     return (
