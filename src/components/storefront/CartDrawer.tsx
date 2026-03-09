@@ -59,6 +59,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [tenantAlias, setTenantAlias] = useState<string | null>(null);
+    const [tenantAccountName, setTenantAccountName] = useState<string | null>(null);
 
     // MP State
     const [isMPActive, setIsMPActive] = useState(false);
@@ -96,13 +97,14 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias")
+                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
 
                 setIsMPActive(!!tenantData.is_mp_active);
                 setTenantAlias(tenantData.transfer_alias || null);
+                setTenantAccountName(tenantData.transfer_account_name || null);
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -571,7 +573,12 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                     <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 animate-in fade-in slide-in-from-top-4">
                                         <h4 className="mb-2 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
                                         <p className="mb-4 text-xs text-zinc-400 leading-relaxed">
-                                            Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU:
+                                            Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
+                                            {tenantAccountName ? (
+                                                <> a nombre de <strong className="text-white">{tenantAccountName}</strong>:</>
+                                            ) : (
+                                                <>:</>
+                                            )}
                                         </p>
 
                                         <div className="mb-5 flex items-center justify-between rounded-lg bg-zinc-950/50 p-3 ring-1 ring-zinc-800">

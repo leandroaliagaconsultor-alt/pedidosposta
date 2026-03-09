@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft } from "lucide-react";
+import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft, User } from "lucide-react";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,7 @@ const settingsSchema = z.object({
     mp_access_token: z.string().optional().nullable(),
     mp_public_key: z.string().optional().nullable(),
     transfer_alias: z.string().optional().nullable(),
+    transfer_account_name: z.string().optional().nullable(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -50,6 +51,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             mp_access_token: "",
             mp_public_key: "",
             transfer_alias: "",
+            transfer_account_name: "",
         },
     });
 
@@ -73,6 +75,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     mp_access_token: data.mp_access_token || "",
                     mp_public_key: data.mp_public_key || "",
                     transfer_alias: data.transfer_alias || "",
+                    transfer_account_name: data.transfer_account_name || "",
                 });
             }
             setLoading(false);
@@ -99,6 +102,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     mp_access_token: data.mp_access_token,
                     mp_public_key: data.mp_public_key,
                     transfer_alias: data.transfer_alias,
+                    transfer_account_name: data.transfer_account_name,
                 })
                 .eq("id", tenantId);
 
@@ -389,16 +393,30 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
 
                     <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá el Alias, CBU o CVU donde los clientes deben realizar las transferencias.</p>
 
-                    <div>
-                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Alias / CBU / CVU para Transferencias</label>
-                        <div className="relative">
-                            <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                            <input
-                                type="text"
-                                {...form.register("transfer_alias")}
-                                placeholder="Ej: PEDIDO.POSTA.MP o 00000031000..."
-                                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
-                            />
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Alias / CBU / CVU</label>
+                            <div className="relative">
+                                <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("transfer_alias")}
+                                    placeholder="Ej: PEDIDO.POSTA.MP o 00000031000..."
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Nombre del Titular de la Cuenta</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("transfer_account_name")}
+                                    placeholder="Ej: Juan Pérez"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
