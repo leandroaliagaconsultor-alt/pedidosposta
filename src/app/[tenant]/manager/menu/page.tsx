@@ -463,14 +463,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
         <div className="mx-auto max-w-5xl animate-in fade-in duration-500">
 
             {/* ── Header ── */}
-            <div className="mb-8 flex items-end justify-between">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">Menu Builder</h1>
                     <p className="mt-1 text-sm text-zinc-400">Gestioná las categorías y productos de tu restaurante.</p>
                 </div>
                 <button
                     onClick={() => openProdModal()}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-[0_0_20px_var(--brand-color)] shadow-primary/30 transition hover:brightness-110 active:scale-95"
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-[0_0_20px_var(--brand-color)] shadow-primary/30 transition hover:brightness-110 active:scale-95 w-full sm:w-auto justify-center"
                 >
                     <Plus size={18} /> NUEVO PRODUCTO
                 </button>
@@ -496,11 +496,11 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Tab Content: Categorías ── */}
             {activeTab === "categorias" && (
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-4 sm:p-6">
                         <p className="text-sm text-zinc-400">Las categorías agrupan tu menú. Ej: "Burgers", "Papas Fritas", "Bebidas".</p>
                         <button
                             onClick={() => openCatModal()}
-                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 w-full sm:w-auto text-center"
                         >
                             + Nueva Categoría
                         </button>
@@ -586,11 +586,11 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Tab Content: Modificadores  ── */}
             {activeTab === "modificadores" && (
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-4 sm:p-6">
                         <p className="text-sm text-zinc-400">Los modificadores son agregados u opciones (ej: "Salsas", "Punto de carne", "Extra Queso").</p>
                         <button
                             onClick={() => openModModal()}
-                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 w-full sm:w-auto text-center"
                         >
                             + Nuevo Modificador
                         </button>
@@ -705,7 +705,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-1 block text-sm font-semibold text-zinc-300">Categoría</label>
                                     <select
@@ -736,7 +736,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-1 block text-sm font-semibold text-zinc-300">Precio de Costo ($)</label>
                                     <div className="relative">
