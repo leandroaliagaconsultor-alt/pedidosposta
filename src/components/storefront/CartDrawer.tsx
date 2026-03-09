@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { X, Minus, Plus, ShoppingBag, ArrowLeft, Truck, Package, MapPin, CheckCircle2, Loader2, MessageSquare, User, Phone, Clock, ChevronDown, CreditCard, Banknote } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, ArrowLeft, Truck, Package, MapPin, CheckCircle2, Loader2, MessageSquare, User, Phone, Clock, ChevronDown, CreditCard, Banknote, Upload, FileText } from "lucide-react";
 import { useCartStore } from "@/lib/store/cartStore";
 import { createClient } from "@/lib/supabase/client";
 import { generateAvailableSlots } from "@/lib/utils/timeSlots";
@@ -57,6 +57,9 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
     const [scheduleType, setScheduleType] = useState<"asap" | "scheduled">("asap");
 
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [tenantAlias, setTenantAlias] = useState<string | null>(null);
+
     // MP State
     const [isMPActive, setIsMPActive] = useState(false);
 
@@ -93,12 +96,13 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, is_mp_active")
+                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
 
                 setIsMPActive(!!tenantData.is_mp_active);
+                setTenantAlias(tenantData.transfer_alias || null);
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -158,6 +162,24 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                 scheduledTime = scheduledDate.toISOString();
             }
 
+            // Subir comprobante si es transferencia
+            let receiptUrl: string | null = null;
+            if (data.paymentMethod === "TRANSFER" && receiptFile) {
+                const fileExt = receiptFile.name.split(".").pop();
+                const filePath = `${tenantData.id}/${Date.now()}.${fileExt}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from("receipts")
+                    .upload(filePath, receiptFile);
+                if (uploadErr) {
+                    console.error("Upload error:", uploadErr);
+                } else {
+                    const { data: publicUrl } = supabase.storage
+                        .from("receipts")
+                        .getPublicUrl(filePath);
+                    receiptUrl = publicUrl.publicUrl;
+                }
+            }
+
             // 2. Insert Order
             const { data: order, error: orderErr } = await supabase
                 .from("orders")
@@ -175,6 +197,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     scheduled_time: scheduledTime,
                     total_amount: total,
                     status: data.paymentMethod === "MP" ? "pending_payment" : "pending",
+                    receipt_url: receiptUrl,
                 })
                 .select("id")
                 .single();
@@ -232,6 +255,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             }
 
             // 4. Cleanup & Redirect for non-MP
+            try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
             clearCart();
             onOpenChange(false);
 
@@ -534,13 +558,67 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                 {isMPActive && (
                                     <button
                                         type="button"
-                                        onClick={() => setValue("paymentMethod", "MP", { shouldValidate: true })}
+                                        onClick={() => { setValue("paymentMethod", "MP", { shouldValidate: true }); setReceiptFile(null); }}
                                         className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl border text-sm font-black tracking-wide transition ${selectedPayment === "MP" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[inset_0_0_15px_rgba(14,165,233,0.15)]" : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-700"}`}
                                     >
                                         <CreditCard size={18} /> Pagar con MercadoPago
                                     </button>
                                 )}
                                 {errors.paymentMethod && <p className="mt-2 ml-1 text-[11px] font-medium text-red-500">{errors.paymentMethod.message}</p>}
+
+                                {/* INFO PARA TRANSFERENCIA */}
+                                {selectedPayment === "TRANSFER" && tenantAlias && (
+                                    <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 animate-in fade-in slide-in-from-top-4">
+                                        <h4 className="mb-2 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
+                                        <p className="mb-4 text-xs text-zinc-400 leading-relaxed">
+                                            Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU:
+                                        </p>
+
+                                        <div className="mb-5 flex items-center justify-between rounded-lg bg-zinc-950/50 p-3 ring-1 ring-zinc-800">
+                                            <span className="font-mono text-sm font-bold text-white tracking-wider">{tenantAlias}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(tenantAlias);
+                                                    toast.success("Alias copiado al portapapeles");
+                                                }}
+                                                className="text-[10px] font-bold uppercase tracking-widest text-amber-500 hover:text-amber-400"
+                                            >
+                                                Copiar
+                                            </button>
+                                        </div>
+
+                                        <div className="rounded-xl border border-dashed border-amber-500/30 p-4">
+                                            <p className="mb-2 text-xs font-bold text-zinc-300">Comprobante de transferencia <span className="text-red-400">*</span></p>
+                                            <p className="mb-3 text-[11px] text-zinc-500">Es obligatorio adjuntar una foto o PDF del comprobante para verificar el pago.</p>
+                                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
+                                                <Upload size={16} />
+                                                {receiptFile ? receiptFile.name : "Subir comprobante"}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    className="sr-only"
+                                                    onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                                                />
+                                            </label>
+                                            {receiptFile && (
+                                                <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                                                    <FileText size={14} />
+                                                    <span className="truncate">{receiptFile.name}</span>
+                                                    <span className="shrink-0 text-amber-500/50">({(receiptFile.size / 1024).toFixed(0)} KB)</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedPayment === "TRANSFER" && !tenantAlias && (
+                                    <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 animate-in fade-in">
+                                        <p className="text-xs text-red-400 text-center font-medium">
+                                            El local no ha configurado un alias para transferencias. Por favor, elegí Efectivo.
+                                        </p>
+                                    </div>
+                                )}
                             </section>
 
                         </div>
@@ -553,7 +631,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                             </div>
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || (selectedPayment === "TRANSFER" && ((tenantAlias && !receiptFile) || !tenantAlias))}
                                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 font-black tracking-widest text-[13px] text-primary-foreground shadow-[0_4px_25px_var(--brand-color)] shadow-primary/30 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />}
