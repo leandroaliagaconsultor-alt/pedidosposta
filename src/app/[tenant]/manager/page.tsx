@@ -107,7 +107,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         className: "border-primary bg-primary/10 text-primary shadow-xl",
                         duration: 5000,
                     });
-                    const audio = new Audio("/notification.mp3");
+                    const audio = new Audio("/timbrenotificacion.mp3");
                     audio.play().catch(() => { });
                 }
             )
@@ -230,8 +230,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             {tab.label}
                             {count > 0 && (
                                 <span className={`ml-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${isActive
-                                        ? "bg-white/10 text-white"
-                                        : "bg-zinc-800 text-zinc-500"
+                                    ? "bg-white/10 text-white"
+                                    : "bg-zinc-800 text-zinc-500"
                                     }`}>
                                     {count}
                                 </span>
@@ -256,8 +256,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         <div
                             key={order.id}
                             className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-zinc-900/30 shadow-2xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${order.status === "pending"
-                                    ? "border-primary/50 ring-1 ring-primary/20"
-                                    : "border-zinc-800"
+                                ? "border-primary/50 ring-1 ring-primary/20"
+                                : "border-zinc-800"
                                 }`}
                         >
                             {/* Card Header */}
@@ -289,8 +289,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 </div>
                                 <div
                                     className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${order.delivery_method === "DELIVERY"
-                                            ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
-                                            : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
+                                        ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
+                                        : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
                                         }`}
                                 >
                                     {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}

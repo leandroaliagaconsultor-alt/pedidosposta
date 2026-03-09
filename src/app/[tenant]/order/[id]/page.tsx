@@ -27,7 +27,7 @@ function playKitchenBell() {
         setTimeout(() => ctx.close(), 2000);
     } catch {
         // Fallback to notification.mp3
-        const audio = new Audio("/notification.mp3");
+        const audio = new Audio("/timbrenotificacion.mp3");
         audio.play().catch(() => { });
     }
 }
@@ -116,19 +116,19 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                             }
                         } else {
                             toast.success("¡Tu pedido está en camino! 🚴");
-                            const audio = new Audio("/notification.mp3");
+                            const audio = new Audio("/timbrenotificacion.mp3");
                             audio.play().catch(() => { });
                         }
                     } else if (newStatus === "delivered") {
                         toast.success("¡Pedido entregado! Disfrutalo 🎉");
-                        const audio = new Audio("/notification.mp3");
+                        const audio = new Audio("/timbrenotificacion.mp3");
                         audio.play().catch(() => { });
                     } else if (newStatus === "cancelled") {
                         toast.error("El pedido fue cancelado.");
-                        const audio = new Audio("/notification.mp3");
+                        const audio = new Audio("/timbrenotificacion.mp3");
                         audio.play().catch(() => { });
                     } else {
-                        const audio = new Audio("/notification.mp3");
+                        const audio = new Audio("/timbrenotificacion.mp3");
                         audio.play().catch(() => { });
                     }
                 }
