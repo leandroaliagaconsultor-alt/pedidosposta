@@ -97,17 +97,16 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                     // ── Status-specific notifications ────────────────
                     if (newStatus === "preparing") {
                         toast.success("¡Tu pedido fue confirmado! Ya se está preparando.");
-                    }
-
-                    if (newStatus === "on_the_way") {
+                    } else if (newStatus === "on_the_way") {
                         if (isTakeaway) {
-                            // 🔔 Take Away: campana de cocina + notificación larga
+                            // 🔔 ÚNICO caso con sonido: Take Away → PREPARADO
                             playKitchenBell();
+                            const audio = new Audio("/timbrenotificacion.mp3");
+                            audio.play().catch(() => { });
                             toast.success(
                                 "¡Tu pedido está PREPARADO! Ya podés pasar a retirarlo. 🏪",
                                 { duration: 10000 }
                             );
-                            // Notificación nativa del navegador
                             if ("Notification" in window && Notification.permission === "granted") {
                                 new Notification("🔔 ¡Pedido listo para retirar!", {
                                     body: "Tu pedido está preparado. Acercate al local a retirarlo.",
@@ -116,20 +115,11 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                             }
                         } else {
                             toast.success("¡Tu pedido está en camino! 🚴");
-                            const audio = new Audio("/timbrenotificacion.mp3");
-                            audio.play().catch(() => { });
                         }
                     } else if (newStatus === "delivered") {
                         toast.success("¡Pedido entregado! Disfrutalo 🎉");
-                        const audio = new Audio("/timbrenotificacion.mp3");
-                        audio.play().catch(() => { });
                     } else if (newStatus === "cancelled") {
                         toast.error("El pedido fue cancelado.");
-                        const audio = new Audio("/timbrenotificacion.mp3");
-                        audio.play().catch(() => { });
-                    } else {
-                        const audio = new Audio("/timbrenotificacion.mp3");
-                        audio.play().catch(() => { });
                     }
                 }
             )
