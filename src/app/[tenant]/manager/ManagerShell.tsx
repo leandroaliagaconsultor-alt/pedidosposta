@@ -86,10 +86,14 @@ export default function ManagerShell({
                ═══════════════════════════════════════════════════════════ */}
             <aside className="hidden md:flex w-64 flex-col border-r border-zinc-800 bg-zinc-900/40 backdrop-blur-xl">
                 <div className="p-6">
-                    <h2 className="text-xl font-extrabold tracking-tight text-white">
-                        Manager <span className="text-primary">Portal</span>
+                    <h2 className="text-2xl font-black tracking-tight flex items-center gap-1">
+                        <span className="text-white">Pedidos</span>
+                        <span className="text-primary italic">Posta</span>
                     </h2>
-                    <p className="mt-1 text-xs text-zinc-500 font-mono">{tenant}.pedidoposta</p>
+                    <div className="mt-3 flex flex-col">
+                        <span className="text-xs font-bold text-white leading-tight">{tenantData?.name || tenant}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mt-0.5">Panel Administrador</span>
+                    </div>
 
                     <Link
                         href={`/${tenant}`}
@@ -97,7 +101,11 @@ export default function ManagerShell({
                         rel="noopener noreferrer"
                         className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[11px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
                     >
-                        <ExternalLink size={16} />
+                        {tenantData?.logo_url ? (
+                            <img src={tenantData.logo_url} alt="Store" className="h-4 w-4 rounded-md object-cover" />
+                        ) : (
+                            <ExternalLink size={16} />
+                        )}
                         VER MI TIENDA
                     </Link>
                 </div>
@@ -133,10 +141,11 @@ export default function ManagerShell({
             {/* Mobile Header Bar (fixed at top) */}
             <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-lg px-4 py-3 md:hidden">
                 <div>
-                    <h2 className="text-lg font-extrabold tracking-tight text-white">
-                        Manager <span className="text-primary">Portal</span>
+                    <h2 className="text-lg font-black tracking-tight flex items-center gap-0.5">
+                        <span className="text-white">Pedidos</span>
+                        <span className="text-primary italic">Posta</span>
                     </h2>
-                    <p className="text-[10px] text-zinc-500 font-mono">{tenant}.pedidoposta</p>
+                    <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">{tenantData?.name || tenant}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link
@@ -145,7 +154,11 @@ export default function ManagerShell({
                         rel="noopener noreferrer"
                         className="flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-[10px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all active:scale-95"
                     >
-                        <ExternalLink size={14} />
+                        {tenantData?.logo_url ? (
+                            <img src={tenantData.logo_url} alt="Store" className="h-3.5 w-3.5 rounded-md object-cover" />
+                        ) : (
+                            <ExternalLink size={14} />
+                        )}
                         TIENDA
                     </Link>
                     <button

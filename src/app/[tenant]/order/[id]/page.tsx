@@ -27,19 +27,27 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
     const supabase = createClient();
 
     const [order, setOrder] = useState<any>(null);
+    const [tenantData, setTenantData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     // ── Initial Fetch ────────────────────────────────────────────────────
     useEffect(() => {
         const fetchOrder = async () => {
-            const { data } = await supabase
+            const { data: orderData } = await supabase
                 .from("orders")
                 .select("*")
                 .eq("id", orderId)
                 .single();
 
-            if (data) {
-                setOrder(data);
+            if (orderData) {
+                setOrder(orderData);
+                // Also fetch tenant logo
+                const { data: tData } = await supabase
+                    .from("tenants")
+                    .select("name, logo_url")
+                    .eq("slug", tenant)
+                    .single();
+                if (tData) setTenantData(tData);
             } else {
                 toast.error("No se pudo encontrar el pedido.");
             }
@@ -176,7 +184,15 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                     : "ring-primary/40 shadow-[0_0_40px_var(--brand-color)] shadow-primary/20 text-primary"
                     }`}
             >
-                <ActiveIcon className={`h-12 w-12 ${activeColor} drop-shadow-md`} />
+                {tenantData?.logo_url ? (
+                    <img
+                        src={tenantData.logo_url}
+                        alt={tenantData.name}
+                        className="h-16 w-16 rounded-full object-cover animate-pulse"
+                    />
+                ) : (
+                    <ActiveIcon className={`h-12 w-12 ${activeColor} drop-shadow-md`} />
+                )}
             </div>
 
             {/* Order number badge */}
@@ -248,7 +264,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-0.5">
                             Tiempo Estimado
                         </p>
-                        <p className="text-lg font-bold text-white drop-shadow-sm">
+                        <p className="text-lg font-bold text-white drop-shadow-sm leading-tight">
                             {currentStep === 0 ? "A confirmar" : "30–45 minutos"}
                         </p>
                     </div>
