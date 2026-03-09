@@ -51,12 +51,14 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     const hostname = request.headers.get("host") || "";
 
-    const isLocalhost =
-        hostname.includes("localhost:") || hostname.includes("127.0.0.1");
-    const mainDomain = isLocalhost ? hostname : "pedidoposta.com";
+    const isLocalhost = hostname.includes("localhost:") || hostname.includes("127.0.0.1");
+    const isVercel = hostname.includes("vercel.app"); // Le enseñamos qué es Vercel
+
     let tenantSlug = "";
 
-    if (hostname !== mainDomain && !hostname.startsWith("www.")) {
+    // SOLO buscamos un subdominio si NO es localhost y NO es Vercel
+    // (Esto te servirá a futuro cuando compres pedidosposta.com)
+    if (!isLocalhost && !isVercel && !hostname.startsWith("www.")) {
         tenantSlug = hostname.split(".")[0];
     }
 
@@ -64,8 +66,6 @@ export async function proxy(request: NextRequest) {
         url.pathname = `/${tenantSlug}${url.pathname}`;
 
         // IMPORTANTE: al reescribir debemos propagar las cookies de sesión
-        // que setAll() pudo haber establecido en `response`. Las copiamos
-        // a la nueva NextResponse.rewrite para que no se pierdan.
         const rewriteResponse = NextResponse.rewrite(url);
         response.cookies.getAll().forEach(({ name, value }) => {
             rewriteResponse.cookies.set(name, value);
