@@ -75,28 +75,32 @@ export async function proxy(request: NextRequest) {
     }
 
     // 5. Guards de autenticación para las rutas /manager.
-    const effectivePath = tenantSlug ? url.pathname : request.nextUrl.pathname;
-    const segments = effectivePath.split("/").filter(Boolean);
+    //    Usamos request.nextUrl.pathname (la ruta ORIGINAL antes del rewrite)
+    //    para determinar si la ruta es una ruta de manager, ya que en modo
+    //    path (sin subdominio) la URL real YA incluye el tenant en el path.
+    const originalPathname = request.nextUrl.pathname;
+    const segments = originalPathname.split("/").filter(Boolean);
 
+    // La ruta de manager tiene forma: /[tenant]/manager[/...]
     if (segments.length >= 2 && segments[1] === "manager") {
         const isLoginPath = segments[2] === "login";
         const currentTenant = segments[0];
-        const redirectUrl = request.nextUrl.clone();
 
         if (!user && !isLoginPath) {
-            // Sin sesión → login
-            redirectUrl.pathname = tenantSlug
-                ? "/manager/login"
-                : `/${currentTenant}/manager/login`;
-            return NextResponse.redirect(redirectUrl);
+            // Sin sesión → redirigir a login del tenant correcto
+            const loginUrl = request.nextUrl.clone();
+            loginUrl.pathname = `/${currentTenant}/manager/login`;
+            // Limpiar query params para no arrastrar basura
+            loginUrl.search = "";
+            return NextResponse.redirect(loginUrl);
         }
 
         if (user && isLoginPath) {
-            // Con sesión en página de login → dashboard
-            redirectUrl.pathname = tenantSlug
-                ? "/manager"
-                : `/${currentTenant}/manager`;
-            return NextResponse.redirect(redirectUrl);
+            // Ya autenticado en la página de login → redirigir al dashboard
+            const dashboardUrl = request.nextUrl.clone();
+            dashboardUrl.pathname = `/${currentTenant}/manager`;
+            dashboardUrl.search = "";
+            return NextResponse.redirect(dashboardUrl);
         }
     }
 
