@@ -202,12 +202,6 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         Monitor de estado de operaciones en tiempo real.
                     </p>
                 </div>
-                <div className="flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-5 py-2.5 text-sm shadow-[inset_0_1px_4px_rgba(0,0,0,0.4)] backdrop-blur-md">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-primary shadow-[0_0_8px_var(--brand-color)]" />
-                    <span className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">
-                        Conectado a Reactor
-                    </span>
-                </div>
             </div>
 
             {/* ── Tabs ───────────────────────────────────────────── */}

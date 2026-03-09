@@ -103,7 +103,8 @@ export default function StorefrontPage() {
                     acc[curr.modifier_id].push({
                         id: curr.id,
                         name: curr.name,
-                        additionalPrice: curr.additional_price
+                        additionalPrice: curr.additional_price,
+                        isDefault: curr.is_default ?? false,
                     });
                     return acc;
                 }, {});

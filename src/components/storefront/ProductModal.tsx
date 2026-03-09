@@ -13,6 +13,7 @@ export interface ModifierOption {
     id: string;
     name: string;
     additionalPrice: number;
+    isDefault?: boolean;
 }
 
 export interface Modifier {
@@ -47,6 +48,23 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
     const [quantity, setQuantity] = useState(1);
     // Map: modifierId -> Set of selected optionIds
     const [selectedOptions, setSelectedOptions] = useState<Map<string, Set<string>>>(new Map());
+
+    // ── Pre-populate defaults when modal opens ──
+    const initDefaults = () => {
+        const defaults = new Map<string, Set<string>>();
+        (product.modifiers ?? []).forEach((mod) => {
+            const defaultOpts = mod.options.filter((o) => o.isDefault);
+            if (defaultOpts.length > 0) {
+                if (mod.isMultiple) {
+                    defaults.set(mod.id, new Set(defaultOpts.map((o) => o.id)));
+                } else {
+                    // Radio: only first default
+                    defaults.set(mod.id, new Set([defaultOpts[0].id]));
+                }
+            }
+        });
+        return defaults;
+    };
 
     // Recalculate price whenever selections or quantity changes
     const modifiersPrice = useMemo(() => {
@@ -108,14 +126,17 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
 
         // Reset and close
         setQuantity(1);
-        setSelectedOptions(new Map());
+        setSelectedOptions(initDefaults());
         onOpenChange(false);
     };
 
     const handleClose = (isOpen: boolean) => {
         if (!isOpen) {
             setQuantity(1);
-            setSelectedOptions(new Map());
+            setSelectedOptions(initDefaults());
+        } else {
+            // Opening: set defaults
+            setSelectedOptions(initDefaults());
         }
         onOpenChange(isOpen);
     };

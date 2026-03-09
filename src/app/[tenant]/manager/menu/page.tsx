@@ -31,6 +31,7 @@ type ModifierOption = {
     modifier_id: string;
     name: string;
     additional_price: number;
+    is_default: boolean;
 };
 type Modifier = {
     id: string;
@@ -64,6 +65,7 @@ const modSchema = z.object({
     options: z.array(z.object({
         name: z.string().min(1, "Nombre requerido"),
         additional_price: z.coerce.number().min(0, { message: "El precio no puede ser negativo" }).default(0),
+        is_default: z.boolean().default(false),
     })).min(1, "Debes agregar al menos una opción"),
 });
 type ModForm = z.infer<typeof modSchema>;
@@ -110,7 +112,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
     const modForm = useForm({
         resolver: zodResolver(modSchema),
-        defaultValues: { name: "", is_required: false, is_multiple: false, options: [{ name: "", additional_price: 0 as any }] }
+        defaultValues: { name: "", is_required: false, is_multiple: false, options: [{ name: "", additional_price: 0 as any, is_default: false }] }
     });
 
     const { fields: optionFields, append: optionAppend, remove: optionRemove } = useFieldArray({
@@ -383,10 +385,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 name: mod.name,
                 is_multiple: mod.is_multiple,
                 is_required: mod.is_required,
-                options: mod.options?.length ? mod.options : [{ name: "", additional_price: 0 as any }],
+                options: mod.options?.length ? mod.options.map(o => ({ name: o.name, additional_price: o.additional_price, is_default: o.is_default ?? false })) : [{ name: "", additional_price: 0 as any, is_default: false }],
             });
         } else {
-            modForm.reset({ name: "", is_multiple: false, is_required: false, options: [{ name: "", additional_price: 0 as any }] });
+            modForm.reset({ name: "", is_multiple: false, is_required: false, options: [{ name: "", additional_price: 0 as any, is_default: false }] });
         }
         setModModalOpen(true);
     };
@@ -418,7 +420,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                 const { data: insertedOpts, error: optsErr } = await supabase
                     .from("modifier_options")
-                    .insert(data.options.map(opt => ({ modifier_id: editingMod.id, name: opt.name, additional_price: opt.additional_price })))
+                    .insert(data.options.map(opt => ({ modifier_id: editingMod.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default })))
                     .select();
                 if (optsErr) throw optsErr;
 
@@ -435,7 +437,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 // Insert Options
                 const { data: insertedOpts, error: optsErr } = await supabase
                     .from("modifier_options")
-                    .insert(data.options.map(opt => ({ modifier_id: newBase.id, name: opt.name, additional_price: opt.additional_price })))
+                    .insert(data.options.map(opt => ({ modifier_id: newBase.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default })))
                     .select();
                 if (optsErr) throw optsErr;
 
@@ -888,7 +890,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                     <label className="block text-sm font-semibold text-zinc-300">Opciones</label>
                                     <button
                                         type="button"
-                                        onClick={() => optionAppend({ name: "", additional_price: 0 })}
+                                        onClick={() => optionAppend({ name: "", additional_price: 0, is_default: false })}
                                         className="text-xs font-bold text-primary hover:text-white"
                                     >
                                         + Agregar Opción
@@ -913,6 +915,31 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                     placeholder="+$ 0.00"
                                                 />
                                             </div>
+                                            <label
+                                                className={`flex items-center gap-1.5 cursor-pointer rounded-lg px-2 py-2 transition-colors ${modForm.watch(`options.${index}.is_default`)
+                                                        ? "text-amber-400 bg-amber-500/10"
+                                                        : "text-zinc-500 hover:text-zinc-300"
+                                                    }`}
+                                                title="Opción predeterminada"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={modForm.watch(`options.${index}.is_default`) || false}
+                                                    onChange={(e) => {
+                                                        const isMultiple = modForm.getValues("is_multiple");
+                                                        if (!isMultiple && e.target.checked) {
+                                                            // Radio mode: uncheck all others
+                                                            const opts = modForm.getValues("options");
+                                                            opts.forEach((_: any, i: number) => {
+                                                                if (i !== index) modForm.setValue(`options.${i}.is_default`, false);
+                                                            });
+                                                        }
+                                                        modForm.setValue(`options.${index}.is_default`, e.target.checked);
+                                                    }}
+                                                    className="sr-only"
+                                                />
+                                                <span className="text-xs font-bold whitespace-nowrap">★</span>
+                                            </label>
                                             <button
                                                 type="button"
                                                 className="p-2.5 rounded-lg text-zinc-500 hover:bg-red-500/20 hover:text-red-400 mt-px"
