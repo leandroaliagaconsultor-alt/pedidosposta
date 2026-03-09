@@ -8,10 +8,10 @@ import { toast } from "sonner";
 
 // ─── Status Map ─────────────────────────
 const STEPS = [
-    { key: "pending", label: "Pedido Recibido", icon: CheckCircle2, color: "text-primary", bg: "bg-primary" },
-    { key: "preparing", label: "En preparación", icon: ChefHat, color: "text-amber-400", bg: "bg-amber-400" },
-    { key: "on_the_way", label: "En camino", icon: Bike, color: "text-sky-400", bg: "bg-sky-400" },
-    { key: "delivered", label: "Entregado!", icon: PartyPopper, color: "text-emerald-400", bg: "bg-emerald-400" },
+    { key: "pending", label: "PEDIDO", icon: CheckCircle2, color: "text-primary", bg: "bg-primary" },
+    { key: "preparing", label: "EN PREPARACION", icon: ChefHat, color: "text-amber-400", bg: "bg-amber-400" },
+    { key: "on_the_way", label: "EN CAMINO", icon: Bike, color: "text-sky-400", bg: "bg-sky-400" },
+    { key: "delivered", label: "ENTREGADO", icon: PartyPopper, color: "text-emerald-400", bg: "bg-emerald-400" },
 ];
 
 export default function OrderTrackingPage({ params }: { params: Promise<{ tenant: string, id: string }> }) {

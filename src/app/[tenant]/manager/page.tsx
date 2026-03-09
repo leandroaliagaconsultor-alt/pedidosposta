@@ -3,9 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Phone, MapPin, Package, Truck, Loader2 } from "lucide-react";
+import {
+    CheckCircle2, Clock, Phone, MapPin, Package, Truck,
+    Loader2, Undo2, ChefHat, Bike, PartyPopper,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 
+// ── Types ────────────────────────────────────────────────────────────────────
 interface Order {
     id: string;
     order_number: number;
@@ -27,17 +31,28 @@ interface Order {
     }[];
 }
 
+// ── Tab config ───────────────────────────────────────────────────────────────
+type TabKey = "pending" | "preparing" | "on_the_way" | "delivered";
+
+const TABS: { key: TabKey; label: string; statuses: string[]; icon: React.ElementType; color: string; ringColor: string }[] = [
+    { key: "pending", label: "RECIBIDOS", statuses: ["pending"], icon: Package, color: "text-primary", ringColor: "ring-primary/30" },
+    { key: "preparing", label: "CONFIRMADOS", statuses: ["preparing"], icon: ChefHat, color: "text-amber-400", ringColor: "ring-amber-400/30" },
+    { key: "on_the_way", label: "DESPACHADOS", statuses: ["on_the_way"], icon: Bike, color: "text-sky-400", ringColor: "ring-sky-400/30" },
+    { key: "delivered", label: "FINALIZADOS", statuses: ["delivered"], icon: PartyPopper, color: "text-emerald-400", ringColor: "ring-emerald-400/30" },
+];
+
+// ── Component ────────────────────────────────────────────────────────────────
 export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: string }> }) {
     const { tenant } = React.use(params);
     const supabase = createClient();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<TabKey>("pending");
 
-    // ── Fetch Initial Data ──
+    // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
         const fetchOrders = async () => {
-            // 1. Get tenant ID from slug
             const { data: tenantData } = await supabase
                 .from("tenants")
                 .select("id")
@@ -47,13 +62,13 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             if (!tenantData) return;
             setTenantId(tenantData.id);
 
-            // 2. Fetch pending and active orders
             const { data: initialOrders } = await supabase
                 .from("orders")
                 .select("*, order_items(*, product:products(name))")
                 .eq("tenant_id", tenantData.id)
-                .in("status", ["pending", "preparing", "on_the_way"])
-                .order("created_at", { ascending: false });
+                .in("status", ["pending", "preparing", "on_the_way", "delivered"])
+                .order("created_at", { ascending: false })
+                .limit(200);
 
             if (initialOrders) setOrders(initialOrders as unknown as Order[]);
             setLoading(false);
@@ -62,7 +77,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         fetchOrders();
     }, [supabase, tenant]);
 
-    // ── Realtime Subscription ──
+    // ── Realtime ─────────────────────────────────────────────────────────
     useEffect(() => {
         if (!tenantId) return;
 
@@ -78,8 +93,6 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 },
                 async (payload) => {
                     const newOrderRow = payload.new as Order;
-
-                    // Fetch full order to get items
                     const { data: fullOrder } = await supabase
                         .from("orders")
                         .select("*, order_items(*, product:products(name))")
@@ -87,16 +100,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         .single();
 
                     const newOrder = (fullOrder || newOrderRow) as unknown as Order;
-
                     setOrders((prev) => [newOrder, ...prev]);
 
-                    // Toast Notification with Sound fallback
                     toast("¡🔔 Nuevo pedido recibido!", {
                         description: `#${newOrder.order_number} - ${newOrder.first_name} ${newOrder.last_name}`,
                         className: "border-primary bg-primary/10 text-primary shadow-xl",
                         duration: 5000,
                     });
-                    const audio = new Audio('/notification.mp3');
+                    const audio = new Audio("/notification.mp3");
                     audio.play().catch(() => { });
                 }
             )
@@ -109,14 +120,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     filter: `tenant_id=eq.${tenantId}`,
                 },
                 (payload) => {
-                    const updatedOrder = payload.new as Order;
-                    if (["delivered", "cancelled"].includes(updatedOrder.status)) {
-                        // Remove from active view if finalized
-                        setOrders((prev) => prev.filter((o) => o.id !== updatedOrder.id));
+                    const updated = payload.new as Order;
+                    if (updated.status === "cancelled") {
+                        setOrders((prev) => prev.filter((o) => o.id !== updated.id));
                     } else {
-                        // Update inline but keep order_items intact if new update doesn't bring it
                         setOrders((prev) =>
-                            prev.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
+                            prev.map((o) =>
+                                o.id === updated.id ? { ...o, ...updated } : o
+                            )
                         );
                     }
                 }
@@ -128,9 +139,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         };
     }, [supabase, tenantId]);
 
-    // ── Actions ──
+    // ── Update order status ──────────────────────────────────────────────
     const updateOrderStatus = async (orderId: string, currentStatus: string, newStatus: string) => {
-        // Optimistic UI Update
         setOrders((prev) =>
             prev.map((o) => (o.id === orderId ? { ...o, status: "loading" } : o))
         );
@@ -141,27 +151,37 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             .eq("id", orderId);
 
         if (error) {
-            console.error("Order Update Error:", error);
-            toast.error("Error al actualizar la orden", {
+            toast.error("Error al actualizar", {
                 description: error.message.includes("check constraint")
-                    ? `Estado '${newStatus}' no permitido por la DB.`
-                    : error.message
+                    ? `Estado '${newStatus}' no permitido.`
+                    : error.message,
             });
-            // Revert optimism
             setOrders((prev) =>
                 prev.map((o) => (o.id === orderId ? { ...o, status: currentStatus } : o))
             );
         } else {
-            let msg = "";
-            if (newStatus === "preparing") msg = "¡Pedido en preparación!";
-            if (newStatus === "on_the_way") msg = "¡Pedido en camino!";
-            if (newStatus === "delivered") msg = "Pedido finalizado.";
-            if (newStatus === "cancelled") msg = "Pedido rechazado/cancelado.";
-            toast.success(msg);
+            const msgs: Record<string, string> = {
+                pending: "Pedido devuelto a Recibidos.",
+                preparing: "¡Pedido confirmado!",
+                on_the_way: "¡Pedido despachado!",
+                delivered: "Pedido finalizado.",
+                cancelled: "Pedido rechazado.",
+            };
+            toast.success(msgs[newStatus] || "Estado actualizado.");
         }
     };
 
-    // ── UI Shell ──
+    // ── Filtered orders for Active Tab ───────────────────────────────────
+    const currentTabConfig = TABS.find((t) => t.key === activeTab)!;
+    const filteredOrders = orders.filter((o) =>
+        currentTabConfig.statuses.includes(o.status)
+    );
+
+    // Count badges
+    const countByTab = (statuses: string[]) =>
+        orders.filter((o) => statuses.includes(o.status)).length;
+
+    // ── Loading State ────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex h-full min-h-[60vh] items-center justify-center">
@@ -171,7 +191,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     }
 
     return (
-        <div className="mx-auto max-w-6xl space-y-8 animate-in fade-in duration-500">
+        <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500">
+            {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
@@ -183,24 +204,60 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 </div>
                 <div className="flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-5 py-2.5 text-sm shadow-[inset_0_1px_4px_rgba(0,0,0,0.4)] backdrop-blur-md">
                     <div className="h-2 w-2 animate-pulse rounded-full bg-primary shadow-[0_0_8px_var(--brand-color)]" />
-                    <span className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">Conectado a Reactor</span>
+                    <span className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">
+                        Conectado a Reactor
+                    </span>
                 </div>
             </div>
 
+            {/* ── Tabs ───────────────────────────────────────────── */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+                {TABS.map((tab) => {
+                    const isActive = activeTab === tab.key;
+                    const count = countByTab(tab.statuses);
+                    const Icon = tab.icon;
+                    return (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`group relative flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95
+                                ${isActive
+                                    ? `bg-zinc-800/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
+                                    : "bg-zinc-900/40 text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                }`}
+                        >
+                            <Icon size={15} className={isActive ? tab.color : "text-zinc-600"} />
+                            {tab.label}
+                            {count > 0 && (
+                                <span className={`ml-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${isActive
+                                        ? "bg-white/10 text-white"
+                                        : "bg-zinc-800 text-zinc-500"
+                                    }`}>
+                                    {count}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* ── Cards Grid ─────────────────────────────────────── */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {orders.length === 0 ? (
-                    <div className="col-span-full flex h-[40vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
-                        <Package size={52} className="mb-4 text-zinc-700 opacity-50" />
-                        <p className="text-lg font-bold text-zinc-400">Todo limpio.</p>
-                        <p className="mt-1 max-w-xs text-center text-sm text-zinc-600">Cuando un cliente finalice un pedido, lo vas a escuchar y ver brillar aquí.</p>
+                {filteredOrders.length === 0 ? (
+                    <div className="col-span-full flex h-[35vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
+                        <currentTabConfig.icon size={48} className="mb-4 text-zinc-700 opacity-40" />
+                        <p className="text-base font-bold text-zinc-500">Sin pedidos {currentTabConfig.label.toLowerCase()}</p>
+                        <p className="mt-1 max-w-xs text-center text-sm text-zinc-600">
+                            Los pedidos aparecerán aquí cuando cambien a este estado.
+                        </p>
                     </div>
                 ) : (
-                    orders.map((order) => (
+                    filteredOrders.map((order) => (
                         <div
                             key={order.id}
                             className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-zinc-900/30 shadow-2xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${order.status === "pending"
-                                ? "border-primary/50 ring-1 ring-primary/20"
-                                : "border-zinc-800"
+                                    ? "border-primary/50 ring-1 ring-primary/20"
+                                    : "border-zinc-800"
                                 }`}
                         >
                             {/* Card Header */}
@@ -213,23 +270,27 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         {order.is_asap ? (
                                             <>
                                                 <span className="relative flex h-2 w-2">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                                                 </span>
                                                 <span className="text-red-400 ml-0.5">Lo antes posible</span>
                                             </>
                                         ) : (
                                             <>
                                                 <Clock size={14} className="opacity-70" />
-                                                <span>🕒 Programado para: {order.scheduled_time ? format(parseISO(order.scheduled_time), "HH:mm") + " hs" : "No especificado"}</span>
+                                                <span>
+                                                    🕒 {order.scheduled_time
+                                                        ? format(parseISO(order.scheduled_time), "HH:mm") + " hs"
+                                                        : "No especificado"}
+                                                </span>
                                             </>
                                         )}
                                     </div>
                                 </div>
                                 <div
                                     className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${order.delivery_method === "DELIVERY"
-                                        ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
-                                        : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
+                                            ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
+                                            : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
                                         }`}
                                 >
                                     {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
@@ -257,7 +318,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     )}
                                 </div>
 
-                                {/* Order Items List */}
+                                {/* Items */}
                                 {order.order_items && order.order_items.length > 0 && (
                                     <div className="mt-4 rounded-xl bg-zinc-900/50 p-3 ring-1 ring-zinc-800/50">
                                         <ul className="space-y-2">
@@ -288,8 +349,15 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 </div>
                             </div>
 
-                            {/* Card Actions Container */}
+                            {/* ── Card Actions (Bi-directional) ──── */}
                             <div className="border-t border-zinc-800/80 bg-zinc-950 p-4">
+                                {order.status === "loading" && (
+                                    <div className="flex w-full justify-center py-3.5">
+                                        <Loader2 size={18} className="animate-spin text-zinc-500" />
+                                    </div>
+                                )}
+
+                                {/* RECIBIDOS → CONFIRMAR / RECHAZAR */}
                                 {order.status === "pending" && (
                                     <div className="flex gap-2">
                                         <button
@@ -297,7 +365,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-extrabold tracking-wider text-primary-foreground shadow-[0_4px_14px_0_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95"
                                         >
                                             <CheckCircle2 size={18} />
-                                            ACEPTAR
+                                            CONFIRMAR
                                         </button>
                                         <button
                                             onClick={() => updateOrderStatus(order.id, "pending", "cancelled")}
@@ -308,48 +376,55 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     </div>
                                 )}
 
+                                {/* CONFIRMADOS → DESPACHAR / ← Volver a Recibido */}
                                 {order.status === "preparing" && (
                                     <div className="flex gap-2">
-                                        {order.delivery_method === "DELIVERY" ? (
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, "preparing", "on_the_way")}
-                                                className="flex-1 items-center justify-center rounded-xl bg-sky-500/10 py-3 text-xs font-bold tracking-widest text-sky-400 ring-1 ring-inset ring-sky-500/20 transition-all hover:bg-sky-500/20 active:scale-95 text-center"
-                                            >
-                                                DESPACHAR
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, "preparing", "delivered")}
-                                                className="flex-1 items-center justify-center rounded-xl bg-emerald-500/10 py-3 text-xs font-bold tracking-widest text-emerald-400 ring-1 ring-inset ring-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 text-center"
-                                            >
-                                                ENTREGAR LOCAL
-                                            </button>
-                                        )}
-                                        {order.delivery_method === "DELIVERY" && (
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, "preparing", "delivered")}
-                                                className="items-center justify-center rounded-xl bg-emerald-500/10 px-4 text-xs font-bold tracking-widest text-emerald-400 ring-1 ring-inset ring-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 text-center"
-                                            >
-                                                <CheckCircle2 size={16} />
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => updateOrderStatus(order.id, "preparing", "on_the_way")}
+                                            className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-sky-500/10 py-3.5 text-sm font-extrabold tracking-wider text-sky-400 ring-1 ring-inset ring-sky-500/20 transition-all hover:bg-sky-500/20 active:scale-95"
+                                        >
+                                            <Truck size={18} />
+                                            DESPACHAR
+                                        </button>
+                                        <button
+                                            onClick={() => updateOrderStatus(order.id, "preparing", "pending")}
+                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                        >
+                                            <Undo2 size={14} />
+                                            RECIBIDO
+                                        </button>
                                     </div>
                                 )}
 
+                                {/* DESPACHADOS → FINALIZAR / ← Volver a Confirmado */}
                                 {order.status === "on_the_way" && (
-                                    <button
-                                        onClick={() => updateOrderStatus(order.id, "on_the_way", "delivered")}
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-3 text-xs font-bold tracking-widest text-emerald-400 ring-1 ring-inset ring-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95"
-                                    >
-                                        <CheckCircle2 size={16} />
-                                        MARCAR ENTREGADO
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => updateOrderStatus(order.id, "on_the_way", "delivered")}
+                                            className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-3.5 text-sm font-extrabold tracking-wider text-emerald-400 ring-1 ring-inset ring-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95"
+                                        >
+                                            <CheckCircle2 size={18} />
+                                            FINALIZAR
+                                        </button>
+                                        <button
+                                            onClick={() => updateOrderStatus(order.id, "on_the_way", "preparing")}
+                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                        >
+                                            <Undo2 size={14} />
+                                            CONFIRMADO
+                                        </button>
+                                    </div>
                                 )}
 
-                                {order.status === "loading" && (
-                                    <div className="flex w-full justify-center py-3.5">
-                                        <Loader2 size={18} className="animate-spin text-zinc-500" />
-                                    </div>
+                                {/* FINALIZADOS → ← Volver a Despachado */}
+                                {order.status === "delivered" && (
+                                    <button
+                                        onClick={() => updateOrderStatus(order.id, "delivered", "on_the_way")}
+                                        className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                    >
+                                        <Undo2 size={14} />
+                                        VOLVER A DESPACHADO
+                                    </button>
                                 )}
                             </div>
                         </div>
