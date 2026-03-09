@@ -6,31 +6,7 @@ import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, 
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 
-// ── Kitchen bell sound (Web Audio API) ───────────────────────────────────────
-function playKitchenBell() {
-    try {
-        const ctx = new AudioContext();
-        // Double-ding: two metallic bell hits
-        [0, 0.25].forEach((delay) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(1200, ctx.currentTime + delay);
-            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + delay + 0.3);
-            gain.gain.setValueAtTime(0.6, ctx.currentTime + delay);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.8);
-            osc.connect(gain).connect(ctx.destination);
-            osc.start(ctx.currentTime + delay);
-            osc.stop(ctx.currentTime + delay + 0.8);
-        });
-        // Cleanup
-        setTimeout(() => ctx.close(), 2000);
-    } catch {
-        // Fallback to notification.mp3
-        const audio = new Audio("/timbrenotificacion.mp3");
-        audio.play().catch(() => { });
-    }
-}
+
 
 // ── Dynamic steps builder ────────────────────────────────────────────────────
 // Step 3 label changes based on delivery method:
@@ -100,7 +76,6 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                     } else if (newStatus === "on_the_way") {
                         if (isTakeaway) {
                             // 🔔 ÚNICO caso con sonido: Take Away → PREPARADO
-                            playKitchenBell();
                             const audio = new Audio("/timbrenotificacion.mp3");
                             audio.play().catch(() => { });
                             toast.success(
