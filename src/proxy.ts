@@ -2,11 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
+    // 0. Inyectar pathname como header para que los Server Components
+    //    puedan conocer la ruta actual (layouts no tienen acceso directo).
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
     // 1. Respuesta base — se pasan los headers del request original para que
     //    las Server Components puedan leerlos sin problemas.
     let response = NextResponse.next({
         request: {
-            headers: request.headers,
+            headers: requestHeaders,
         },
     });
 

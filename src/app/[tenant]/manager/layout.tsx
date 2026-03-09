@@ -1,97 +1,70 @@
-"use client";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import ManagerShell from "./ManagerShell";
 
-import React from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { ListOrdered, Palette, LayoutDashboard, LogOut, Loader2, Settings, BarChart } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { toast, Toaster } from "sonner";
-
-export default function ManagerLayout({
+export default async function ManagerLayout({
     children,
     params,
 }: {
     children: React.ReactNode;
     params: Promise<{ tenant: string }>;
 }) {
-    const { tenant } = React.use(params);
-    const pathname = usePathname();
-    const router = useRouter();
-    const supabase = createClient();
-    const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+    const { tenant } = await params;
 
-    // Exclude login page from rendering the sidebar
-    if (pathname.endsWith("/login")) {
+    // ── Login page: renderizar sin sidebar ni guard ──────────────────────
+    // Leemos x-pathname inyectado por proxy.ts para saber la ruta actual.
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") || "";
+    const isLoginPage = pathname.endsWith("/login");
+
+    if (isLoginPage) {
+        // La página de login no necesita auth guard ni sidebar
         return <>{children}</>;
     }
 
-    const handleSignOut = async () => {
-        setIsLoggingOut(true);
-        await supabase.auth.signOut();
-        toast.success("Sesión cerrada correctamente");
-        router.push(`/${tenant}/manager/login`);
-        router.refresh();
-    };
+    const supabase = await createClient();
 
-    const navLinks = [
-        { name: "Live Orders", href: `/${tenant}/manager`, icon: ListOrdered },
-        { name: "Menu Builder", href: `/${tenant}/manager/menu`, icon: LayoutDashboard },
-        { name: "Brand Studio", href: `/${tenant}/manager/brand`, icon: Palette },
-        { name: "Configuración", href: `/${tenant}/manager/settings`, icon: Settings },
-        { name: "Analytics", href: `/${tenant}/manager/analytics`, icon: BarChart },
-    ];
+    // ── 1. Obtener usuario autenticado ──────────────────────────────────
+    const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        // Sin sesión → redirigir a login (defensa en profundidad)
+        redirect(`/${tenant}/manager/login`);
+    }
+
+    // ── 2. Verificar que el usuario pertenece a este tenant ─────────────
+    // Una sola query optimizada que cruza tenant_users con tenants por slug.
+    const { data: membership } = await supabase
+        .from("tenant_users")
+        .select("id, tenants!inner(slug)")
+        .eq("user_id", user.id)
+        .eq("tenants.slug", tenant)
+        .maybeSingle();
+
+    if (!membership) {
+        // Usuario autenticado pero NO pertenece a este tenant.
+        // Buscar su tenant real para redirigirlo allí.
+        const { data: ownTenant } = await supabase
+            .from("tenant_users")
+            .select("tenants(slug)")
+            .eq("user_id", user.id)
+            .limit(1)
+            .single();
+
+        if (ownTenant?.tenants) {
+            const ownSlug = (ownTenant.tenants as unknown as { slug: string }).slug;
+            redirect(`/${ownSlug}/manager`);
+        }
+
+        // Sin ningún tenant asignado: volver a login
+        redirect(`/${tenant}/manager/login`);
+    }
+
+    // ── 3. Autorizado → renderizar el panel con sidebar ─────────────────
     return (
-        <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100">
-            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
-
-            {/* Sidebar */}
-            <aside className="flex w-64 flex-col border-r border-zinc-800 bg-zinc-900/40 backdrop-blur-xl">
-                <div className="p-6">
-                    <h2 className="text-xl font-extrabold tracking-tight text-white">
-                        Manager <span className="text-primary">Portal</span>
-                    </h2>
-                    <p className="mt-1 text-xs text-zinc-500 font-mono">{tenant}.pedidoposta</p>
-                </div>
-
-                <nav className="flex-1 space-y-2 px-4 py-4">
-                    {navLinks.map((item) => {
-                        const isActive = pathname === item.href;
-                        const Icon = item.icon;
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
-                                    ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
-                                    : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
-                                    }`}
-                            >
-                                <Icon size={18} className={isActive ? "text-primary" : "text-zinc-500"} />
-                                {item.name}
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                <div className="border-t border-zinc-800 p-4">
-                    <button
-                        onClick={handleSignOut}
-                        disabled={isLoggingOut}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
-                    >
-                        {isLoggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main content */}
-            <main className="flex-1 overflow-y-auto bg-zinc-950/50 p-8 shadow-inner relative">
-                {/* Glow accent */}
-                <div className="pointer-events-none absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
-                {children}
-            </main>
-        </div>
+        <ManagerShell tenant={tenant}>
+            {children}
+        </ManagerShell>
     );
 }
