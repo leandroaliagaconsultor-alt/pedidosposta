@@ -15,6 +15,8 @@ import {
     Package,
     Smartphone,
     Truck,
+    Upload,
+    FileText,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -55,6 +57,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<"CASH" | "TRANSFER" | null>(null);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
@@ -145,6 +148,23 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 scheduledTime = scheduledDate.toISOString();
             }
 
+            // Upload receipt if transfer
+            let receiptUrl: string | null = null;
+            if (data.paymentMethod === "TRANSFER" && receiptFile) {
+                const fileExt = receiptFile.name.split(".").pop();
+                const filePath = `${tenant.id}/${Date.now()}.${fileExt}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from("receipts")
+                    .upload(filePath, receiptFile);
+                if (uploadErr) console.error("Upload error:", uploadErr);
+                else {
+                    const { data: publicUrl } = supabase.storage
+                        .from("receipts")
+                        .getPublicUrl(filePath);
+                    receiptUrl = publicUrl.publicUrl;
+                }
+            }
+
             // 2. Insert the order
             const { data: order, error: orderErr } = await supabase
                 .from("orders")
@@ -163,6 +183,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     status: "pending",
                     total_amount: total,
                     customer_name: `${data.firstName} ${data.lastName}`,
+                    receipt_url: receiptUrl,
                 })
                 .select("id, order_number")
                 .single();
@@ -191,7 +212,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 );
             }
 
-            // 4. Done!
+            // 4. Done! Save to localStorage for recovery banner
+            try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
             clearCart();
             router.push(`/${tenantSlug}/order/${order.id}`);
         } catch (err: any) {
@@ -340,13 +362,38 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     {/* ── 4. Método de Pago ── */}
                     <Section title="Método de Pago">
                         <div className="grid grid-cols-2 gap-3">
-                            <PaymentCard icon={<Banknote size={22} />} label="Efectivo" selected={selectedPayment === "CASH"} onClick={() => selectPayment("CASH")} />
+                            <PaymentCard icon={<Banknote size={22} />} label="Efectivo" selected={selectedPayment === "CASH"} onClick={() => { selectPayment("CASH"); setReceiptFile(null); }} />
                             <PaymentCard icon={<Smartphone size={22} />} label="Transferencia" selected={selectedPayment === "TRANSFER"} onClick={() => selectPayment("TRANSFER")} />
                         </div>
                         {errors.paymentMethod && (
                             <p className="mt-2 text-xs text-red-400">{errors.paymentMethod.message}</p>
                         )}
                         <input type="hidden" {...register("paymentMethod")} />
+
+                        {/* Receipt upload — only for TRANSFER */}
+                        {selectedPayment === "TRANSFER" && (
+                            <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
+                                <p className="mb-2 text-xs font-bold text-zinc-300">Comprobante de transferencia</p>
+                                <p className="mb-3 text-[11px] text-zinc-500">Opcional: Adjuntá una foto o PDF del comprobante para agilizar la verificación.</p>
+                                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
+                                    <Upload size={16} />
+                                    {receiptFile ? receiptFile.name : "Elegir archivo"}
+                                    <input
+                                        type="file"
+                                        accept="image/*,.pdf"
+                                        className="sr-only"
+                                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                                    />
+                                </label>
+                                {receiptFile && (
+                                    <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+                                        <FileText size={14} />
+                                        <span className="truncate">{receiptFile.name}</span>
+                                        <span className="text-zinc-600">({(receiptFile.size / 1024).toFixed(0)} KB)</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </Section>
 
                     {/* ── 5. Resumen ── */}

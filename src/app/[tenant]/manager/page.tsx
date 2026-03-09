@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper,
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -19,11 +19,13 @@ interface Order {
     customer_address: string;
     delivery_method: string;
     delivery_time: string;
+    payment_method: string;
     is_asap: boolean;
     scheduled_time: string | null;
     total_amount: number;
     status: string;
     created_at: string;
+    receipt_url: string | null;
     order_items?: {
         quantity: number;
         notes: string | null;
@@ -49,6 +51,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>("pending");
+    const [receiptModal, setReceiptModal] = useState<string | null>(null);
 
     // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
@@ -343,6 +346,17 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* Receipt button */}
+                                {order.receipt_url && (
+                                    <button
+                                        onClick={() => setReceiptModal(order.receipt_url)}
+                                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 py-2.5 text-xs font-bold text-amber-400 transition hover:bg-amber-500/10 active:scale-95"
+                                    >
+                                        <Receipt size={14} />
+                                        🧾 Ver Comprobante
+                                    </button>
+                                )}
                             </div>
 
                             {/* ── Card Actions (Bi-directional) ──── */}
@@ -427,6 +441,40 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     ))
                 )}
             </div>
+
+            {/* ── Receipt viewer modal ── */}
+            {receiptModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setReceiptModal(null)}>
+                    <div className="relative max-h-[90vh] max-w-lg w-full mx-4 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <Receipt size={16} className="text-amber-400" />
+                                Comprobante de Transferencia
+                            </h3>
+                            <button onClick={() => setReceiptModal(null)} className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-white">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
+                            {receiptModal.endsWith(".pdf") ? (
+                                <iframe src={receiptModal} className="w-full h-[70vh] rounded-lg" />
+                            ) : (
+                                <img src={receiptModal} alt="Comprobante" className="w-full rounded-lg object-contain" />
+                            )}
+                        </div>
+                        <div className="border-t border-zinc-800 px-5 py-3">
+                            <a
+                                href={receiptModal}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500/10 py-2.5 text-xs font-bold text-amber-400 ring-1 ring-inset ring-amber-500/20 transition hover:bg-amber-500/20"
+                            >
+                                Abrir en nueva pestaña
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

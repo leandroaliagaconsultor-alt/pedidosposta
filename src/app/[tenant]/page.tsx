@@ -8,6 +8,7 @@ import { ShoppingBag, Loader2, MapPin, Clock, Bike, ShoppingCart } from "lucide-
 
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
+import ActiveOrderBanner from "@/components/storefront/ActiveOrderBanner";
 import { useCartStore } from "@/lib/store/cartStore";
 import type { Product } from "@/components/storefront/ProductModal";
 import { createClient } from "@/lib/supabase/client";
@@ -527,6 +528,7 @@ export default function StorefrontPage() {
 
             {/* ─── 5. Cart Drawer ─── */}
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />
+            <ActiveOrderBanner tenant={tenantSlug as string} />
         </main>
     );
 }
