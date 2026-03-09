@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -22,6 +22,17 @@ export default function ManagerShell({
     const supabase = createClient();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null } | null>(null);
+
+    // ── Fetch tenant logo ────────────────────────────────────────────────
+    useEffect(() => {
+        supabase
+            .from("tenants")
+            .select("name, logo_url")
+            .eq("slug", tenant)
+            .single()
+            .then(({ data }) => { if (data) setTenantData(data); });
+    }, [supabase, tenant]);
 
     const handleSignOut = async () => {
         setIsLoggingOut(true);
@@ -50,8 +61,8 @@ export default function ManagerShell({
                     href={item.href}
                     onClick={onClickExtra}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
-                            ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
-                            : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
+                        : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
                         }`}
                 >
                     <Icon size={18} className={isActive ? "text-primary" : "text-zinc-500"} />
@@ -59,6 +70,19 @@ export default function ManagerShell({
                 </Link>
             );
         });
+
+    // ── Tenant logo avatar component ─────────────────────────────────────
+    const TenantAvatar = ({ size = "h-8 w-8", textSize = "text-sm" }: { size?: string; textSize?: string }) => (
+        <div className={`${size} shrink-0 rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center`}>
+            {tenantData?.logo_url ? (
+                <img src={tenantData.logo_url} alt={tenantData.name} className="h-full w-full object-cover" />
+            ) : (
+                <span className={`font-black text-primary ${textSize}`}>
+                    {(tenantData?.name || tenant).charAt(0).toUpperCase()}
+                </span>
+            )}
+        </div>
+    );
 
     const renderLogoutButton = () => (
         <button
@@ -76,7 +100,7 @@ export default function ManagerShell({
             <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
 
             {/* ═══════════════════════════════════════════════════════════
-                DESKTOP SIDEBAR — Unchanged, hidden on mobile
+                DESKTOP SIDEBAR — hidden on mobile
                ═══════════════════════════════════════════════════════════ */}
             <aside className="hidden md:flex w-64 flex-col border-r border-zinc-800 bg-zinc-900/40 backdrop-blur-xl">
                 <div className="p-6">
@@ -90,22 +114,35 @@ export default function ManagerShell({
                     {renderNavLinks()}
                 </nav>
 
-                <div className="border-t border-zinc-800 p-4">
+                {/* Tenant branding + logout */}
+                <div className="border-t border-zinc-800 p-4 space-y-3">
+                    <div className="flex items-center gap-3 rounded-xl bg-zinc-900/60 px-3 py-2.5">
+                        <TenantAvatar />
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-zinc-200 truncate">
+                                {tenantData?.name || tenant}
+                            </p>
+                            <p className="text-[10px] text-zinc-500 font-mono truncate">/{tenant}</p>
+                        </div>
+                    </div>
                     {renderLogoutButton()}
                 </div>
             </aside>
 
             {/* ═══════════════════════════════════════════════════════════
-                MOBILE HEADER + DRAWER — Only visible on mobile
+                MOBILE HEADER + DRAWER
                ═══════════════════════════════════════════════════════════ */}
 
             {/* Mobile Header Bar (fixed at top) */}
             <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-lg px-4 py-3 md:hidden">
-                <div>
-                    <h2 className="text-lg font-extrabold tracking-tight text-white">
-                        Manager <span className="text-primary">Portal</span>
-                    </h2>
-                    <p className="text-[10px] text-zinc-500 font-mono">{tenant}.pedidoposta</p>
+                <div className="flex items-center gap-3">
+                    <TenantAvatar size="h-9 w-9" />
+                    <div>
+                        <h2 className="text-base font-extrabold tracking-tight text-white leading-tight">
+                            {tenantData?.name || "Manager Portal"}
+                        </h2>
+                        <p className="text-[10px] text-zinc-500 font-mono">{tenant}.pedidoposta</p>
+                    </div>
                 </div>
                 <button
                     onClick={() => setMobileMenuOpen(true)}
@@ -124,13 +161,16 @@ export default function ManagerShell({
                         onClick={() => setMobileMenuOpen(false)}
                     />
 
-                    {/* Drawer Panel (slides in from right) */}
+                    {/* Drawer Panel */}
                     <div className="absolute right-0 top-0 bottom-0 w-72 bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between border-b border-zinc-800 p-5">
-                            <div>
-                                <h3 className="text-lg font-bold text-white">Navegación</h3>
-                                <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{tenant}.pedidoposta</p>
+                            <div className="flex items-center gap-3">
+                                <TenantAvatar />
+                                <div>
+                                    <h3 className="text-base font-bold text-white">{tenantData?.name || "Navegación"}</h3>
+                                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{tenant}.pedidoposta</p>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setMobileMenuOpen(false)}

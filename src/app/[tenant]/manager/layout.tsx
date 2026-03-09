@@ -3,6 +3,11 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import ManagerShell from "./ManagerShell";
 
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  🔑 SUPER ADMIN — Tiene acceso global a TODOS los tenants                ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+const SUPER_ADMIN_EMAIL = "leandro@pedidosposta.com";
+
 export default async function ManagerLayout({
     children,
     params,
@@ -13,13 +18,11 @@ export default async function ManagerLayout({
     const { tenant } = await params;
 
     // ── Login page: renderizar sin sidebar ni guard ──────────────────────
-    // Leemos x-pathname inyectado por proxy.ts para saber la ruta actual.
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") || "";
     const isLoginPage = pathname.endsWith("/login");
 
     if (isLoginPage) {
-        // La página de login no necesita auth guard ni sidebar
         return <>{children}</>;
     }
 
@@ -29,12 +32,20 @@ export default async function ManagerLayout({
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        // Sin sesión → redirigir a login (defensa en profundidad)
         redirect(`/${tenant}/manager/login`);
     }
 
-    // ── 2. Verificar que el usuario pertenece a este tenant ─────────────
-    // Una sola query optimizada que cruza tenant_users con tenants por slug.
+    // ── 2. LLAVE MAESTRA: Super Admin bypasea el RBAC ───────────────────
+    if (user.email === SUPER_ADMIN_EMAIL) {
+        // 🔑 God Mode: acceso global sin restricciones
+        return (
+            <ManagerShell tenant={tenant}>
+                {children}
+            </ManagerShell>
+        );
+    }
+
+    // ── 3. Verificar que el usuario pertenece a este tenant ─────────────
     const { data: membership } = await supabase
         .from("tenant_users")
         .select("id, tenants!inner(slug)")
@@ -43,8 +54,6 @@ export default async function ManagerLayout({
         .maybeSingle();
 
     if (!membership) {
-        // Usuario autenticado pero NO pertenece a este tenant.
-        // Buscar su tenant real para redirigirlo allí.
         const { data: ownTenant } = await supabase
             .from("tenant_users")
             .select("tenants(slug)")
@@ -57,11 +66,10 @@ export default async function ManagerLayout({
             redirect(`/${ownSlug}/manager`);
         }
 
-        // Sin ningún tenant asignado: volver a login
         redirect(`/${tenant}/manager/login`);
     }
 
-    // ── 3. Autorizado → renderizar el panel con sidebar ─────────────────
+    // ── 4. Autorizado → renderizar el panel con sidebar ─────────────────
     return (
         <ManagerShell tenant={tenant}>
             {children}

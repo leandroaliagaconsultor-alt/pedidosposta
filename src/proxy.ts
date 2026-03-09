@@ -52,6 +52,11 @@ export async function proxy(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
+    // ── BYPASS: Rutas /admin son globales del SaaS, no usan tenant slugs ──
+    if (request.nextUrl.pathname.startsWith("/admin")) {
+        return response;
+    }
+
     // 4. Lógica de subdominio → reescritura de ruta interna.
     const url = request.nextUrl.clone();
     const hostname = request.headers.get("host") || "";

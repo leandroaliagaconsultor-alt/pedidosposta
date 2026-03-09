@@ -28,26 +28,29 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
 
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null } | null>(null);
 
-    // ── Initial Fetch ────────────────────────────────────────────────────
+    // ── Initial Fetch (order + tenant logo) ───────────────────────────────
     useEffect(() => {
-        const fetchOrder = async () => {
-            const { data } = await supabase
-                .from("orders")
-                .select("*")
-                .eq("id", orderId)
-                .single();
+        const fetchData = async () => {
+            const [orderRes, tenantRes] = await Promise.all([
+                supabase.from("orders").select("*").eq("id", orderId).single(),
+                supabase.from("tenants").select("name, logo_url").eq("slug", tenant).single(),
+            ]);
 
-            if (data) {
-                setOrder(data);
+            if (orderRes.data) {
+                setOrder(orderRes.data);
             } else {
                 toast.error("No se pudo encontrar el pedido.");
+            }
+            if (tenantRes.data) {
+                setTenantData(tenantRes.data);
             }
             setLoading(false);
         };
 
-        fetchOrder();
-    }, [supabase, orderId]);
+        fetchData();
+    }, [supabase, orderId, tenant]);
 
     // ── Realtime Listener ────────────────────────────────────────────────
     useEffect(() => {
@@ -169,14 +172,24 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 className={`pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 -z-10 h-72 w-full max-w-lg bg-[radial-gradient(ellipse_at_top_center,var(--tw-gradient-stops))] opacity-15 transition-all duration-1000 ${isCancelled ? "from-red-500 to-transparent" : "from-primary to-transparent"}`}
             />
 
-            {/* Icon */}
+            {/* Tenant Logo / Branding */}
             <div
-                className={`mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-zinc-900/50 backdrop-blur-md ring-2 ring-offset-4 ring-offset-zinc-950 shadow-2xl transition-all duration-700 ${isCancelled
-                    ? "ring-red-500/50 shadow-red-500/20 text-red-500"
-                    : "ring-primary/40 shadow-[0_0_40px_var(--brand-color)] shadow-primary/20 text-primary"
+                className={`mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-zinc-900/50 backdrop-blur-md ring-2 ring-offset-4 ring-offset-zinc-950 shadow-2xl transition-all duration-700 overflow-hidden ${isCancelled
+                    ? "ring-red-500/50 shadow-red-500/20"
+                    : "ring-primary/40 shadow-[0_0_40px_var(--brand-color)] shadow-primary/20"
                     }`}
             >
-                <ActiveIcon className={`h-12 w-12 ${activeColor} drop-shadow-md`} />
+                {tenantData?.logo_url ? (
+                    <img
+                        src={tenantData.logo_url}
+                        alt={tenantData.name}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <span className={`text-3xl font-black ${isCancelled ? "text-red-500" : "text-primary"}`}>
+                        {(tenantData?.name || tenant).charAt(0).toUpperCase()}
+                    </span>
+                )}
             </div>
 
             {/* Order number badge */}
