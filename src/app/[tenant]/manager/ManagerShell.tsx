@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -22,6 +22,12 @@ export default function ManagerShell({
     const supabase = createClient();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null } | null>(null);
+
+    useEffect(() => {
+        supabase.from("tenants").select("name, logo_url").eq("slug", tenant).single()
+            .then(({ data }) => { if (data) setTenantData(data); });
+    }, [supabase, tenant]);
 
     const handleSignOut = async () => {
         setIsLoggingOut(true);
@@ -50,8 +56,8 @@ export default function ManagerShell({
                     href={item.href}
                     onClick={onClickExtra}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
-                            ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
-                            : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
+                        : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
                         }`}
                 >
                     <Icon size={18} className={isActive ? "text-primary" : "text-zinc-500"} />
@@ -90,7 +96,22 @@ export default function ManagerShell({
                     {renderNavLinks()}
                 </nav>
 
-                <div className="border-t border-zinc-800 p-4">
+                <div className="border-t border-zinc-800 p-4 space-y-3">
+                    <div className="flex items-center gap-3 rounded-xl bg-zinc-900/60 px-3 py-2.5">
+                        <div className="h-8 w-8 shrink-0 rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
+                            {tenantData?.logo_url ? (
+                                <img src={tenantData.logo_url} alt={tenantData.name} className="h-full w-full object-cover" />
+                            ) : (
+                                <span className="font-black text-primary text-sm">
+                                    {(tenantData?.name || tenant).charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-zinc-200 truncate">{tenantData?.name || tenant}</p>
+                            <p className="text-[10px] text-zinc-500 font-mono truncate">/{tenant}</p>
+                        </div>
+                    </div>
                     {renderLogoutButton()}
                 </div>
             </aside>

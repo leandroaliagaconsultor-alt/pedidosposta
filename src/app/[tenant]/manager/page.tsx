@@ -173,9 +173,11 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
     // ── Filtered orders for Active Tab ───────────────────────────────────
     const currentTabConfig = TABS.find((t) => t.key === activeTab)!;
-    const filteredOrders = orders.filter((o) =>
+    const rawFiltered = orders.filter((o) =>
         currentTabConfig.statuses.includes(o.status)
     );
+    // Limit "Finalizados" to last 15 for performance
+    const filteredOrders = activeTab === "delivered" ? rawFiltered.slice(0, 15) : rawFiltered;
 
     // Count badges
     const countByTab = (statuses: string[]) =>

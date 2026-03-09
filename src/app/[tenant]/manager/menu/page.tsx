@@ -46,12 +46,18 @@ const categorySchema = z.object({
 });
 type CategoryForm = z.infer<typeof categorySchema>;
 
+const numericPreprocess = (val: unknown) => {
+    if (val === '' || val === undefined || val === null) return 0;
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
+};
+
 const productSchema = z.object({
     name: z.string().min(2, "El nombre del producto es requerido"),
     description: z.string().optional(),
-    price: z.coerce.number().min(0, { message: "El precio no puede ser negativo" }),
-    cost_price: z.coerce.number().min(0, { message: "El costo no puede ser negativo" }).default(0),
-    profit_margin: z.coerce.number().min(0, { message: "El margen no puede ser negativo" }).default(0),
+    price: z.preprocess(numericPreprocess, z.number().min(0, { message: "El precio no puede ser negativo" })),
+    cost_price: z.preprocess(numericPreprocess, z.number().min(0, { message: "El costo no puede ser negativo" })),
+    profit_margin: z.preprocess(numericPreprocess, z.number().min(0, { message: "El margen no puede ser negativo" })),
     category_id: z.string().min(1, "Selecciona una categoría"),
     modifier_ids: z.array(z.string()).default([]),
     image_url: z.string().optional().nullable(),
@@ -246,8 +252,13 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
     };
 
     const handleCostOrMarginChange = (field: 'cost_price' | 'profit_margin', rawValue: string) => {
-        // Allow empty string while user types, treat as 0 for calculation
-        const numValue = rawValue === '' ? 0 : parseFloat(rawValue);
+        // Allow empty string while user types
+        if (rawValue === '') {
+            prodForm.setValue(field, '' as any, { shouldDirty: true });
+            if (field === 'cost_price') prodForm.setValue('price', '' as any, { shouldDirty: true });
+            return;
+        }
+        const numValue = parseFloat(rawValue);
         if (isNaN(numValue)) return;
         prodForm.setValue(field, numValue, { shouldValidate: true, shouldDirty: true });
         const cp = field === 'cost_price' ? numValue : Number(prodForm.getValues("cost_price") || 0);
@@ -258,7 +269,11 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
     };
 
     const handlePriceChange = (rawValue: string) => {
-        const numValue = rawValue === '' ? 0 : parseFloat(rawValue);
+        if (rawValue === '') {
+            prodForm.setValue('price', '' as any, { shouldDirty: true });
+            return;
+        }
+        const numValue = parseFloat(rawValue);
         if (isNaN(numValue)) return;
         prodForm.setValue("price", numValue, { shouldValidate: true, shouldDirty: true });
         const cp = Number(prodForm.getValues("cost_price") || 0);
@@ -727,7 +742,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <input
                                             type="number"
                                             inputMode="decimal"
-                                            value={prodForm.watch("profit_margin") as number ?? ''}
+                                            value={(prodForm.watch("profit_margin") as any) ?? ''}
                                             onChange={(e) => handleCostOrMarginChange('profit_margin', e.target.value)}
                                             onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-zinc-900 pl-4 pr-10 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.profit_margin ? "border-red-500/50" : "border-zinc-800"}`}
@@ -746,7 +761,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <input
                                             type="number"
                                             inputMode="decimal"
-                                            value={prodForm.watch("cost_price") as number ?? ''}
+                                            value={(prodForm.watch("cost_price") as any) ?? ''}
                                             onChange={(e) => handleCostOrMarginChange('cost_price', e.target.value)}
                                             onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-zinc-900 pl-8 pr-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.cost_price ? "border-red-500/50" : "border-zinc-800"}`}
@@ -763,7 +778,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <input
                                             type="number"
                                             inputMode="decimal"
-                                            value={prodForm.watch("price") as number ?? ''}
+                                            value={(prodForm.watch("price") as any) ?? ''}
                                             onChange={(e) => handlePriceChange(e.target.value)}
                                             onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-green-950/20 pl-8 pr-4 py-3 text-sm text-green-400 font-bold outline-none transition focus:ring-2 focus:ring-green-500 ${prodForm.formState.errors.price ? "border-red-500/50" : "border-green-500/30"}`}
@@ -917,8 +932,8 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             </div>
                                             <label
                                                 className={`flex items-center gap-1.5 cursor-pointer rounded-lg px-2 py-2 transition-colors ${modForm.watch(`options.${index}.is_default`)
-                                                        ? "text-amber-400 bg-amber-500/10"
-                                                        : "text-zinc-500 hover:text-zinc-300"
+                                                    ? "text-amber-400 bg-amber-500/10"
+                                                    : "text-zinc-500 hover:text-zinc-300"
                                                     }`}
                                                 title="Opción predeterminada"
                                             >
