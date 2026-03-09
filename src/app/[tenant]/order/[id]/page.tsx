@@ -2,29 +2,61 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 
-// ─── Status Map ─────────────────────────
-const STEPS = [
-    { key: "pending", label: "PEDIDO", icon: CheckCircle2, color: "text-primary", bg: "bg-primary" },
-    { key: "preparing", label: "EN PREPARACION", icon: ChefHat, color: "text-amber-400", bg: "bg-amber-400" },
-    { key: "on_the_way", label: "EN CAMINO", icon: Bike, color: "text-sky-400", bg: "bg-sky-400" },
-    { key: "delivered", label: "ENTREGADO", icon: PartyPopper, color: "text-emerald-400", bg: "bg-emerald-400" },
-];
+// ── Kitchen bell sound (Web Audio API) ───────────────────────────────────────
+function playKitchenBell() {
+    try {
+        const ctx = new AudioContext();
+        // Double-ding: two metallic bell hits
+        [0, 0.25].forEach((delay) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(1200, ctx.currentTime + delay);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + delay + 0.3);
+            gain.gain.setValueAtTime(0.6, ctx.currentTime + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.8);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(ctx.currentTime + delay);
+            osc.stop(ctx.currentTime + delay + 0.8);
+        });
+        // Cleanup
+        setTimeout(() => ctx.close(), 2000);
+    } catch {
+        // Fallback to notification.mp3
+        const audio = new Audio("/notification.mp3");
+        audio.play().catch(() => { });
+    }
+}
 
-export default function OrderTrackingPage({ params }: { params: Promise<{ tenant: string, id: string }> }) {
+// ── Dynamic steps builder ────────────────────────────────────────────────────
+// Step 3 label changes based on delivery method:
+//   DELIVERY  → "DESPACHADO"
+//   TAKEAWAY  → "PREPARADO"
+function getSteps(deliveryMethod: string) {
+    const isTakeaway = deliveryMethod !== "DELIVERY";
+    return [
+        { key: "pending", label: "PEDIDO", icon: CheckCircle2, color: "text-primary", bg: "bg-primary" },
+        { key: "preparing", label: "CONFIRMADO", icon: ChefHat, color: "text-amber-400", bg: "bg-amber-400" },
+        { key: "on_the_way", label: isTakeaway ? "PREPARADO" : "DESPACHADO", icon: isTakeaway ? PackageCheck : Bike, color: "text-sky-400", bg: "bg-sky-400" },
+        { key: "delivered", label: "ENTREGADO", icon: PartyPopper, color: "text-emerald-400", bg: "bg-emerald-400" },
+    ];
+}
+
+export default function OrderTrackingPage({ params }: { params: Promise<{ tenant: string; id: string }> }) {
     const { tenant, id: orderId } = use(params);
     const supabase = createClient();
 
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    // Initial Fetch
+    // ── Initial Fetch ────────────────────────────────────────────────────
     useEffect(() => {
         const fetchOrder = async () => {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from("orders")
                 .select("*")
                 .eq("id", orderId)
@@ -41,7 +73,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         fetchOrder();
     }, [supabase, orderId]);
 
-    // Realtime Listener
+    // ── Realtime Listener ────────────────────────────────────────────────
     useEffect(() => {
         if (!orderId) return;
 
@@ -57,17 +89,46 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 },
                 (payload) => {
                     const newStatus = payload.new.status;
+                    const method = payload.new.delivery_method || order?.delivery_method;
+                    const isTakeaway = method !== "DELIVERY";
+
                     setOrder((prev: any) => ({ ...prev, status: newStatus }));
 
-                    if (newStatus === "preparing") toast.success("¡Tu pedido se está preparando!");
-                    if (newStatus === "on_the_way") toast.success("¡Tu pedido está en camino!");
-                    if (newStatus === "delivered") toast.success("¡Pedido entregado! 🎉");
-                    if (newStatus === "cancelled") {
+                    // ── Status-specific notifications ────────────────
+                    if (newStatus === "preparing") {
+                        toast.success("¡Tu pedido fue confirmado! Ya se está preparando.");
+                    }
+
+                    if (newStatus === "on_the_way") {
+                        if (isTakeaway) {
+                            // 🔔 Take Away: campana de cocina + notificación larga
+                            playKitchenBell();
+                            toast.success(
+                                "¡Tu pedido está PREPARADO! Ya podés pasar a retirarlo. 🏪",
+                                { duration: 10000 }
+                            );
+                            // Notificación nativa del navegador
+                            if ("Notification" in window && Notification.permission === "granted") {
+                                new Notification("🔔 ¡Pedido listo para retirar!", {
+                                    body: "Tu pedido está preparado. Acercate al local a retirarlo.",
+                                    icon: "/favicon.ico",
+                                });
+                            }
+                        } else {
+                            toast.success("¡Tu pedido está en camino! 🚴");
+                            const audio = new Audio("/notification.mp3");
+                            audio.play().catch(() => { });
+                        }
+                    } else if (newStatus === "delivered") {
+                        toast.success("¡Pedido entregado! Disfrutalo 🎉");
+                        const audio = new Audio("/notification.mp3");
+                        audio.play().catch(() => { });
+                    } else if (newStatus === "cancelled") {
                         toast.error("El pedido fue cancelado.");
-                        const audio = new Audio('/notification.mp3');
+                        const audio = new Audio("/notification.mp3");
                         audio.play().catch(() => { });
                     } else {
-                        const audio = new Audio('/notification.mp3');
+                        const audio = new Audio("/notification.mp3");
                         audio.play().catch(() => { });
                     }
                 }
@@ -77,8 +138,16 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, orderId]);
+    }, [supabase, orderId, order?.delivery_method]);
 
+    // ── Request notification permission on mount ─────────────────────────
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    // ── Loading ──────────────────────────────────────────────────────────
     if (loading || !order) {
         return (
             <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4">
@@ -87,11 +156,12 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         );
     }
 
+    // ── Derived State ────────────────────────────────────────────────────
     const { status: rawStatus, order_number, total_amount, delivery_method } = order;
-
-    // ─── Status Resolution (Robust Mapping) ───
     const status = (rawStatus || "pending").toLowerCase();
     const isCancelled = status === "cancelled";
+    const isTakeaway = delivery_method !== "DELIVERY";
+    const STEPS = getSteps(delivery_method);
 
     const statusToStep: Record<string, number> = {
         pending: 0,
@@ -99,24 +169,20 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         on_the_way: 2,
         delivered: 3,
     };
-
     const currentStep = statusToStep[status] ?? 0;
 
-    // ─── Visual Helpers ───
     const activeStepData = currentStep >= 0 ? STEPS[currentStep] : null;
     const ActiveIcon = isCancelled ? XCircle : (activeStepData?.icon || CheckCircle2);
     const activeColor = isCancelled ? "text-red-500" : (activeStepData?.color || "text-primary");
-    const activeBg = isCancelled ? "bg-red-500" : (activeStepData?.bg || "bg-primary");
 
-    // Helper to get messaging
     const getMessage = () => {
         if (isCancelled) return "El pedido ha sido cancelado. Comunicate con el local para más información.";
         if (status === "pending") return "Estamos esperando que el local confirme tu pedido. Te avisaremos enseguida.";
-        if (status === "preparing") return "Tu pedido ya está en la cocina. Preparando todo con mucho cuidado.";
+        if (status === "preparing") return "Tu pedido ya fue confirmado. Preparando todo con mucho cuidado.";
         if (status === "on_the_way") {
-            return delivery_method === "DELIVERY"
-                ? "Tu pedido ya salió. Está en camino a tu dirección."
-                : "Tu pedido está listo. Date una vuelta por el local a retirarlo.";
+            return isTakeaway
+                ? "¡Tu pedido está listo! Acercate al local a retirarlo."
+                : "Tu pedido ya salió. Está en camino a tu dirección.";
         }
         if (status === "delivered") return "¡Disfrutá tu pedido! Gracias por elegirnos.";
         return "Estamos procesando tu pedido...";
@@ -124,6 +190,8 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
 
     return (
         <main className="flex min-h-screen flex-col items-center justify-start bg-zinc-950 px-4 py-8 relative overflow-hidden">
+            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
+
             {/* Nav Back */}
             <div className="w-full max-w-sm mb-8 z-10">
                 <Link href={`/${tenant}`} className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition">
@@ -133,11 +201,16 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
 
             {/* Glowing orb accent */}
             <div
-                className={`pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 -z-10 h-72 w-full max-w-lg bg-[radial-gradient(ellipse_at_top_center,var(--tw-gradient-stops))] opacity-15 transition-all duration-1000 ${isCancelled ? 'from-red-500 to-transparent' : 'from-primary to-transparent'}`}
+                className={`pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 -z-10 h-72 w-full max-w-lg bg-[radial-gradient(ellipse_at_top_center,var(--tw-gradient-stops))] opacity-15 transition-all duration-1000 ${isCancelled ? "from-red-500 to-transparent" : "from-primary to-transparent"}`}
             />
 
             {/* Icon */}
-            <div className={`mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-zinc-900/50 backdrop-blur-md ring-2 ring-offset-4 ring-offset-zinc-950 shadow-2xl transition-all duration-700 ${isCancelled ? 'ring-red-500/50 shadow-red-500/20 text-red-500' : 'ring-primary/40 shadow-[0_0_40px_var(--brand-color)] shadow-primary/20 text-primary'}`}>
+            <div
+                className={`mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-zinc-900/50 backdrop-blur-md ring-2 ring-offset-4 ring-offset-zinc-950 shadow-2xl transition-all duration-700 ${isCancelled
+                    ? "ring-red-500/50 shadow-red-500/20 text-red-500"
+                    : "ring-primary/40 shadow-[0_0_40px_var(--brand-color)] shadow-primary/20 text-primary"
+                    }`}
+            >
                 <ActiveIcon className={`h-12 w-12 ${activeColor} drop-shadow-md`} />
             </div>
 
@@ -159,37 +232,39 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 {getMessage()}
             </p>
 
-            {/* Progress stepper (Hide if cancelled) */}
+            {/* ── Progress Stepper (full labels, no truncation) ────────── */}
             {!isCancelled && (
-                <div className="mb-12 w-full max-w-[320px]">
-                    <div className="relative flex items-center justify-between">
-                        {/* Connecting track background */}
-                        <div className="absolute left-[10%] right-[10%] top-4 h-1 bg-zinc-800/80 rounded-full" />
+                <div className="mb-12 w-full max-w-[360px]">
+                    <div className="relative flex items-start justify-between">
+                        {/* Track background */}
+                        <div className="absolute left-[12%] right-[12%] top-[18px] h-1 bg-zinc-800/80 rounded-full" />
 
-                        {/* Active Progress Line */}
+                        {/* Active progress line */}
                         <div
-                            className="absolute left-[10%] top-4 h-1 bg-primary transition-all duration-700 rounded-full shadow-[0_0_10px_var(--brand-color)] shadow-primary/50"
-                            style={{ width: `${(currentStep / (STEPS.length - 1)) * 80}%` }}
+                            className="absolute left-[12%] top-[18px] h-1 bg-primary transition-all duration-700 rounded-full shadow-[0_0_10px_var(--brand-color)] shadow-primary/50"
+                            style={{ width: `${(currentStep / (STEPS.length - 1)) * 76}%` }}
                         />
 
                         {STEPS.map((step, idx) => {
                             const Icon = step.icon;
-                            // Pending shows as complete immediately, else only if passed
                             const isDone = idx <= currentStep;
                             const isCurrent = idx === currentStep;
 
                             return (
-                                <div key={step.key} className="relative flex flex-col items-center gap-2 w-16">
+                                <div key={step.key} className="relative z-10 flex flex-col items-center gap-2.5" style={{ width: "25%" }}>
                                     <div
-                                        className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-[3px] transition-all duration-500 ${isDone
-                                            ? `border-primary bg-zinc-950 text-primary shadow-[0_0_15px_var(--brand-color)] shadow-primary/30 scale-110`
+                                        className={`flex h-9 w-9 items-center justify-center rounded-full border-[3px] transition-all duration-500 ${isDone
+                                            ? "border-primary bg-zinc-950 text-primary shadow-[0_0_15px_var(--brand-color)] shadow-primary/30 scale-110"
                                             : "border-zinc-800 bg-zinc-950 text-zinc-600"
-                                            } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}
+                                            } ${isCurrent ? "ring-4 ring-primary/20" : ""}`}
                                     >
                                         <Icon size={16} className={isDone ? "" : "opacity-50"} />
                                     </div>
-                                    <span className={`text-center transition-colors duration-300 font-bold tracking-tight text-[10px] uppercase ${isDone ? "text-zinc-200" : "text-zinc-600"}`}>
-                                        {step.label.split(" ")[0]}
+                                    <span
+                                        className={`text-center font-bold text-[10px] leading-tight uppercase transition-colors duration-300 ${isDone ? "text-zinc-200" : "text-zinc-600"
+                                            }`}
+                                    >
+                                        {step.label}
                                     </span>
                                 </div>
                             );
@@ -216,15 +291,18 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
             )}
 
             <div className="mt-auto w-full pt-6 border-t border-zinc-900 flex flex-col items-center pb-12">
-                {/* Order ID for support */}
                 <p className="mb-6 text-center text-[10px] uppercase font-bold tracking-widest text-zinc-600">
                     ID Transacción: <span className="font-mono text-zinc-400">{orderId.slice(0, 8)}</span>
                 </p>
                 <div className="flex gap-4">
-                    <button onClick={() => window.location.reload()} className="text-xs font-semibold text-zinc-500 hover:text-white transition underline underline-offset-4 decoration-zinc-700">Actualizar</button>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-xs font-semibold text-zinc-500 hover:text-white transition underline underline-offset-4 decoration-zinc-700"
+                    >
+                        Actualizar
+                    </button>
                 </div>
             </div>
-
         </main>
     );
 }
