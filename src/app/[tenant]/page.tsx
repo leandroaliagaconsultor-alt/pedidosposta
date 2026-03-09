@@ -230,7 +230,7 @@ export default function StorefrontPage() {
                 </section>
 
                 {/* ─── 2. Product Grid (Cols 5-9) ─── */}
-                <div className="lg:col-span-5 flex flex-col p-4 lg:p-8 border-r border-zinc-800/50 bg-[#09090b] min-h-screen pb-32 lg:pb-8">
+                <div className="lg:col-span-5 flex flex-col p-4 lg:p-8 border-r border-zinc-800/50 bg-[#09090b] min-h-screen pb-28 lg:pb-8">
                     {/* Categories sticky inside this col */}
                     <nav className="sticky top-0 z-40 w-full bg-[#09090b]/90 backdrop-blur-md mb-6 py-4">
                         <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
@@ -300,21 +300,26 @@ export default function StorefrontPage() {
                     )}
                 </aside>
 
-                {/* Floating mobile cart button + drawer */}
-                <div className="lg:hidden fixed bottom-6 right-6 z-50">
-                    <button
-                        onClick={() => setCartOpen(true)}
-                        className={`${themeEngine.skin.cta} h-14 w-14 !p-0`}
-                        style={{ backgroundColor: themeEngine.primaryColor, color: '#09090b' }}
-                    >
-                        <ShoppingBag size={24} />
-                        {totalItems > 0 && (
-                            <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#09090b] bg-red-600 text-[10px] font-black tracking-tighter text-white shadow-sm">
-                                {totalItems}
+                {/* Floating mobile cart pill + drawer */}
+                {totalItems > 0 && (
+                    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-gradient-to-t from-[#09090b] via-[#09090b]/95 to-transparent">
+                        <button
+                            onClick={() => setCartOpen(true)}
+                            className="flex w-full items-center justify-between rounded-2xl px-6 py-4 text-sm font-extrabold shadow-[0_-4px_30px_var(--brand-color)] shadow-primary/30 transition-all active:scale-[0.98]"
+                            style={{ backgroundColor: themeEngine.primaryColor, color: '#09090b' }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-sm font-black text-white">
+                                    {totalItems}
+                                </div>
+                                <span className="tracking-wide uppercase">Ver Pedido</span>
+                            </div>
+                            <span className="text-base font-black">
+                                ${cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString('es-AR')}
                             </span>
-                        )}
-                    </button>
-                </div>
+                        </button>
+                    </div>
+                )}
                 <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />
             </main>
         );
@@ -494,24 +499,30 @@ export default function StorefrontPage() {
                 )}
             </div>
 
-            {/* ─── 4. Floating Cart Button ─── */}
-            <div className="fixed bottom-6 right-6 z-50">
-                <button
-                    onClick={() => setCartOpen(true)}
-                    className={themeEngine.skin.cta + " h-14 w-14 !p-0"}
-                    style={{
-                        backgroundColor: themeEngine.primaryColor,
-                        color: themeEngine.lightTextMode ? '#000' : '#fff'
-                    }}
-                >
-                    <ShoppingBag size={24} />
-                    {totalItems > 0 && (
-                        <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--bg-color)] bg-red-600 text-xs font-bold text-white shadow-sm">
-                            {totalItems}
+            {/* ─── 4. Floating Cart Pill (Mobile-First) ─── */}
+            {totalItems > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/95 to-transparent">
+                    <button
+                        onClick={() => setCartOpen(true)}
+                        className="flex w-full max-w-3xl mx-auto items-center justify-between rounded-2xl px-6 py-4 text-sm font-extrabold shadow-[0_-4px_30px_var(--brand-color)] transition-all active:scale-[0.98]"
+                        style={{
+                            backgroundColor: themeEngine.primaryColor,
+                            color: themeEngine.lightTextMode ? '#000' : '#fff',
+                            boxShadow: `0 -4px 30px ${themeEngine.primaryColor}40`,
+                        }}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-sm font-black text-white">
+                                {totalItems}
+                            </div>
+                            <span className="tracking-wide uppercase">Ver Pedido</span>
+                        </div>
+                        <span className="text-base font-black">
+                            ${cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString('es-AR')}
                         </span>
-                    )}
-                </button>
-            </div>
+                    </button>
+                </div>
+            )}
 
             {/* ─── 5. Cart Drawer ─── */}
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />

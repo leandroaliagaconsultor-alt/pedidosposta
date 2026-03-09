@@ -48,9 +48,9 @@ type CategoryForm = z.infer<typeof categorySchema>;
 const productSchema = z.object({
     name: z.string().min(2, "El nombre del producto es requerido"),
     description: z.string().optional(),
-    price: z.coerce.number().min(0, "El precio debe ser 0 o mayor"),
-    cost_price: z.coerce.number().min(0).default(0),
-    profit_margin: z.coerce.number().min(0).default(0),
+    price: z.coerce.number().min(0, { message: "El precio no puede ser negativo" }),
+    cost_price: z.coerce.number().min(0, { message: "El costo no puede ser negativo" }).default(0),
+    profit_margin: z.coerce.number().min(0, { message: "El margen no puede ser negativo" }).default(0),
     category_id: z.string().min(1, "Selecciona una categoría"),
     modifier_ids: z.array(z.string()).default([]),
     image_url: z.string().optional().nullable(),
@@ -63,7 +63,7 @@ const modSchema = z.object({
     is_multiple: z.boolean().default(false),
     options: z.array(z.object({
         name: z.string().min(1, "Nombre requerido"),
-        additional_price: z.coerce.number().min(0, "Debe ser mayor a 0").default(0),
+        additional_price: z.coerce.number().min(0, { message: "El precio no puede ser negativo" }).default(0),
     })).min(1, "Debes agregar al menos una opción"),
 });
 type ModForm = z.infer<typeof modSchema>;
@@ -243,22 +243,25 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
         prodForm.setValue("image_url", tempUrl);
     };
 
-    const handleCostOrMarginChange = (field: 'cost_price' | 'profit_margin', value: number) => {
-        prodForm.setValue(field, value, { shouldValidate: true, shouldDirty: true });
-        const cp = field === 'cost_price' ? value : Number(prodForm.getValues("cost_price") || 0);
-        const pm = field === 'profit_margin' ? value : Number(prodForm.getValues("profit_margin") || 0);
+    const handleCostOrMarginChange = (field: 'cost_price' | 'profit_margin', rawValue: string) => {
+        // Allow empty string while user types, treat as 0 for calculation
+        const numValue = rawValue === '' ? 0 : parseFloat(rawValue);
+        if (isNaN(numValue)) return;
+        prodForm.setValue(field, numValue, { shouldValidate: true, shouldDirty: true });
+        const cp = field === 'cost_price' ? numValue : Number(prodForm.getValues("cost_price") || 0);
+        const pm = field === 'profit_margin' ? numValue : Number(prodForm.getValues("profit_margin") || 0);
 
         const newPrice = cp * (1 + (pm / 100));
-        // Redondear a un entero es más común para precios, usamos Math.round
         prodForm.setValue("price", Math.round(newPrice), { shouldValidate: true, shouldDirty: true });
     };
 
-    const handlePriceChange = (value: number) => {
-        prodForm.setValue("price", value, { shouldValidate: true, shouldDirty: true });
+    const handlePriceChange = (rawValue: string) => {
+        const numValue = rawValue === '' ? 0 : parseFloat(rawValue);
+        if (isNaN(numValue)) return;
+        prodForm.setValue("price", numValue, { shouldValidate: true, shouldDirty: true });
         const cp = Number(prodForm.getValues("cost_price") || 0);
         if (cp > 0) {
-            const newMargin = ((value / cp) - 1) * 100;
-            // Redondear margen a 1 decimal
+            const newMargin = ((numValue / cp) - 1) * 100;
             prodForm.setValue("profit_margin", parseFloat(newMargin.toFixed(1)), { shouldValidate: true, shouldDirty: true });
         }
     };
@@ -721,8 +724,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">%</span>
                                         <input
                                             type="number"
-                                            value={prodForm.watch("profit_margin") as any}
-                                            onChange={(e) => handleCostOrMarginChange('profit_margin', parseFloat(e.target.value) || 0)}
+                                            inputMode="decimal"
+                                            value={prodForm.watch("profit_margin") as number ?? ''}
+                                            onChange={(e) => handleCostOrMarginChange('profit_margin', e.target.value)}
+                                            onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-zinc-900 pl-4 pr-10 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.profit_margin ? "border-red-500/50" : "border-zinc-800"}`}
                                             placeholder="Ej: 50"
                                         />
@@ -738,8 +743,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
                                         <input
                                             type="number"
-                                            value={prodForm.watch("cost_price") as any}
-                                            onChange={(e) => handleCostOrMarginChange('cost_price', parseFloat(e.target.value) || 0)}
+                                            inputMode="decimal"
+                                            value={prodForm.watch("cost_price") as number ?? ''}
+                                            onChange={(e) => handleCostOrMarginChange('cost_price', e.target.value)}
+                                            onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-zinc-900 pl-8 pr-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.cost_price ? "border-red-500/50" : "border-zinc-800"}`}
                                             placeholder="Ej: 3000"
                                         />
@@ -753,8 +760,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-500 font-bold">$</span>
                                         <input
                                             type="number"
-                                            value={prodForm.watch("price") as any}
-                                            onChange={(e) => handlePriceChange(parseFloat(e.target.value) || 0)}
+                                            inputMode="decimal"
+                                            value={prodForm.watch("price") as number ?? ''}
+                                            onChange={(e) => handlePriceChange(e.target.value)}
+                                            onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
                                             className={`w-full rounded-xl border bg-green-950/20 pl-8 pr-4 py-3 text-sm text-green-400 font-bold outline-none transition focus:ring-2 focus:ring-green-500 ${prodForm.formState.errors.price ? "border-red-500/50" : "border-green-500/30"}`}
                                             placeholder="Ej: 5000"
                                         />
