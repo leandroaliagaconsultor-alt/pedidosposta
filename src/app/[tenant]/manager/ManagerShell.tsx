@@ -86,10 +86,13 @@ export default function ManagerShell({
                ═══════════════════════════════════════════════════════════ */}
             <aside className="hidden md:flex w-64 flex-col border-r border-zinc-800 bg-zinc-900/40 backdrop-blur-xl">
                 <div className="p-6">
-                    <h2 className="text-2xl font-black tracking-tight flex items-center gap-1">
-                        <span className="text-white">Pedidos</span>
-                        <span className="text-primary italic">Posta</span>
-                    </h2>
+                    <Link href={`/${tenant}/manager`} className="flex items-center">
+                        <img
+                            src="/logo-pedidoposta.png"
+                            alt="PedidosPosta"
+                            className="h-10 w-auto object-contain cursor-pointer"
+                        />
+                    </Link>
                     <div className="mt-3 flex flex-col">
                         <span className="text-xs font-bold text-white leading-tight">{tenantData?.name || tenant}</span>
                         <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mt-0.5">Panel Administrador</span>
@@ -141,10 +144,13 @@ export default function ManagerShell({
             {/* Mobile Header Bar (fixed at top) */}
             <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-lg px-4 py-3 md:hidden">
                 <div>
-                    <h2 className="text-lg font-black tracking-tight flex items-center gap-0.5">
-                        <span className="text-white">Pedidos</span>
-                        <span className="text-primary italic">Posta</span>
-                    </h2>
+                    <Link href={`/${tenant}/manager`} className="flex items-center">
+                        <img
+                            src="/logo-pedidoposta.png"
+                            alt="PedidosPosta"
+                            className="h-8 w-auto object-contain cursor-pointer"
+                        />
+                    </Link>
                     <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">{tenantData?.name || tenant}</p>
                 </div>
                 <div className="flex items-center gap-2">
