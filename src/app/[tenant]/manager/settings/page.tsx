@@ -35,6 +35,7 @@ const settingsSchema = z.object({
     delivery_base_fee: z.coerce.number().min(0).optional().nullable(),
     delivery_base_km: z.coerce.number().min(0).optional().nullable(),
     delivery_per_km: z.coerce.number().min(0).optional().nullable(),
+    delivery_type: z.enum(['fixed', 'variable']).default('fixed'),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -95,6 +96,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             delivery_base_fee: 0,
             delivery_base_km: 0,
             delivery_per_km: 0,
+            delivery_type: "fixed" as "fixed" | "variable",
         },
     });
 
@@ -123,6 +125,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     delivery_base_fee: data.delivery_base_fee || 0,
                     delivery_base_km: data.delivery_base_km || 0,
                     delivery_per_km: data.delivery_per_km || 0,
+                    delivery_type: data.delivery_type || "fixed",
                 });
 
                 if (data.store_address) {
@@ -158,6 +161,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     delivery_base_fee: data.delivery_base_fee,
                     delivery_base_km: data.delivery_base_km,
                     delivery_per_km: data.delivery_per_km,
+                    delivery_type: data.delivery_type,
                 })
                 .eq("id", tenantId);
 
@@ -487,48 +491,65 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá tu dirección de origen y las reglas de cobro para calcular envíos dinámicos según la distancia real al cliente.</p>
 
                     <div className="space-y-6">
+                        {/* ── Tipo de Cobro ── */}
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Física de Origen (Google Maps)</label>
-                            <div className="relative">
-                                <MapPin className="absolute left-3 top-4 text-zinc-500" size={18} />
-                                <input
-                                    type="text"
-                                    value={addressValue}
-                                    onChange={(e) => {
-                                        setAddressValue(e.target.value);
-                                        form.setValue("store_address", e.target.value, { shouldDirty: true });
-                                    }}
-                                    disabled={!ready || !isLoaded}
-                                    placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección exacta del local..."}
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                                />
-                                {/* Suggested Places List */}
-                                {status === "OK" && (
-                                    <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
-                                        {data.map(({ place_id, description }) => (
-                                            <li
-                                                key={place_id}
-                                                onClick={() => {
-                                                    setAddressValue(description, false);
-                                                    clearSuggestions();
-                                                    form.setValue("store_address", description, { shouldDirty: true });
-                                                }}
-                                                className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
-                                            >
-                                                {description}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                            <label className="mb-3 block text-sm font-semibold text-zinc-300">Tipo de Envío</label>
+                            <div className="flex gap-4">
+                                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all ${watchValues.delivery_type === "fixed" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300"}`}>
+                                    <input type="radio" value="fixed" className="sr-only" {...form.register("delivery_type")} />
+                                    Costo Fijo
+                                </label>
+                                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all ${watchValues.delivery_type === "variable" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300"}`}>
+                                    <input type="radio" value="variable" className="sr-only" {...form.register("delivery_type")} />
+                                    Costo Variable por KM
+                                </label>
                             </div>
-                            <p className="mt-2 text-xs text-zinc-500">
-                                Debe ser una dirección exacta elegida del listado de Google para poder calcular los envíos con éxito.
-                            </p>
                         </div>
+
+                        {watchValues.delivery_type === "variable" && (
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Física de Origen (Google Maps)</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-4 text-zinc-500" size={18} />
+                                    <input
+                                        type="text"
+                                        value={addressValue}
+                                        onChange={(e) => {
+                                            setAddressValue(e.target.value);
+                                            form.setValue("store_address", e.target.value, { shouldDirty: true });
+                                        }}
+                                        disabled={!ready || !isLoaded}
+                                        placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección exacta del local..."}
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                                    />
+                                    {/* Suggested Places List */}
+                                    {status === "OK" && (
+                                        <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
+                                            {data.map(({ place_id, description }) => (
+                                                <li
+                                                    key={place_id}
+                                                    onClick={() => {
+                                                        setAddressValue(description, false);
+                                                        clearSuggestions();
+                                                        form.setValue("store_address", description, { shouldDirty: true });
+                                                    }}
+                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                                >
+                                                    {description}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-xs text-zinc-500">
+                                    Debe ser una dirección exacta elegida del listado de Google para poder calcular los envíos con éxito.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="grid gap-6 md:grid-cols-3">
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Tarifa Base ($)</label>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">{watchValues.delivery_type === "fixed" ? "Costo Fijo de Envío ($)" : "Tarifa Base ($)"}</label>
                                 <input
                                     type="number"
                                     min="0"
@@ -537,32 +558,36 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     placeholder="Ej: 1500"
                                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                 />
-                                <p className="mt-1 text-xs text-zinc-500">Costo mínimo del envío al cliente.</p>
+                                <p className="mt-1 text-xs text-zinc-500">{watchValues.delivery_type === "fixed" ? "Costo único de envío para cualquier pedido." : "Costo mínimo del envío al cliente."}</p>
                             </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Distancia Base Activa (KM)</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.1"
-                                    {...form.register("delivery_base_km")}
-                                    placeholder="Ej: 2.5"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
-                                />
-                                <p className="mt-1 text-xs text-zinc-500">KM que cubre esa Tarifa Base inicial.</p>
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Costo por KM Extra ($)</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    {...form.register("delivery_per_km")}
-                                    placeholder="Ej: 500"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
-                                />
-                                <p className="mt-1 text-xs text-zinc-500">Valor a sumar por cada KM superado.</p>
-                            </div>
+                            {watchValues.delivery_type === "variable" && (
+                                <>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Distancia Base Activa (KM)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            {...form.register("delivery_base_km")}
+                                            placeholder="Ej: 2.5"
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                        <p className="mt-1 text-xs text-zinc-500">KM que cubre esa Tarifa Base inicial.</p>
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Costo por KM Extra ($)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            {...form.register("delivery_per_km")}
+                                            placeholder="Ej: 500"
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                        <p className="mt-1 text-xs text-zinc-500">Valor a sumar por cada KM superado.</p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

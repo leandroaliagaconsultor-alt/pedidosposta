@@ -76,6 +76,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
     const [tenantDeliveryBaseFee, setTenantDeliveryBaseFee] = useState(0);
     const [tenantDeliveryBaseKm, setTenantDeliveryBaseKm] = useState(0);
     const [tenantDeliveryPerKm, setTenantDeliveryPerKm] = useState(0);
+    const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "variable">("fixed");
     const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
     const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState<number>(0);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
@@ -144,7 +145,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_base_fee, delivery_base_km, delivery_per_km")
+                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_base_fee, delivery_base_km, delivery_per_km, delivery_type")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
@@ -156,6 +157,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                 setTenantDeliveryBaseFee(tenantData.delivery_base_fee || 0);
                 setTenantDeliveryBaseKm(tenantData.delivery_base_km || 0);
                 setTenantDeliveryPerKm(tenantData.delivery_per_km || 0);
+                setTenantDeliveryType(tenantData.delivery_type || "fixed");
 
                 // Fallback base fee if delivery calculate fails
                 setCalculatedDeliveryCost(tenantData.delivery_base_fee || 0);
@@ -192,8 +194,14 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         clearSuggestions();
         setValue("address", addressStr, { shouldValidate: true });
 
-        if (!tenantStoreAddress) {
+        if (!tenantStoreAddress && tenantDeliveryType === "variable") {
             toast.error("El local no tiene configurada su dirección de envío.");
+            return;
+        }
+
+        if (tenantDeliveryType === "fixed") {
+            // Si es costo fijo, no calculamos distancia matemática que impacte costo, omitimos geocoding de distancia o lo mostramos para UX nada más
+            setCalculatedDeliveryCost(tenantDeliveryBaseFee);
             return;
         }
 
@@ -202,7 +210,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             const results = await getGeocode({ address: addressStr });
             const { lat, lng } = await getLatLng(results[0]);
 
-            const originResults = await getGeocode({ address: tenantStoreAddress });
+            const originResults = await getGeocode({ address: tenantStoreAddress! });
             const originLatLng = await getLatLng(originResults[0]);
 
             // Using DistanceMatrixService for exact routing distance

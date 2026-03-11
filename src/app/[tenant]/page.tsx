@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { ShoppingBag, Loader2, MapPin, Clock, Bike, ShoppingCart } from "lucide-react";
 
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import ActiveOrderBanner from "@/components/storefront/ActiveOrderBanner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -215,12 +216,32 @@ export default function StorefrontPage() {
                                     <span>{brand.business_hours}</span>
                                 </div>
                             )}
-                            {brand?.delivery_fee !== null && brand?.delivery_fee !== undefined && (
+                            {brand?.delivery_type === 'fixed' && brand?.delivery_base_fee !== undefined && (
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
                                     <Bike size={12} style={{ color: "var(--brand-color)" }} />
-                                    <span>Envío: {brand.delivery_fee === 0 ? "Gratis" : `$${brand.delivery_fee}`}</span>
+                                    <span>Envío: {brand.delivery_base_fee === 0 ? "Gratis" : `$${brand.delivery_base_fee}`}</span>
                                 </div>
                             )}
+                            {brand?.delivery_type === 'variable' && brand?.delivery_base_fee !== undefined && (
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={300}>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md cursor-help">
+                                                <Bike size={12} style={{ color: "var(--brand-color)" }} />
+                                                <span className="border-b border-dashed border-zinc-500">Envío desde ${brand.delivery_base_fee}</span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" className="text-center p-3 text-xs z-50">
+                                            <p>Tarifa base de ${brand.delivery_base_fee} cubriendo hasta {brand.delivery_base_km} km.</p>
+                                            <p>Luego, ${brand.delivery_per_km} por cada kilómetro adicional.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            )}
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
+                                <ShoppingBag size={12} style={{ color: "var(--brand-color)" }} />
+                                <span>Retiro en local gratis</span>
+                            </div>
                             {brand?.min_order !== null && brand?.min_order !== undefined && brand.min_order > 0 && (
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
                                     <ShoppingCart size={12} style={{ color: "var(--brand-color)" }} />
@@ -433,12 +454,32 @@ export default function StorefrontPage() {
                                 <span>{brand.business_hours}</span>
                             </div>
                         )}
-                        {brand?.delivery_fee !== null && brand?.delivery_fee !== undefined && (
+                        {brand?.delivery_type === 'fixed' && brand?.delivery_base_fee !== undefined && (
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
                                 <Bike size={14} className="opacity-70" />
-                                <span>Envío: {brand.delivery_fee === 0 ? "Gratis" : `$${brand.delivery_fee}`}</span>
+                                <span>Envío: {brand.delivery_base_fee === 0 ? "Gratis" : `$${brand.delivery_base_fee}`}</span>
                             </div>
                         )}
+                        {brand?.delivery_type === 'variable' && brand?.delivery_base_fee !== undefined && (
+                            <TooltipProvider>
+                                <Tooltip delayDuration={300}>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium cursor-help">
+                                            <Bike size={14} className="opacity-70" />
+                                            <span className="border-b border-dashed border-current">Envío desde ${brand.delivery_base_fee}</span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-center p-3 text-xs z-50">
+                                        <p>Tarifa base de ${brand.delivery_base_fee} cubriendo hasta {brand.delivery_base_km} km.</p>
+                                        <p>Luego, ${brand.delivery_per_km} por cada kilómetro adicional.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                            <ShoppingBag size={14} className="opacity-70" />
+                            <span>Retiro en local gratis</span>
+                        </div>
                         {brand?.min_order !== null && brand?.min_order !== undefined && brand.min_order > 0 && (
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
                                 <ShoppingCart size={14} className="opacity-70" />
