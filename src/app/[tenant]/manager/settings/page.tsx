@@ -24,6 +24,10 @@ const settingsSchema = z.object({
     mp_public_key: z.string().optional().nullable(),
     transfer_alias: z.string().optional().nullable(),
     transfer_account_name: z.string().optional().nullable(),
+    store_address: z.string().optional().nullable(),
+    delivery_base_fee: z.coerce.number().min(0).optional().nullable(),
+    delivery_base_km: z.coerce.number().min(0).optional().nullable(),
+    delivery_per_km: z.coerce.number().min(0).optional().nullable(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -52,6 +56,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             mp_public_key: "",
             transfer_alias: "",
             transfer_account_name: "",
+            store_address: "",
+            delivery_base_fee: 0,
+            delivery_base_km: 0,
+            delivery_per_km: 0,
         },
     });
 
@@ -76,6 +84,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     mp_public_key: data.mp_public_key || "",
                     transfer_alias: data.transfer_alias || "",
                     transfer_account_name: data.transfer_account_name || "",
+                    store_address: data.store_address || "",
+                    delivery_base_fee: data.delivery_base_fee || 0,
+                    delivery_base_km: data.delivery_base_km || 0,
+                    delivery_per_km: data.delivery_per_km || 0,
                 });
             }
             setLoading(false);
@@ -103,6 +115,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     mp_public_key: data.mp_public_key,
                     transfer_alias: data.transfer_alias,
                     transfer_account_name: data.transfer_account_name,
+                    store_address: data.store_address,
+                    delivery_base_fee: data.delivery_base_fee,
+                    delivery_base_km: data.delivery_base_km,
+                    delivery_per_km: data.delivery_per_km,
                 })
                 .eq("id", tenantId);
 
@@ -416,6 +432,72 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     placeholder="Ej: Juan Pérez"
                                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
                                 />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Logistics Integration ── */}
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                            <MapPin className="text-emerald-500" size={24} /> Logística de Envíos (Google Maps)
+                        </h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá tu dirección de origen y las reglas de cobro para calcular envíos dinámicos según la distancia real al cliente.</p>
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Física de Origen (Google Maps)</label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("store_address")}
+                                    placeholder="Ej: Calle San Martín 123, Ciudad Autónoma de Buenos Aires"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-500">Debe ser una dirección exacta para que Google Maps pueda calcular la distancia correctamente.</p>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Tarifa Base ($)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    {...form.register("delivery_base_fee")}
+                                    placeholder="Ej: 1500"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">Costo mínimo del envío al cliente.</p>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Distancia Base Activa (KM)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    {...form.register("delivery_base_km")}
+                                    placeholder="Ej: 2.5"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">KM que cubre esa Tarifa Base inicial.</p>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Costo por KM Extra ($)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    {...form.register("delivery_per_km")}
+                                    placeholder="Ej: 500"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">Valor a sumar por cada KM superado.</p>
                             </div>
                         </div>
                     </div>

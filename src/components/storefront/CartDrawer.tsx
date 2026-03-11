@@ -11,12 +11,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import usePlacesAutocomplete, {
+    getGeocode,
+    getLatLng,
+} from "use-places-autocomplete";
+import { useJsApiLoader } from "@react-google-maps/api";
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+
+// Move libraries array outside component to avoid infinite re-renders
+const libraries: ("places")[] = ["places"];
 
 // ─── Zod Schema ────────────────────────────────────────────────────────────────
 const checkoutSchema = z
@@ -61,11 +69,48 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
     const [tenantAlias, setTenantAlias] = useState<string | null>(null);
     const [tenantAccountName, setTenantAccountName] = useState<string | null>(null);
 
+    // Logistics & Maps State
+    const [tenantStoreAddress, setTenantStoreAddress] = useState<string | null>(null);
+    const [tenantDeliveryBaseFee, setTenantDeliveryBaseFee] = useState(0);
+    const [tenantDeliveryBaseKm, setTenantDeliveryBaseKm] = useState(0);
+    const [tenantDeliveryPerKm, setTenantDeliveryPerKm] = useState(0);
+    const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
+    const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState<number>(0);
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+
+    // Load Google Maps Script
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+        libraries,
+    });
+
+    const {
+        ready,
+        value: addressValue,
+        suggestions: { status, data },
+        setValue: setAddressValue,
+        clearSuggestions,
+        init,
+    } = usePlacesAutocomplete({
+        initOnMount: false,
+        requestOptions: {
+            /* Restrict to Argentina boundaries mostly if needed, or omit */
+            componentRestrictions: { country: "ar" },
+        },
+        debounce: 300,
+    });
+
+    React.useEffect(() => {
+        if (isLoaded) {
+            init();
+        }
+    }, [isLoaded, init]);
+
     // MP State
     const [isMPActive, setIsMPActive] = useState(false);
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const deliveryCost = 2000; // Mock until tenant config handles it
 
     const {
         register,
@@ -80,7 +125,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
     const deliveryMethod = watch("deliveryMethod");
     const selectedPayment = watch("paymentMethod");
-    const total = subtotal + (deliveryMethod === "DELIVERY" ? deliveryCost : 0);
+    const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
 
     // Reset view when Drawer closes
     const handleOpenChange = (isOpen: boolean) => {
@@ -97,7 +142,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name")
+                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_base_fee, delivery_base_km, delivery_per_km")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
@@ -105,6 +150,13 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                 setIsMPActive(!!tenantData.is_mp_active);
                 setTenantAlias(tenantData.transfer_alias || null);
                 setTenantAccountName(tenantData.transfer_account_name || null);
+                setTenantStoreAddress(tenantData.store_address || null);
+                setTenantDeliveryBaseFee(tenantData.delivery_base_fee || 0);
+                setTenantDeliveryBaseKm(tenantData.delivery_base_km || 0);
+                setTenantDeliveryPerKm(tenantData.delivery_per_km || 0);
+
+                // Fallback base fee if delivery calculate fails
+                setCalculatedDeliveryCost(tenantData.delivery_base_fee || 0);
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -131,6 +183,69 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             fetchAvailability();
         }
     }, [tenantSlug, supabase, scheduleType, setValue, open, isCheckoutMode]);
+
+    // ─── Calculate Distance ─────────────────────────────────────────────────────
+    const handleAddressSelect = async (addressStr: string) => {
+        setAddressValue(addressStr, false);
+        clearSuggestions();
+        setValue("address", addressStr, { shouldValidate: true });
+
+        if (!tenantStoreAddress) {
+            toast.error("El local no tiene configurada su dirección de envío.");
+            return;
+        }
+
+        setIsCalculatingDistance(true);
+        try {
+            const results = await getGeocode({ address: addressStr });
+            const { lat, lng } = await getLatLng(results[0]);
+
+            const originResults = await getGeocode({ address: tenantStoreAddress });
+            const originLatLng = await getLatLng(originResults[0]);
+
+            // Using DistanceMatrixService for exact routing distance
+            const service = new window.google.maps.DistanceMatrixService();
+            service.getDistanceMatrix(
+                {
+                    origins: [originLatLng],
+                    destinations: [{ lat, lng }],
+                    travelMode: window.google.maps.TravelMode.DRIVING,
+                    unitSystem: window.google.maps.UnitSystem.METRIC,
+                },
+                (response, status) => {
+                    setIsCalculatingDistance(false);
+                    if (status !== "OK" || !response) {
+                        toast.error("Error al calcular la distancia. Se aplicará tarifa base.");
+                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                        return;
+                    }
+
+                    const result = response.rows[0].elements[0];
+                    if (result.status !== "OK") {
+                        toast.error("No se pudo calcular la ruta. Se aplicará tarifa base.");
+                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                        return;
+                    }
+
+                    const distanceKm = result.distance.value / 1000;
+                    setCalculatedDistance(distanceKm);
+
+                    if (distanceKm <= tenantDeliveryBaseKm) {
+                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                    } else {
+                        const extraKm = distanceKm - tenantDeliveryBaseKm;
+                        const cost = tenantDeliveryBaseFee + (extraKm * tenantDeliveryPerKm);
+                        setCalculatedDeliveryCost(cost);
+                    }
+                }
+            );
+
+        } catch (error) {
+            setIsCalculatingDistance(false);
+            setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+            console.error("Error Geocoding: ", error);
+        }
+    };
 
     // ─── Submit Order ───────────────────────────────────────────────────────────
     const onSubmit = async (data: CheckoutForm) => {
@@ -236,7 +351,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         items,
-                        deliveryFee: data.deliveryMethod === "DELIVERY" ? deliveryCost : 0,
+                        deliveryFee: data.deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0,
                         tenantId: tenantData.id,
                         orderId: order.id,
                         tenantSlug: tenantSlug
@@ -383,7 +498,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                     </div>
                                     <div className="flex justify-between font-medium text-zinc-400 border-b border-zinc-800/50 pb-3">
                                         <span>Costo de Envío</span>
-                                        <span className="text-zinc-500">A calcular</span>
+                                        <span className="text-zinc-500 text-xs">A calcular en Checkout</span>
                                     </div>
                                     <div className="flex justify-between pt-1 text-xl font-extrabold tracking-tight text-white">
                                         <span>Total</span>
@@ -447,15 +562,50 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                         <div>
                                             <div className="relative">
-                                                <MapPin size={16} className="absolute left-4 top-4 text-zinc-500" />
+                                                <MapPin size={16} className={`absolute left-4 top-4 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
                                                 <input
-                                                    {...register("address")}
-                                                    placeholder="Calle y Número (Ej: Av. Siempreviva 123)"
+                                                    value={addressValue}
+                                                    onChange={(e) => {
+                                                        setAddressValue(e.target.value);
+                                                        setValue("address", e.target.value);
+                                                    }}
+                                                    disabled={!ready || !isLoaded}
+                                                    placeholder="Buscar tu dirección exacta..."
                                                     className={`${inputCls(!!errors.address)} pl-11`}
                                                 />
                                             </div>
+
+                                            {/* Google Maps Suggestions */}
+                                            {status === "OK" && (
+                                                <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
+                                                    {data.map(({ place_id, description }) => (
+                                                        <li
+                                                            key={place_id}
+                                                            onClick={() => handleAddressSelect(description)}
+                                                            className="px-4 py-3 text-sm text-zinc-300 hover:bg-primary/20 hover:text-primary cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                                        >
+                                                            {description}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+
                                             {errors.address && <p className="mt-1.5 ml-1 text-[11px] font-medium text-red-500">{errors.address.message}</p>}
                                         </div>
+
+                                        {calculatedDistance !== null && (
+                                            <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/80 rounded-lg py-2 px-4 shadow-inner">
+                                                <span className="text-xs text-zinc-400 font-medium">Distancia a recorrer:</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs font-black tracking-widest text-zinc-200 bg-zinc-800 px-2 py-1 rounded">
+                                                        {calculatedDistance.toFixed(1)} km
+                                                    </span>
+                                                    <span className="text-sm font-black text-primary">
+                                                        ${calculatedDeliveryCost.toFixed(0)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </section>
@@ -632,6 +782,18 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
                         {/* Checkout Footer */}
                         <div className="border-t border-zinc-800 bg-zinc-950 p-6 shrink-0 z-10 shadow-[0_-10px_40px_-5px_theme(colors.black)]">
+                            <div className="space-y-1.5 mb-5 border-b border-zinc-800/50 pb-4">
+                                <div className="flex justify-between font-medium text-zinc-400 text-sm">
+                                    <span>Subtotal</span>
+                                    <span>${subtotal.toFixed(0)}</span>
+                                </div>
+                                {deliveryMethod === "DELIVERY" && (
+                                    <div className="flex justify-between font-medium text-zinc-400 text-sm">
+                                        <span>Envío</span>
+                                        <span>${calculatedDeliveryCost.toFixed(0)}</span>
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex justify-between items-end mb-5">
                                 <span className="text-zinc-400 font-semibold text-sm">Total final:</span>
                                 <span className="text-2xl font-extrabold text-white tracking-tight">${total.toFixed(0)}</span>
