@@ -8,6 +8,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft, User } from "lucide-react";
+import usePlacesAutocomplete, {
+    getGeocode,
+    getLatLng,
+} from "use-places-autocomplete";
+import { useJsApiLoader } from "@react-google-maps/api";
+
+const libraries: ("places")[] = ["places"];
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +47,34 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Load Google Maps Script
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+        libraries,
+    });
+
+    const {
+        ready,
+        value: addressValue,
+        suggestions: { status, data },
+        setValue: setAddressValue,
+        clearSuggestions,
+        init,
+    } = usePlacesAutocomplete({
+        initOnMount: false,
+        requestOptions: {
+            componentRestrictions: { country: "ar" },
+        },
+        debounce: 300,
+    });
+
+    useEffect(() => {
+        if (isLoaded) {
+            init();
+        }
+    }, [isLoaded, init]);
 
     const form = useForm({
         resolver: zodResolver(settingsSchema),
@@ -89,6 +124,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     delivery_base_km: data.delivery_base_km || 0,
                     delivery_per_km: data.delivery_per_km || 0,
                 });
+
+                if (data.store_address) {
+                    setAddressValue(data.store_address, false);
+                }
             }
             setLoading(false);
         };
@@ -451,15 +490,40 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         <div>
                             <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Física de Origen (Google Maps)</label>
                             <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <MapPin className="absolute left-3 top-4 text-zinc-500" size={18} />
                                 <input
                                     type="text"
-                                    {...form.register("store_address")}
-                                    placeholder="Ej: Calle San Martín 123, Ciudad Autónoma de Buenos Aires"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                    value={addressValue}
+                                    onChange={(e) => {
+                                        setAddressValue(e.target.value);
+                                        form.setValue("store_address", e.target.value, { shouldDirty: true });
+                                    }}
+                                    disabled={!ready || !isLoaded}
+                                    placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección exacta del local..."}
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                                 />
+                                {/* Suggested Places List */}
+                                {status === "OK" && (
+                                    <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
+                                        {data.map(({ place_id, description }) => (
+                                            <li
+                                                key={place_id}
+                                                onClick={() => {
+                                                    setAddressValue(description, false);
+                                                    clearSuggestions();
+                                                    form.setValue("store_address", description, { shouldDirty: true });
+                                                }}
+                                                className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                            >
+                                                {description}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500">Debe ser una dirección exacta para que Google Maps pueda calcular la distancia correctamente.</p>
+                            <p className="mt-2 text-xs text-zinc-500">
+                                Debe ser una dirección exacta elegida del listado de Google para poder calcular los envíos con éxito.
+                            </p>
                         </div>
 
                         <div className="grid gap-6 md:grid-cols-3">

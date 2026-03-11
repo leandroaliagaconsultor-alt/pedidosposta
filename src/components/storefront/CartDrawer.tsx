@@ -33,6 +33,8 @@ const checkoutSchema = z
         phone: z.string().min(8, "Teléfono / WhatsApp inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         address: z.string().optional(),
+        cross_streets: z.string().optional(),
+        delivery_notes: z.string().optional(),
         notes: z.string().optional(),
         deliveryTime: z.string().optional(),
         is_asap: z.boolean(),
@@ -307,6 +309,8 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     last_name: lastName || "",
                     customer_phone: data.phone,
                     customer_address: data.deliveryMethod === "DELIVERY" ? data.address : null,
+                    cross_streets: data.deliveryMethod === "DELIVERY" ? data.cross_streets : null,
+                    delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
                     customer_notes: data.notes || null,
                     delivery_method: data.deliveryMethod,
                     payment_method: data.paymentMethod,
@@ -570,10 +574,13 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                                         setValue("address", e.target.value);
                                                     }}
                                                     disabled={!ready || !isLoaded}
-                                                    placeholder="Buscar tu dirección exacta..."
+                                                    placeholder="Ej: Calle 13 34, Mercedes, Buenos Aires"
                                                     className={`${inputCls(!!errors.address)} pl-11`}
                                                 />
                                             </div>
+                                            <p className="mt-1.5 ml-1 text-[11px] text-zinc-500 font-medium">
+                                                Ingresá calle, número y ciudad para calcular el costo de envío exacto.
+                                            </p>
 
                                             {/* Google Maps Suggestions */}
                                             {status === "OK" && (
@@ -591,6 +598,28 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                             )}
 
                                             {errors.address && <p className="mt-1.5 ml-1 text-[11px] font-medium text-red-500">{errors.address.message}</p>}
+                                        </div>
+
+                                        <div>
+                                            <div className="relative">
+                                                <MapPin size={16} className="absolute left-4 top-4 text-zinc-500 opacity-50" />
+                                                <input
+                                                    {...register("cross_streets")}
+                                                    placeholder="Entre calles (Opcional). Ej: Entre 14 y 16"
+                                                    className={`${inputCls(false)} pl-11`}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div className="relative">
+                                                <MessageSquare size={16} className="absolute left-4 top-4 text-zinc-500 opacity-50" />
+                                                <input
+                                                    {...register("delivery_notes")}
+                                                    placeholder="Observaciones para el repartidor (Opcional). Ej: Portón negro..."
+                                                    className={`${inputCls(false)} pl-11`}
+                                                />
+                                            </div>
                                         </div>
 
                                         {calculatedDistance !== null && (
