@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X,
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X, MessageCircle,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -51,6 +51,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState<string | null>(null);
+    const [tenantName, setTenantName] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>("pending");
     const [receiptModal, setReceiptModal] = useState<string | null>(null);
     const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
@@ -61,12 +62,13 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         const fetchOrders = async () => {
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id")
+                .select("id, name")
                 .eq("slug", tenant)
                 .single();
 
             if (!tenantData) return;
             setTenantId(tenantData.id);
+            setTenantName(tenantData.name);
 
             const { data: initialOrders } = await supabase
                 .from("orders")
@@ -147,6 +149,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
     // ── Update order status ──────────────────────────────────────────────
     const updateOrderStatus = async (orderId: string, currentStatus: string, newStatus: string, estimatedTime?: string) => {
+        const orderRef = orders.find((o) => o.id === orderId);
+
         setOrders((prev) =>
             prev.map((o) => (o.id === orderId ? { ...o, status: "loading" } : o))
         );
@@ -171,17 +175,57 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 prev.map((o) => (o.id === orderId ? { ...o, status: currentStatus } : o))
             );
         } else {
+            const isTakeaway = orderRef?.delivery_method !== "DELIVERY";
             const msgs: Record<string, string> = {
                 pending: "Pedido devuelto a Recibidos.",
                 preparing: "¡Pedido confirmado!",
-                on_the_way: "¡Pedido despachado!",
+                on_the_way: isTakeaway ? "¡Pedido listo para retirar!" : "¡Pedido despachado!",
                 delivered: "Pedido finalizado.",
                 cancelled: "Pedido rechazado.",
             };
-            toast.success(msgs[newStatus] || "Estado actualizado.");
+
+            const message = msgs[newStatus] || "Estado actualizado.";
+
+            if ((newStatus === "on_the_way" || newStatus === "preparing") && orderRef?.customer_phone) {
+                toast.success(message, {
+                    description: "¿Querés avisarle al cliente por WhatsApp?",
+                    action: {
+                        label: "Avisar 👋",
+                        onClick: () => handleWhatsAppNotify(orderRef),
+                    },
+                    duration: 8000,
+                });
+            } else {
+                toast.success(message);
+            }
+
             setConfirmingOrderId(null);
             setCustomTime("");
         }
+    };
+
+    // ── Handle WhatsApp ──────────────────────────────────────────────────
+    const handleWhatsAppNotify = (order: Order) => {
+        if (!order.customer_phone) return;
+        let phone = order.customer_phone.replace(/\D/g, "");
+        if (phone.startsWith("0")) phone = phone.substring(1);
+        if (phone.length === 10) phone = "549" + phone;
+
+        const isTakeaway = order.delivery_method !== "DELIVERY";
+        const statusMsg = order.status === "on_the_way" && isTakeaway
+            ? "listo para retirar 🛍️"
+            : order.status === "on_the_way"
+                ? "en camino a tu domicilio 🛵"
+                : order.status === "preparing"
+                    ? "confirmado y en preparación 👨‍🍳"
+                    : order.status === "delivered"
+                        ? "entregado. ¡Que lo disfrutes! 🎉"
+                        : "confirmado";
+
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pedidosposta.com';
+        const text = `¡Hola ${order.first_name}! 👋 Tu pedido #${order.order_number} de ${tenantName || tenant} ya está ${statusMsg}. Seguilo acá: ${baseUrl}/${tenant}/order/${order.id}`;
+
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
     };
 
     // ── Filtered orders for Active Tab ───────────────────────────────────
@@ -446,6 +490,11 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             <Undo2 size={14} />
                                             RECIBIDO
                                         </button>
+                                        {order.customer_phone && (
+                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                                <MessageCircle size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -464,20 +513,32 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
                                         >
                                             <Undo2 size={14} />
-                                            CONFIRMADO
+                                            CONFIRMAR
                                         </button>
+                                        {order.customer_phone && (
+                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                                <MessageCircle size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* FINALIZADOS → ← Volver a Despachado */}
                                 {order.status === "delivered" && (
-                                    <button
-                                        onClick={() => updateOrderStatus(order.id, "delivered", "on_the_way")}
-                                        className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
-                                    >
-                                        <Undo2 size={14} />
-                                        VOLVER A DESPACHADO
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => updateOrderStatus(order.id, "delivered", "on_the_way")}
+                                            className="flex-[3] flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                        >
+                                            <Undo2 size={14} />
+                                            VOLVER A DESPACHADO
+                                        </button>
+                                        {order.customer_phone && (
+                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-1 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                                <MessageCircle size={18} />
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
