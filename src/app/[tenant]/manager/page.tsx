@@ -223,9 +223,10 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         : "confirmado";
 
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pedidosposta.com';
-        const text = `¡Hola ${order.first_name}! 👋 Tu pedido #${order.order_number} de ${tenantName || tenant} ya está ${statusMsg}. Seguilo acá: ${baseUrl}/${tenant}/order/${order.id}`;
+        const fullMessageText = `¡Hola ${order.first_name}! 👋 Tu pedido #${order.order_number} de ${tenantName || tenant} ya está ${statusMsg}. Seguilo acá: ${baseUrl}/${tenant}/order/${order.id}`;
 
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+        const encodedMessage = encodeURIComponent(fullMessageText);
+        window.open(`https://wa.me/${phone}?text=${encodedMessage}`, "_blank");
     };
 
     // ── Filtered orders for Active Tab ───────────────────────────────────
