@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
     // 0. Inyectar pathname como header para que los Server Components
     //    puedan conocer la ruta actual (layouts no tienen acceso directo).
     const requestHeaders = new Headers(request.headers);
@@ -100,13 +100,8 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(loginUrl);
         }
 
-        if (user && isLoginPath) {
-            // Ya autenticado en la página de login → redirigir al dashboard
-            const dashboardUrl = request.nextUrl.clone();
-            dashboardUrl.pathname = `/${currentTenant}/manager`;
-            dashboardUrl.search = "";
-            return NextResponse.redirect(dashboardUrl);
-        }
+        // Si el usuario ESTÁ autenticado pero es login, NO lo redirigimos forzosamente al dashboard, 
+        // para evitar loops si el layout rechaza su membresía o si es SuperAdmin.
     }
 
     // 6. Devolver la response (con cookies de sesión sincronizadas si hubo refresh).

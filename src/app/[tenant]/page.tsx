@@ -161,6 +161,20 @@ export default function StorefrontPage() {
     }
 
     if (themeEngine.isProLayout) {
+        if (brand?.is_suspended) {
+            return (
+                <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-center px-4">
+                    <div className="h-20 w-20 mb-6 flex items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                        <ShoppingCart size={32} />
+                    </div>
+                    <h1 className="text-2xl font-black text-white mb-2">Tienda no disponible</h1>
+                    <p className="text-zinc-500 max-w-sm">
+                        La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde.
+                    </p>
+                </div>
+            );
+        }
+
         return (
             <main className="flex min-h-screen w-full flex-col lg:grid lg:grid-cols-12 bg-[#09090b] text-[#FAFAFA]" style={{ '--brand-color': themeEngine.primaryColor } as React.CSSProperties}>
                 <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
@@ -345,6 +359,20 @@ export default function StorefrontPage() {
                 )}
                 <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />
             </main>
+        );
+    }
+
+    if (brand?.is_suspended) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-center px-4">
+                <div className="h-20 w-20 mb-6 flex items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                    <ShoppingCart size={32} />
+                </div>
+                <h1 className="text-2xl font-black text-white mb-2">Tienda no disponible</h1>
+                <p className="text-zinc-500 max-w-sm">
+                    La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde.
+                </p>
+            </div>
         );
     }
 
