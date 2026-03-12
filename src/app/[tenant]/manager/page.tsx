@@ -211,22 +211,21 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         if (phone.startsWith("0")) phone = phone.substring(1);
         if (phone.length === 10) phone = "549" + phone;
 
-        const isTakeaway = order.delivery_method !== "DELIVERY";
-        const statusMsg = order.status === "on_the_way" && isTakeaway
-            ? "listo para retirar 🛍️"
-            : order.status === "on_the_way"
-                ? "en camino a tu domicilio 🛵"
-                : order.status === "preparing"
-                    ? "confirmado y en preparación 👨‍🍳"
-                    : order.status === "delivered"
-                        ? "entregado. ¡Que lo disfrutes! 🎉"
-                        : "confirmado";
-
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pedidosposta.com';
-        const fullMessageText = `¡Hola ${order.first_name}! 👋 Tu pedido #${order.order_number} de ${tenantName || tenant} ya está ${statusMsg}. Seguilo acá: ${baseUrl}/${tenant}/order/${order.id}`;
+        const trackingUrl = `${baseUrl}/${tenant}/order/${order.id}`;
 
-        const encodedMessage = encodeURIComponent(fullMessageText);
-        window.open(`https://wa.me/${phone}?text=${encodedMessage}`, "_blank");
+        const isTakeaway = order.delivery_method !== "DELIVERY";
+        let statusMsg = "confirmado";
+        if (order.status === "on_the_way" && isTakeaway) statusMsg = "listo para retirar";
+        else if (order.status === "on_the_way") statusMsg = "en camino a tu domicilio";
+        else if (order.status === "preparing") statusMsg = "confirmado y en preparacion";
+        else if (order.status === "delivered") statusMsg = "entregado. Que lo disfrutes";
+
+        const fullText = "Hola " + order.first_name + ". Tu pedido #" + order.order_number + " de " + (tenantName || tenant) + " ya esta " + statusMsg + ". Seguilo aca: " + trackingUrl;
+
+        const whatsappUrl = new URL('https://wa.me/' + phone);
+        whatsappUrl.searchParams.set('text', fullText);
+        window.open(whatsappUrl.toString(), "_blank");
     };
 
     // ── Filtered orders for Active Tab ───────────────────────────────────
