@@ -76,7 +76,11 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                     const method = payload.new.delivery_method || order?.delivery_method;
                     const isTakeaway = method !== "DELIVERY";
 
-                    setOrder((prev: any) => ({ ...prev, status: newStatus }));
+                    setOrder((prev: any) => ({
+                        ...prev,
+                        status: newStatus,
+                        estimated_time: payload.new.estimated_time || prev?.estimated_time
+                    }));
 
                     // ── Status-specific notifications ────────────────
                     if (newStatus === "preparing") {
@@ -264,8 +268,8 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-0.5">
                             Tiempo Estimado
                         </p>
-                        <p className="text-lg font-bold text-white drop-shadow-sm leading-tight">
-                            {currentStep === 0 ? "A confirmar" : "30–45 minutos"}
+                        <p className="text-lg font-bold text-white drop-shadow-sm leading-tight capitalize">
+                            {currentStep === 0 ? "A confirmar" : (order?.estimated_time || "45-60 min")}
                         </p>
                     </div>
                 </div>

@@ -22,6 +22,7 @@ interface Order {
     payment_method: string;
     is_asap: boolean;
     scheduled_time: string | null;
+    estimated_time: string | null;
     total_amount: number;
     status: string;
     created_at: string;
@@ -52,6 +53,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>("pending");
     const [receiptModal, setReceiptModal] = useState<string | null>(null);
+    const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+    const [customTime, setCustomTime] = useState<string>("");
 
     // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
@@ -143,14 +146,19 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     }, [supabase, tenantId]);
 
     // ── Update order status ──────────────────────────────────────────────
-    const updateOrderStatus = async (orderId: string, currentStatus: string, newStatus: string) => {
+    const updateOrderStatus = async (orderId: string, currentStatus: string, newStatus: string, estimatedTime?: string) => {
         setOrders((prev) =>
             prev.map((o) => (o.id === orderId ? { ...o, status: "loading" } : o))
         );
 
+        const updateData: any = { status: newStatus };
+        if (estimatedTime) {
+            updateData.estimated_time = estimatedTime;
+        }
+
         const { error } = await supabase
             .from("orders")
-            .update({ status: newStatus })
+            .update(updateData)
             .eq("id", orderId);
 
         if (error) {
@@ -171,6 +179,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 cancelled: "Pedido rechazado.",
             };
             toast.success(msgs[newStatus] || "Estado actualizado.");
+            setConfirmingOrderId(null);
+            setCustomTime("");
         }
     };
 
@@ -369,21 +379,54 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
                                 {/* RECIBIDOS → CONFIRMAR / RECHAZAR */}
                                 {order.status === "pending" && (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => updateOrderStatus(order.id, "pending", "preparing")}
-                                            className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-extrabold tracking-wider text-primary-foreground shadow-[0_4px_14px_0_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95"
-                                        >
-                                            <CheckCircle2 size={18} />
-                                            CONFIRMAR
-                                        </button>
-                                        <button
-                                            onClick={() => updateOrderStatus(order.id, "pending", "cancelled")}
-                                            className="flex-1 items-center justify-center rounded-xl bg-red-500/10 py-3.5 text-xs font-bold tracking-widest text-red-400 ring-1 ring-inset ring-red-500/20 transition-all hover:bg-red-500/20 active:scale-95 text-center"
-                                        >
-                                            RECHAZAR
-                                        </button>
-                                    </div>
+                                    <>
+                                        {confirmingOrderId === order.id ? (
+                                            <div className="flex flex-col gap-2 rounded-xl bg-zinc-900/60 p-3 ring-1 ring-zinc-700/50">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                                    Tiempo estimado de entrega:
+                                                </span>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "20-30 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition">Rápido (20-30m)</button>
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "40-45 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition">Normal (40-45m)</button>
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "60-80 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition col-span-2">Demorado (60-80m)</button>
+                                                </div>
+                                                <div className="flex gap-2 mt-1">
+                                                    <input
+                                                        placeholder="Personalizado (ej: 90 min)"
+                                                        value={customTime}
+                                                        onChange={(e) => setCustomTime(e.target.value)}
+                                                        className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs text-white outline-none focus:border-primary"
+                                                    />
+                                                    <button
+                                                        onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", customTime)}
+                                                        disabled={!customTime}
+                                                        className="rounded-lg bg-primary px-3 text-xs font-bold text-[#09090b] disabled:opacity-50"
+                                                    >
+                                                        OK
+                                                    </button>
+                                                </div>
+                                                <button onClick={() => { setConfirmingOrderId(null); setCustomTime(""); }} className="mt-1 text-center text-[10px] uppercase font-bold tracking-widest text-zinc-500 hover:text-white">
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setConfirmingOrderId(order.id)}
+                                                    className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-extrabold tracking-wider text-primary-foreground shadow-[0_4px_14px_0_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95"
+                                                >
+                                                    <CheckCircle2 size={18} />
+                                                    CONFIRMAR
+                                                </button>
+                                                <button
+                                                    onClick={() => updateOrderStatus(order.id, "pending", "cancelled")}
+                                                    className="flex-1 items-center justify-center rounded-xl bg-red-500/10 py-3.5 text-xs font-bold tracking-widest text-red-400 ring-1 ring-inset ring-red-500/20 transition-all hover:bg-red-500/20 active:scale-95 text-center"
+                                                >
+                                                    RECHAZAR
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
 
                                 {/* CONFIRMADOS → DESPACHAR / ← Volver a Recibido */}
