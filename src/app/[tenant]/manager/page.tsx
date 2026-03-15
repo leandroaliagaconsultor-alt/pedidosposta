@@ -55,6 +55,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [tenantName, setTenantName] = useState<string | null>(null);
+    const [tenantLogo, setTenantLogo] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>("pending");
     const [receiptModal, setReceiptModal] = useState<string | null>(null);
     const [printingOrder, setPrintingOrder] = useState<{ order: Order, type: 'kitchen' | 'delivery' } | null>(null);
@@ -73,13 +74,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         const fetchOrders = async () => {
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, name, enable_kitchen_tickets, enable_delivery_tickets")
+                .select("id, name, logo_url, enable_kitchen_tickets, enable_delivery_tickets")
                 .eq("slug", tenant)
                 .single();
 
             if (!tenantData) return;
             setTenantId(tenantData.id);
             setTenantName(tenantData.name);
+            setTenantLogo(tenantData.logo_url);
             setTenantSettings({
                 enable_kitchen_tickets: !!tenantData.enable_kitchen_tickets,
                 enable_delivery_tickets: !!tenantData.enable_delivery_tickets
@@ -760,7 +762,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     <div className="hidden print:block">
                         <PrintableReceipt
                             order={printingOrder.order}
-                            tenant={{ name: tenantName }}
+                            tenant={{ name: tenantName, logo_url: tenantLogo }}
                             type={printingOrder.type}
                         />
                     </div>

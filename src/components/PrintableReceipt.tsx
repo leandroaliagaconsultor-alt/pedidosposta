@@ -36,7 +36,16 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ order, tenan
 
             <div className="text-center space-y-1 mb-4 border-b border-dashed border-black pb-2">
                 {!isKitchen && (
-                    <h1 className="text-xl font-black uppercase tracking-tighter">{tenant.name}</h1>
+                    <>
+                        {tenant.logo_url && (
+                            <img
+                                src={tenant.logo_url}
+                                alt="Logo"
+                                className="w-16 h-16 object-contain mx-auto mb-2 filter grayscale contrast-150"
+                            />
+                        )}
+                        <h1 className="text-xl font-black uppercase tracking-tighter">{tenant.name}</h1>
+                    </>
                 )}
                 <h2 className="text-lg font-bold">
                     {isKitchen ? 'COMANDA' : 'TICKET'} #{order.order_number || shortId}
