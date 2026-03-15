@@ -148,6 +148,8 @@ export default function StorefrontPage() {
         loadStorefrontData();
     }, [tenantSlug, supabase]);
 
+    const formatUrl = (url: string) => (url && !url.startsWith("http")) ? `https://${url}` : url;
+
     const filteredProducts = products.filter(
         (p) => p.categoryId === activeCategory
     );
@@ -269,19 +271,19 @@ export default function StorefrontPage() {
                             )}
                             {brand?.public_phone && (
                                 <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
-                                    <MessageCircle size={12} style={{ color: "var(--brand-color)" }} />
+                                    <MessageCircle size={12} className="text-[#25D366]" />
                                     <span>WhatsApp</span>
                                 </a>
                             )}
                             {brand?.instagram_url && (
-                                <a href={brand.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
-                                    <Instagram size={12} style={{ color: "var(--brand-color)" }} />
+                                <a href={formatUrl(brand.instagram_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
+                                    <Instagram size={12} className="text-[#E4405F]" />
                                     <span>Instagram</span>
                                 </a>
                             )}
                             {brand?.facebook_url && (
-                                <a href={brand.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
-                                    <Facebook size={12} style={{ color: "var(--brand-color)" }} />
+                                <a href={formatUrl(brand.facebook_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
+                                    <Facebook size={12} className="text-[#1877F2]" />
                                     <span>Facebook</span>
                                 </a>
                             )}
@@ -544,19 +546,19 @@ export default function StorefrontPage() {
                         )}
                         {brand?.public_phone && (
                             <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <MessageCircle size={14} className="opacity-70" />
+                                <MessageCircle size={14} className="text-[#25D366]" />
                                 <span>WhatsApp</span>
                             </a>
                         )}
                         {brand?.instagram_url && (
-                            <a href={brand.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Instagram size={14} className="opacity-70" />
+                            <a href={formatUrl(brand.instagram_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                                <Instagram size={14} className="text-[#E4405F]" />
                                 <span>Instagram</span>
                             </a>
                         )}
                         {brand?.facebook_url && (
-                            <a href={brand.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Facebook size={14} className="opacity-70" />
+                            <a href={formatUrl(brand.facebook_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                                <Facebook size={14} className="text-[#1877F2]" />
                                 <span>Facebook</span>
                             </a>
                         )}
