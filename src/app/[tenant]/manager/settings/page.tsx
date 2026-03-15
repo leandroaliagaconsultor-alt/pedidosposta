@@ -41,6 +41,8 @@ const settingsSchema = z.object({
     public_phone: z.string().optional().nullable(),
     announcement_text: z.string().optional().nullable(),
     show_whatsapp_checkout: z.boolean().default(false),
+    enable_kitchen_tickets: z.boolean().default(false),
+    enable_delivery_tickets: z.boolean().default(false),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -107,6 +109,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             public_phone: "",
             announcement_text: "",
             show_whatsapp_checkout: false,
+            enable_kitchen_tickets: false,
+            enable_delivery_tickets: false,
         },
     });
 
@@ -141,6 +145,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     public_phone: data.public_phone || "",
                     announcement_text: data.announcement_text || "",
                     show_whatsapp_checkout: !!data.show_whatsapp_checkout,
+                    enable_kitchen_tickets: !!data.enable_kitchen_tickets,
+                    enable_delivery_tickets: !!data.enable_delivery_tickets,
                 });
 
                 if (data.store_address) {
@@ -182,6 +188,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     public_phone: data.public_phone,
                     announcement_text: data.announcement_text,
                     show_whatsapp_checkout: data.show_whatsapp_checkout,
+                    enable_kitchen_tickets: data.enable_kitchen_tickets,
+                    enable_delivery_tickets: data.enable_delivery_tickets,
                 })
                 .eq("id", tenantId);
 
@@ -532,6 +540,49 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Comandas y Operación ── */}
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                            <ShoppingCart className="text-amber-500" size={24} /> Operación y Comandas
+                        </h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá la impresión de tickets para cocina y repartidores.</p>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30">
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Comandas de Cocina</h3>
+                                <p className="text-xs text-zinc-500">Tickets sin precios para la preparación.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    {...form.register('enable_kitchen_tickets')}
+                                />
+                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30">
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Tickets de Repartidor</h3>
+                                <p className="text-xs text-zinc-500">Tickets con precios y datos de cliente.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    {...form.register('enable_delivery_tickets')}
+                                />
+                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
                         </div>
                     </div>
                 </div>
