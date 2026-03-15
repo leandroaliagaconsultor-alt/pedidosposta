@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X, MessageCircle,
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X, MessageCircle, Edit3, AlertCircle
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -32,6 +32,8 @@ interface Order {
         notes: string | null;
         product?: { name: string } | null;
     }[];
+    extra_charge?: number;
+    internal_notes?: string | null;
 }
 
 // ── Tab config ───────────────────────────────────────────────────────────────
@@ -56,6 +58,12 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [receiptModal, setReceiptModal] = useState<string | null>(null);
     const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
     const [customTime, setCustomTime] = useState<string>("");
+
+    // ── Adjustment State ──
+    const [adjustingOrder, setAdjustingOrder] = useState<Order | null>(null);
+    const [extraChargeAmount, setExtraChargeAmount] = useState<string>("");
+    const [adjustmentNotes, setAdjustmentNotes] = useState<string>("");
+    const [isSavingAdjustment, setIsSavingAdjustment] = useState(false);
 
     // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
@@ -204,6 +212,36 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         }
     };
 
+    // ── Handle Adjustment ────────────────────────────────────────────────
+    const handleAdjustOrder = async () => {
+        if (!adjustingOrder) return;
+        setIsSavingAdjustment(true);
+
+        const charge = parseFloat(extraChargeAmount) || 0;
+        const newTotal = (adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)) + charge;
+
+        const { error } = await supabase
+            .from("orders")
+            .update({
+                extra_charge: charge,
+                internal_notes: adjustmentNotes,
+                total_amount: newTotal
+            })
+            .eq("id", adjustingOrder.id);
+
+        if (error) {
+            toast.error("Error al ajustar el pedido");
+            console.error(error);
+        } else {
+            toast.success("Pedido ajustado correctamente");
+            setOrders(prev => prev.map(o => o.id === adjustingOrder.id ? { ...o, extra_charge: charge, internal_notes: adjustmentNotes, total_amount: newTotal } : o));
+            setAdjustingOrder(null);
+            setExtraChargeAmount("");
+            setAdjustmentNotes("");
+        }
+        setIsSavingAdjustment(false);
+    };
+
     // ── Handle WhatsApp ──────────────────────────────────────────────────
     const handleWhatsAppNotify = (order: Order) => {
         if (!order.customer_phone) return;
@@ -349,6 +387,18 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
                                     {order.delivery_method}
                                 </div>
+                                {(order.status === "pending" || order.status === "preparing") && (
+                                    <button
+                                        onClick={() => {
+                                            setAdjustingOrder(order);
+                                            setExtraChargeAmount(order.extra_charge?.toString() || "");
+                                            setAdjustmentNotes(order.internal_notes || "");
+                                        }}
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors ml-2"
+                                    >
+                                        <Edit3 size={14} />
+                                    </button>
+                                )}
                             </div>
 
                             {/* Card Body */}
@@ -394,7 +444,20 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
                                 <div className="mt-auto pt-6">
                                     <div className="flex items-center justify-between border-t border-zinc-800/50 pt-3 font-bold">
-                                        <span className="text-xs uppercase tracking-widest text-zinc-500">Total Pago</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs uppercase tracking-widest text-zinc-500">Total Pago</span>
+                                            {order.extra_charge && order.extra_charge > 0 && (
+                                                <div className="flex items-center gap-1 text-[10px] text-amber-500/80 group/note relative cursor-help">
+                                                    <AlertCircle size={10} />
+                                                    <span>Incluye ajuste: +${order.extra_charge}</span>
+                                                    {order.internal_notes && (
+                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover/note:block w-48 rounded-lg bg-zinc-950 p-2 text-[10px] font-normal text-zinc-300 ring-1 ring-zinc-800 shadow-xl z-50">
+                                                            {order.internal_notes}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="text-lg text-primary drop-shadow-sm font-mono">
                                             ${order.total_amount.toLocaleString("es-AR")}
                                         </span>
@@ -575,6 +638,76 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             >
                                 Abrir en nueva pestaña
                             </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Adjustment Modal ── */}
+            {adjustingOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setAdjustingOrder(null)}>
+                    <div className="relative w-full max-w-md mx-4 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Edit3 size={18} className="text-primary" />
+                                Ajustar Pedido #{adjustingOrder.order_number}
+                            </h3>
+                            <button onClick={() => setAdjustingOrder(null)} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-800 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="flex justify-between items-center rounded-xl bg-zinc-900/50 p-4 border border-zinc-800">
+                                <span className="text-sm font-medium text-zinc-400 uppercase tracking-widest">Total de la Orden</span>
+                                <span className="text-xl font-black text-white font-mono">
+                                    ${(adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)).toLocaleString("es-AR")}
+                                </span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Monto extra a sumar ($)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={extraChargeAmount}
+                                        onChange={(e) => setExtraChargeAmount(e.target.value)}
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Detalle o Motivos (Interno)</label>
+                                    <textarea
+                                        placeholder="Ej: +1 Papas grandes pedidas por WhatsApp"
+                                        value={adjustmentNotes}
+                                        onChange={(e) => setAdjustmentNotes(e.target.value)}
+                                        rows={3}
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none text-sm"
+                                    />
+                                </div>
+
+                                <div className="pt-2">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <span className="text-sm font-bold text-zinc-300">NUEVO TOTAL:</span>
+                                        <span className="text-2xl font-black text-primary font-mono scale-110">
+                                            ${((adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)) + (parseFloat(extraChargeAmount) || 0)).toLocaleString("es-AR")}
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        onClick={handleAdjustOrder}
+                                        disabled={isSavingAdjustment}
+                                        className="w-full py-4 rounded-xl bg-primary text-[#09090b] font-black uppercase tracking-widest shadow-[0_4px_14px_0_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        {isSavingAdjustment ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 size={18} className="animate-spin" /> Guardando...
+                                            </span>
+                                        ) : "Confirmar Ajuste"}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
