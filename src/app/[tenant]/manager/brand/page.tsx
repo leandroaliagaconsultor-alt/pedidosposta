@@ -18,8 +18,8 @@ const brandSchema = z.object({
     whatsapp_number: z.string().optional().nullable(),
     logo_url: z.string().optional().or(z.literal("")),
     banner_url: z.string().optional().or(z.literal("")),
-    font_family: z.enum(["font-sans", "font-serif", "font-mono"]).default("font-sans"),
-    template: z.enum(["midnight", "minimal", "brutalism", "retro-pop", "elegant-dark", "neon-cyber", "organic-earth", "fast-food", "glass-frost", "neon_stack_pro"]).default("midnight"),
+    font_family: z.enum(["font-sans", "font-serif", "font-mono", "font-urbana", "font-artesanal", "font-vanguardia"]).default("font-sans"),
+    template: z.enum(["midnight", "minimal", "brutalism", "retro-pop", "elegant-dark", "neon-cyber", "organic-earth", "fast-food", "glass-frost", "boutique", "urban-flow", "sweet-pastel"]).default("midnight"),
 });
 
 type BrandForm = z.infer<typeof brandSchema>;
@@ -34,7 +34,9 @@ const TEMPLATES = [
     { id: "organic-earth", name: "Organic Earth", desc: "Natural, Asimétrico" },
     { id: "fast-food", name: "Fast Food", desc: "Dinámico, Inclinado" },
     { id: "glass-frost", name: "Glass Frost", desc: "Minimalismo Translúcido" },
-    { id: "neon_stack_pro", name: "Neon Stack Pro", desc: "Inmersivo 3-Col, Acentos Neón, Tech Bold" },
+    { id: "boutique", name: "Boutique", desc: "Diseño de lujo, Serif clásico" },
+    { id: "urban-flow", name: "Urban Flow", desc: "Street style, sombra dura" },
+    { id: "sweet-pastel", name: "Sweet Pastel", desc: "Suave, moderno, orgánico" },
 ];
 
 export default function BrandStudioProPage({ params }: { params: Promise<{ tenant: string }> }) {
@@ -236,13 +238,16 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
             case 'fast-food': return '#fffbeb';
             case 'neon-cyber': return '#050505';
             case 'elegant-dark': return '#0a0a0a';
+            case 'boutique': return '#09090b';
+            case 'urban-flow': return '#ffffff';
+            case 'sweet-pastel': return '#fdfbfb';
             case 'midnight':
             default: return '#09090b';
         }
     };
 
     const isLightBg = (template: string) => {
-        const lightTemplates = ['brutalism', 'minimal', 'glass-frost', 'organic-earth', 'retro-pop', 'fast-food'];
+        const lightTemplates = ['brutalism', 'minimal', 'glass-frost', 'organic-earth', 'retro-pop', 'fast-food', 'urban-flow', 'sweet-pastel'];
         return lightTemplates.includes(template);
     };
 
@@ -261,6 +266,9 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
             case 'organic-earth': return base + "rounded-tl-2xl rounded-br-2xl rounded-tr-md rounded-bl-md bg-[#fefcf8] shadow-[0_4px_20px_rgb(0,0,0,0.05)] text-amber-950";
             case 'fast-food': return base + "rounded-2xl bg-white shadow-xl text-black border border-zinc-100";
             case 'glass-frost': return base + "rounded-3xl bg-white/40 backdrop-blur-md border border-white/80 text-zinc-900 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]";
+            case 'boutique': return base + "border-[0.5px] border-zinc-700/50 rounded-lg bg-zinc-900/80 text-white font-serif";
+            case 'urban-flow': return base + "border-2 border-zinc-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white text-zinc-900 uppercase font-sans";
+            case 'sweet-pastel': return base + "rounded-3xl shadow-xl shadow-zinc-900/5 bg-white text-zinc-800";
             default: return base + "rounded-xl";
         }
     };
@@ -268,7 +276,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
     const getButtonStyles = (t: string, primaryColor: string) => {
         if (t === 'elegant-dark') return { borderColor: primaryColor, color: primaryColor };
         if (t === 'neon-cyber') return { backgroundColor: primaryColor, boxShadow: `0 0 15px ${primaryColor}80`, color: '#000' };
-        if (t === 'brutalism' || t === 'retro-pop') return { backgroundColor: primaryColor, color: '#000' };
+        if (t === 'brutalism' || t === 'retro-pop' || t === 'urban-flow') return { backgroundColor: primaryColor, color: '#000' };
         return { backgroundColor: primaryColor, color: '#fff' };
     };
 
@@ -280,6 +288,9 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
             case 'retro-pop': return base + "rounded-full border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,0.25)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none";
             case 'elegant-dark': return base + "rounded-none border backdrop-blur-sm bg-transparent";
             case 'neon-cyber': return base + "rounded-xl";
+            case 'boutique': return base + "rounded-md border border-current bg-transparent";
+            case 'urban-flow': return base + "rounded-none border-2 border-zinc-900 shadow-[2px_2px_0px_rgba(0,0,0,1)] uppercase";
+            case 'sweet-pastel': return base + "rounded-3xl shadow-md";
             case 'organic-earth': return base + `rounded-tl-[10px] rounded-br-[10px] rounded-tr-[4px] rounded-bl-[4px] shadow-sm`;
             case 'fast-food': return base + "rounded-xl -skew-x-6 shadow-md";
             case 'glass-frost': return base + `rounded-full backdrop-blur-xl bg-white/50 border border-white shadow-sm font-semibold !text-zinc-900`;
@@ -297,6 +308,9 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
             case 'retro-pop': return base + "rounded-full border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)]";
             case 'elegant-dark': return base + "rounded-none border backdrop-blur-md bg-black/40";
             case 'neon-cyber': return base + "rounded-xl font-mono";
+            case 'boutique': return base + "rounded-none border-[0.5px] border-current bg-transparent font-serif hover:bg-zinc-900";
+            case 'urban-flow': return base + "rounded-none border-2 border-zinc-900 shadow-[4px_4px_0px_rgba(0,0,0,1)] uppercase font-sans tracking-widest";
+            case 'sweet-pastel': return base + "rounded-full shadow-lg hover:shadow-xl font-bold";
             case 'organic-earth': return base + `rounded-tl-2xl rounded-br-2xl rounded-tr-md rounded-bl-md shadow-lg`;
             case 'fast-food': return base + "rounded-xl -skew-x-6 italic shadow-xl border-b-4 border-black/20";
             case 'glass-frost': return base + `rounded-full backdrop-blur-xl bg-white/40 border border-white shadow-xl !text-zinc-900`;
@@ -502,6 +516,9 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                                             { id: "font-sans", name: "Moderna", desc: "Sistémica, limpia" },
                                             { id: "font-serif", name: "Clásica", desc: "Elegante, tradicional" },
                                             { id: "font-mono", name: "Divertida", desc: "Técnica, llamativa" },
+                                            { id: "font-urbana", name: "Urbana", desc: "Alto impacto, condensada. Ideal burgers y birra." },
+                                            { id: "font-artesanal", name: "Artesanal", desc: "Rústica, cálida. Ideal horno de barro y masa madre." },
+                                            { id: "font-vanguardia", name: "Vanguardia", desc: "Trendy, geométrica. Ideal café de especialidad." },
                                         ].map((font) => (
                                             <label
                                                 key={font.id}
@@ -517,7 +534,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                                                     className="sr-only"
                                                 />
                                                 <div className="flex flex-col">
-                                                    <span className={`text-sm font-bold ${watchValues.font_family === font.id ? 'text-primary' : 'text-zinc-300'} ${font.id === 'font-sans' ? 'font-sans' : font.id === 'font-serif' ? 'font-serif' : 'font-mono'}`}>
+                                                    <span className={`text-sm font-bold ${watchValues.font_family === font.id ? 'text-primary' : 'text-zinc-300'} ${font.id} ${font.id === 'font-urbana' ? 'uppercase' : ''}`}>
                                                         {font.name}
                                                     </span>
                                                     <span className="text-xs text-zinc-500">{font.desc}</span>
@@ -563,7 +580,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                         <div
                             className={`relative h-[780px] w-[375px] overflow-hidden rounded-[2.5rem] border-[8px] shadow-2xl ring-1 ring-zinc-800/50 
                             ${lightTextMode ? 'border-zinc-900 shadow-black/80' : 'border-zinc-200 shadow-zinc-300/50'}
-                            ${watchValues.font_family === 'font-sans' ? 'font-sans' : watchValues.font_family === 'font-serif' ? 'font-serif' : 'font-mono'}`}
+                            ${watchValues.font_family}`}
                             style={{ backgroundColor: currentBg }}
                         >
                             {/* Notch Fake */}
@@ -595,7 +612,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                                             <Store size={32} className="opacity-50" />
                                         )}
                                     </div>
-                                    <h3 className="mt-3 text-xl font-extrabold tracking-tight drop-shadow-md uppercase text-center px-4 leading-tight">
+                                    <h3 className={`mt-3 text-xl font-extrabold tracking-tight drop-shadow-md text-center px-4 leading-tight ${watchValues.font_family === 'font-urbana' ? 'uppercase' : ''}`}>
                                         {watchValues.name || "Mi Local"}
                                     </h3>
                                 </div>

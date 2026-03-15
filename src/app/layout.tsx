@@ -1,4 +1,10 @@
+import { Inter, Oswald, Zilla_Slab, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const oswald = Oswald({ subsets: ["latin"], variable: "--font-urbana" });
+const zilla = Zilla_Slab({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-artesanal" });
+const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-vanguardia" });
 
 export default function RootLayout({
     children,
@@ -6,8 +12,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
-            <body>
+        <html lang="es">
+            <body className={`${inter.variable} ${oswald.variable} ${zilla.variable} ${space.variable} font-sans`}>
                 {children}
             </body>
         </html>

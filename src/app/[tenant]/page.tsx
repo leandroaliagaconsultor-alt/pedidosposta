@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Toaster } from "sonner";
-import { ShoppingBag, Loader2, MapPin, Clock, Bike, ShoppingCart } from "lucide-react";
+import { ShoppingBag, Loader2, MapPin, Clock, Bike, ShoppingCart, Instagram, Facebook, Phone, MessageCircle } from "lucide-react";
 
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -177,6 +177,11 @@ export default function StorefrontPage() {
 
         return (
             <main className="flex min-h-screen w-full flex-col lg:grid lg:grid-cols-12 bg-[#09090b] text-[#FAFAFA]" style={{ '--brand-color': themeEngine.primaryColor } as React.CSSProperties}>
+                {brand?.announcement_text && (
+                    <div className="lg:col-span-12 w-full bg-emerald-500 text-white text-sm py-2 px-4 text-center font-bold tracking-wide shadow-md z-50 order-first">
+                        {brand.announcement_text}
+                    </div>
+                )}
                 <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
 
                 {/* ─── 1. Hero Section (Cols 1-4) ─── */}
@@ -190,7 +195,7 @@ export default function StorefrontPage() {
                     )}
                     <div className="relative z-10 w-full mb-4 lg:mb-12 flex flex-col items-center lg:items-start">
                         {brand?.logo_url && (
-                            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border border-zinc-800 mb-6 overflow-hidden shadow-[0_0_30px_var(--brand-color)]">
+                            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-2 mb-6 overflow-hidden transition-all duration-300" style={{ borderColor: themeEngine.primaryColor, boxShadow: `0 0 15px ${themeEngine.primaryColor}80, 0 0 30px ${themeEngine.primaryColor}40` }}>
                                 <Image src={brand.logo_url} width={128} height={128} alt="logo" className="w-full h-full object-cover" />
                             </div>
                         )}
@@ -204,13 +209,13 @@ export default function StorefrontPage() {
                         {/* Status Badge Pro */}
                         <div className="mt-6 flex justify-center lg:justify-start">
                             {!isStoreOpen ? (
-                                <span className="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-red-500 border border-red-500/20 backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                                    <span className="mr-2 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                                <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                                    <span className="mr-2 h-2 w-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                     Cerrado momentáneamente
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center rounded-full bg-[#09090b] px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest border backdrop-blur-md" style={{ color: "var(--brand-color)", borderColor: "var(--brand-color)", boxShadow: "0 0 15px rgba(var(--brand-color), 0.2)" }}>
-                                    <span className="mr-2 h-2 w-2 rounded-full animate-pulse shadow-[0_0_8px_var(--brand-color)]" style={{ backgroundColor: "var(--brand-color)" }} />
+                                <span className="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                    <span className="mr-2 h-2 w-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                     Abierto ahora
                                 </span>
                             )}
@@ -261,6 +266,24 @@ export default function StorefrontPage() {
                                     <ShoppingCart size={12} style={{ color: "var(--brand-color)" }} />
                                     <span>Mín. $ {brand.min_order}</span>
                                 </div>
+                            )}
+                            {brand?.public_phone && (
+                                <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
+                                    <MessageCircle size={12} style={{ color: "var(--brand-color)" }} />
+                                    <span>WhatsApp</span>
+                                </a>
+                            )}
+                            {brand?.instagram_url && (
+                                <a href={brand.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
+                                    <Instagram size={12} style={{ color: "var(--brand-color)" }} />
+                                    <span>Instagram</span>
+                                </a>
+                            )}
+                            {brand?.facebook_url && (
+                                <a href={brand.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md hover:bg-zinc-800 transition-colors">
+                                    <Facebook size={12} style={{ color: "var(--brand-color)" }} />
+                                    <span>Facebook</span>
+                                </a>
                             )}
                         </div>
                     </div>
@@ -377,7 +400,12 @@ export default function StorefrontPage() {
     }
 
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col pb-28">
+        <main className="mx-auto flex min-h-screen w-full flex-col pb-28">
+            {brand?.announcement_text && (
+                <div className="w-full bg-emerald-500 text-white text-sm py-2 px-4 text-center font-bold tracking-wide shadow-sm z-50">
+                    {brand.announcement_text}
+                </div>
+            )}
             {/* ─── Sonner Toast Provider ─── */}
             <Toaster
                 position="top-center"
@@ -426,8 +454,8 @@ export default function StorefrontPage() {
                 <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-4 pb-12">
                     {/* Logo (Avatar) */}
                     <div
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 z-10 mx-auto -mt-12 sm:-mt-14 bg-zinc-900"
-                        style={{ borderColor: 'var(--bg-color)' }}
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-[3px] z-10 mx-auto -mt-12 sm:-mt-14 bg-zinc-900 transition-all duration-300"
+                        style={{ borderColor: themeEngine.primaryColor, boxShadow: `0 0 15px ${themeEngine.primaryColor}80, 0 0 25px ${themeEngine.primaryColor}40` }}
                     >
                         {brand?.logo_url ? (
                             <Image
@@ -447,13 +475,13 @@ export default function StorefrontPage() {
                     {/* Badge */}
                     <div className="mt-4">
                         {!isStoreOpen ? (
-                            <span className="inline-flex items-center rounded-full bg-red-500/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-red-500 ring-1 ring-inset ring-red-500/30 backdrop-blur-md">
-                                <span className="mr-2 h-2 w-2 rounded-full bg-red-500" />
+                            <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                                <span className="mr-2 h-2 w-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                 Cerrado momentáneamente
                             </span>
                         ) : (
-                            <span className="inline-flex items-center rounded-full bg-primary/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30 backdrop-blur-md">
-                                <span className="mr-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            <span className="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                <span className="mr-2 h-2 w-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                 Abierto ahora
                             </span>
                         )}
@@ -513,6 +541,24 @@ export default function StorefrontPage() {
                                 <ShoppingCart size={14} className="opacity-70" />
                                 <span>Mín. $ {brand.min_order}</span>
                             </div>
+                        )}
+                        {brand?.public_phone && (
+                            <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                                <MessageCircle size={14} className="opacity-70" />
+                                <span>WhatsApp</span>
+                            </a>
+                        )}
+                        {brand?.instagram_url && (
+                            <a href={brand.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                                <Instagram size={14} className="opacity-70" />
+                                <span>Instagram</span>
+                            </a>
+                        )}
+                        {brand?.facebook_url && (
+                            <a href={brand.facebook_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
+                                <Facebook size={14} className="opacity-70" />
+                                <span>Facebook</span>
+                            </a>
                         )}
                     </div>
                 </div>

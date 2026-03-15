@@ -55,10 +55,10 @@ export function ProductCard({
                 {/* Content */}
                 <div className="flex flex-1 flex-col justify-between py-1 sm:py-2">
                     <div className="mb-2">
-                        <h3 className={`text-base sm:text-lg font-black uppercase tracking-tight leading-tight text-zinc-100 group-hover:text-white transition-colors`}>
+                        <h3 className={`text-base sm:text-lg font-black uppercase tracking-tight leading-tight transition-colors ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-900 group-hover:text-black' : 'text-zinc-100 group-hover:text-white'}`}>
                             {product.name}
                         </h3>
-                        <p className={`line-clamp-2 text-xs sm:text-[13px] text-zinc-400 mt-1 leading-relaxed`}>{product.description}</p>
+                        <p className={`line-clamp-2 text-xs sm:text-[13px] mt-1 leading-relaxed ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-600' : 'text-zinc-400'}`}>{product.description}</p>
                     </div>
 
                     {/* Footer Flex Between */}

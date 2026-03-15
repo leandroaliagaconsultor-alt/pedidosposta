@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 
@@ -41,10 +41,10 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
 
             if (orderData) {
                 setOrder(orderData);
-                // Also fetch tenant logo
+                // Also fetch tenant logo and public_phone
                 const { data: tData } = await supabase
                     .from("tenants")
-                    .select("name, logo_url")
+                    .select("name, logo_url, public_phone")
                     .eq("slug", tenant)
                     .single();
                 if (tData) setTenantData(tData);
@@ -279,13 +279,24 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 <p className="mb-6 text-center text-[10px] uppercase font-bold tracking-widest text-zinc-600">
                     ID Transacción: <span className="font-mono text-zinc-400">{orderId.slice(0, 8)}</span>
                 </p>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
                     <button
                         onClick={() => window.location.reload()}
                         className="text-xs font-semibold text-zinc-500 hover:text-white transition underline underline-offset-4 decoration-zinc-700"
                     >
-                        Actualizar
+                        Actualizar estado manualmente
                     </button>
+                    {tenantData?.public_phone && (
+                        <a
+                            href={`https://wa.me/${tenantData.public_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! Acabo de hacer el pedido #${order.order_number || String(order.id).slice(0, 8)} y me gustaría consultar o agregar algo:`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                        >
+                            <MessageCircle size={16} className="text-emerald-500" />
+                            ¿Te olvidaste de algo? Escribinos
+                        </a>
+                    )}
                 </div>
             </div>
         </main>

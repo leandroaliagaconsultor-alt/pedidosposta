@@ -9,6 +9,12 @@ const config: Config = {
   darkMode: "class",
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', 'sans-serif'],
+        urbana: ['var(--font-urbana)', 'sans-serif'],
+        artesanal: ['var(--font-artesanal)', 'serif'],
+        vanguardia: ['var(--font-vanguardia)', 'sans-serif'],
+      },
       colors: {
         primary: {
           DEFAULT: "var(--brand-color)",

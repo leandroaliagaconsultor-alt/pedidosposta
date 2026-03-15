@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft, User } from "lucide-react";
+import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft, User, Instagram, Facebook, Phone, Megaphone } from "lucide-react";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
@@ -36,6 +36,11 @@ const settingsSchema = z.object({
     delivery_base_km: z.coerce.number().min(0).optional().nullable(),
     delivery_per_km: z.coerce.number().min(0).optional().nullable(),
     delivery_type: z.enum(['fixed', 'variable']).default('fixed'),
+    instagram_url: z.string().optional().nullable(),
+    facebook_url: z.string().optional().nullable(),
+    public_phone: z.string().optional().nullable(),
+    announcement_text: z.string().optional().nullable(),
+    show_whatsapp_checkout: z.boolean().default(false),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -97,6 +102,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             delivery_base_km: 0,
             delivery_per_km: 0,
             delivery_type: "fixed" as "fixed" | "variable",
+            instagram_url: "",
+            facebook_url: "",
+            public_phone: "",
+            announcement_text: "",
+            show_whatsapp_checkout: false,
         },
     });
 
@@ -126,6 +136,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     delivery_base_km: data.delivery_base_km || 0,
                     delivery_per_km: data.delivery_per_km || 0,
                     delivery_type: data.delivery_type || "fixed",
+                    instagram_url: data.instagram_url || "",
+                    facebook_url: data.facebook_url || "",
+                    public_phone: data.public_phone || "",
+                    announcement_text: data.announcement_text || "",
+                    show_whatsapp_checkout: !!data.show_whatsapp_checkout,
                 });
 
                 if (data.store_address) {
@@ -162,6 +177,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     delivery_base_km: data.delivery_base_km,
                     delivery_per_km: data.delivery_per_km,
                     delivery_type: data.delivery_type,
+                    instagram_url: data.instagram_url,
+                    facebook_url: data.facebook_url,
+                    public_phone: data.public_phone,
+                    announcement_text: data.announcement_text,
+                    show_whatsapp_checkout: data.show_whatsapp_checkout,
                 })
                 .eq("id", tenantId);
 
@@ -389,6 +409,80 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Marketing & Contacto ── */}
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                            <Megaphone className="text-pink-500" size={24} /> Contacto y Marketing
+                        </h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Ofrecé canales de atención e impactá con un anuncio activo en la tienda.</p>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Instagram</label>
+                            <div className="relative">
+                                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("instagram_url")}
+                                    placeholder="Ej: https://instagram.com/mimark o @mimark"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Facebook</label>
+                            <div className="relative">
+                                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("facebook_url")}
+                                    placeholder="Ej: https://facebook.com/mimark"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Número de WhatsApp (Soporte)</label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("public_phone")}
+                                    placeholder="Ej: +54 9 11 1234-5678"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Banner Promocional Superior</label>
+                            <div className="relative">
+                                <Megaphone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="text"
+                                    {...form.register("announcement_text")}
+                                    placeholder="Ej: ¡Hoy 15% OFF abonando en efectivo!"
+                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-500">Aparecerá fijado en la parte más alta de tu tienda. Dejar en blanco para ocultar.</p>
+                        </div>
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-zinc-800/80">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    {...form.register('show_whatsapp_checkout')}
+                                />
+                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <span className="ml-3 text-sm font-semibold text-zinc-300">Mostrar botón de WhatsApp en el Checkout (Para dudas antes de comprar)</span>
+                            </label>
                         </div>
                     </div>
                 </div>

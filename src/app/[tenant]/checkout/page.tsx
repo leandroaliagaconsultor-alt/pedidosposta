@@ -17,6 +17,7 @@ import {
     Truck,
     Upload,
     FileText,
+    MessageCircle,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -59,6 +60,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [selectedPayment, setSelectedPayment] = useState<"CASH" | "TRANSFER" | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [tenantAlias, setTenantAlias] = useState<string | null>(null);
+    const [whatsappSettings, setWhatsappSettings] = useState<{ show: boolean; phone: string | null }>({ show: false, phone: null });
 
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
@@ -92,12 +94,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, transfer_alias")
+                    .select("id, schedule, max_orders_per_slot, transfer_alias, show_whatsapp_checkout, public_phone")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
 
                 setTenantAlias(tenantData.transfer_alias);
+                setWhatsappSettings({ show: !!tenantData.show_whatsapp_checkout, phone: tenantData.public_phone });
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -230,7 +233,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     };
 
     return (
-        <main className="min-h-screen bg-zinc-950 pb-28 pt-6">
+        <main className="min-h-screen bg-zinc-950 pb-32 pt-6">
             <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
 
             <div className="mx-auto max-w-lg px-4">
@@ -457,31 +460,42 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         </div>
                     </Section>
 
-                    {/* ── CTA ── */}
-                    <button
-                        type="submit"
-                        disabled={
-                            items.length === 0 ||
-                            isSubmitting ||
-                            (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
-                        }
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-primary-foreground shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                        {isSubmitting ? (
-                            <span className="flex items-center gap-2">
-                                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                </svg>
-                                Confirmando...
-                            </span>
-                        ) : (
-                            <>
-                                <CheckCircle2 size={20} />
-                                CONFIRMAR PEDIDO
-                            </>
-                        )}
-                    </button>
+                    {/* ── CTA FIJO (SMART BUTTON) ── */}
+                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-900 p-4 pb-6 sm:pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                        <div className="mx-auto max-w-lg">
+                            {whatsappSettings.show && whatsappSettings.phone && (
+                                <div className="mb-4">
+                                    <a href={`https://wa.me/${whatsappSettings.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-zinc-800 hover:text-emerald-400 w-full">
+                                        <MessageCircle size={18} />
+                                        ¿Alguna consulta? Escribinos por WhatsApp
+                                    </a>
+                                </div>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={
+                                    items.length === 0 ||
+                                    isSubmitting ||
+                                    (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
+                                }
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-extrabold text-[#09090b] shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide"
+                            >
+                                {isSubmitting ? (
+                                    <span className="flex items-center gap-2">
+                                        <svg className="h-5 w-5 animate-spin text-black" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                        </svg>
+                                        CONFIRMANDO...
+                                    </span>
+                                ) : (
+                                    <>
+                                        Confirmar Pedido • ${total.toLocaleString("es-AR")}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </main>
@@ -491,7 +505,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 // ─── Micro-components ──────────────────────────────────────────────────────────
 
 function inputCls(hasError: boolean) {
-    return `w-full rounded-lg border bg-zinc-950 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition focus:ring-2 focus:ring-primary ${hasError ? "border-red-500/50 focus:ring-red-500" : "border-zinc-800 focus:border-primary/50"
+    return `w-full rounded-lg border bg-zinc-950 px-4 py-3 text-base text-zinc-100 placeholder-zinc-600 outline-none transition focus:ring-2 focus:ring-primary ${hasError ? "border-red-500/50 focus:ring-red-500" : "border-zinc-800 focus:border-primary/50"
         }`;
 }
 
