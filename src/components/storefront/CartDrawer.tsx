@@ -73,13 +73,21 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
     // Logistics & Maps State
     const [tenantStoreAddress, setTenantStoreAddress] = useState<string | null>(null);
-    const [tenantDeliveryBaseFee, setTenantDeliveryBaseFee] = useState(0);
-    const [tenantDeliveryBaseKm, setTenantDeliveryBaseKm] = useState(0);
-    const [tenantDeliveryPerKm, setTenantDeliveryPerKm] = useState(0);
-    const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "variable">("fixed");
+    const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "distance">("fixed");
     const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
     const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState<number>(0);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+    const [isOutOfBounds, setIsOutOfBounds] = useState(false);
+
+    // Modern Pricing State
+    const [tenantDeliveryRadius, setTenantDeliveryRadius] = useState(5);
+    const [tenantFixedPrice, setTenantFixedPrice] = useState(0);
+    const [tenantBasePrice, setTenantBasePrice] = useState(0);
+    const [tenantBaseKm, setTenantBaseKm] = useState(0);
+    const [tenantExtraKmPrice, setTenantExtraKmPrice] = useState(0);
+    const [isUsingCachedAddress, setIsUsingCachedAddress] = useState(false);
+    const [mapSessionToken, setMapSessionToken] = useState<string | null>(null);
+    const [selectedCoords, setSelectedCoords] = useState<{ lat: number, lng: number } | null>(null);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -100,6 +108,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         requestOptions: {
             /* Restrict to Argentina boundaries mostly if needed, or omit */
             componentRestrictions: { country: "ar" },
+            sessionToken: mapSessionToken || undefined,
         },
         debounce: 300,
     });
@@ -110,10 +119,12 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         }
     }, [isLoaded, init]);
 
-    // MP State
-    const [isMPActive, setIsMPActive] = useState(false);
-
-    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    // OPTIMIZACIÓN: Generar un sessionToken único por sesión de checkout
+    React.useEffect(() => {
+        if (open && isCheckoutMode && !mapSessionToken) {
+            setMapSessionToken(Math.random().toString(36).substring(2, 15));
+        }
+    }, [open, isCheckoutMode, mapSessionToken]);
 
     const {
         register,
@@ -128,6 +139,38 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
     const deliveryMethod = watch("deliveryMethod");
     const selectedPayment = watch("paymentMethod");
+
+    // OPTIMIZACIÓN: Cargar ubicación desde caché al montar el checkout
+    React.useEffect(() => {
+        if (open && isCheckoutMode) {
+            const cached = localStorage.getItem('pedidosposta_user_location');
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    // Pre-rellenar campos de contacto
+                    setValue("fullName", data.client_name);
+                    setValue("phone", data.phone || "");
+
+                    // Bypass de Google API si hay dirección y costos guardados
+                    if (data.address && data.shipping_cost !== undefined) {
+                        setValue("address", data.address);
+                        setAddressValue(data.address, false);
+                        setCalculatedDistance(data.distance_km);
+                        setCalculatedDeliveryCost(data.shipping_cost);
+                        setSelectedCoords({ lat: data.lat, lng: data.lng });
+                        setIsUsingCachedAddress(true);
+                    }
+                } catch (e) {
+                    console.error("Error loading location cache", e);
+                }
+            }
+        }
+    }, [open, isCheckoutMode, setValue, setAddressValue]);
+
+    // MP State
+    const [isMPActive, setIsMPActive] = useState(false);
+
+    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
 
     // Reset view when Drawer closes
@@ -145,7 +188,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_base_fee, delivery_base_km, delivery_per_km, delivery_type")
+                    .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
@@ -154,13 +197,18 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                 setTenantAlias(tenantData.transfer_alias || null);
                 setTenantAccountName(tenantData.transfer_account_name || null);
                 setTenantStoreAddress(tenantData.store_address || null);
-                setTenantDeliveryBaseFee(tenantData.delivery_base_fee || 0);
-                setTenantDeliveryBaseKm(tenantData.delivery_base_km || 0);
-                setTenantDeliveryPerKm(tenantData.delivery_per_km || 0);
-                setTenantDeliveryType(tenantData.delivery_type || "fixed");
 
-                // Fallback base fee if delivery calculate fails
-                setCalculatedDeliveryCost(tenantData.delivery_base_fee || 0);
+                // Nuevos campos Enterprise
+                const pricingType = tenantData.delivery_pricing_type || "fixed";
+                setTenantDeliveryType(pricingType);
+                setTenantDeliveryRadius(tenantData.delivery_radius_km || 5);
+                setTenantFixedPrice(tenantData.fixed_delivery_price || 0);
+                setTenantBasePrice(tenantData.base_delivery_price || 0);
+                setTenantBaseKm(tenantData.base_delivery_km || 0);
+                setTenantExtraKmPrice(tenantData.extra_price_per_km || 0);
+
+                // Initial fallback
+                setCalculatedDeliveryCost(pricingType === 'fixed' ? (tenantData.fixed_delivery_price || 0) : (tenantData.base_delivery_price || 0));
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -194,14 +242,13 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         clearSuggestions();
         setValue("address", addressStr, { shouldValidate: true });
 
-        if (!tenantStoreAddress && tenantDeliveryType === "variable") {
-            toast.error("El local no tiene configurada su dirección de envío.");
+        if (tenantDeliveryType === "fixed") {
+            setCalculatedDeliveryCost(tenantFixedPrice);
             return;
         }
 
-        if (tenantDeliveryType === "fixed") {
-            // Si es costo fijo, no calculamos distancia matemática que impacte costo, omitimos geocoding de distancia o lo mostramos para UX nada más
-            setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+        if (!tenantStoreAddress && tenantDeliveryType === "distance") {
+            toast.error("El local no tiene configurada su dirección de envío.");
             return;
         }
 
@@ -209,6 +256,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         try {
             const results = await getGeocode({ address: addressStr });
             const { lat, lng } = await getLatLng(results[0]);
+            setSelectedCoords({ lat, lng });
 
             const originResults = await getGeocode({ address: tenantStoreAddress! });
             const originLatLng = await getLatLng(originResults[0]);
@@ -226,25 +274,35 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     setIsCalculatingDistance(false);
                     if (status !== "OK" || !response) {
                         toast.error("Error al calcular la distancia. Se aplicará tarifa base.");
-                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                        setCalculatedDeliveryCost(tenantBasePrice);
                         return;
                     }
 
                     const result = response.rows[0].elements[0];
+                    setIsCalculatingDistance(false);
+
                     if (result.status !== "OK") {
                         toast.error("No se pudo calcular la ruta. Se aplicará tarifa base.");
-                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                        setCalculatedDeliveryCost(tenantBasePrice);
                         return;
                     }
 
                     const distanceKm = result.distance.value / 1000;
                     setCalculatedDistance(distanceKm);
 
-                    if (distanceKm <= tenantDeliveryBaseKm) {
-                        setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+                    // VALIDAR RADIO
+                    if (distanceKm > tenantDeliveryRadius) {
+                        setIsOutOfBounds(true);
+                        toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
+                        return;
+                    }
+                    setIsOutOfBounds(false);
+
+                    if (distanceKm <= tenantBaseKm) {
+                        setCalculatedDeliveryCost(tenantBasePrice);
                     } else {
-                        const extraKm = distanceKm - tenantDeliveryBaseKm;
-                        const cost = tenantDeliveryBaseFee + (extraKm * tenantDeliveryPerKm);
+                        const extraKm = distanceKm - tenantBaseKm;
+                        const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
                         setCalculatedDeliveryCost(cost);
                     }
                 }
@@ -252,7 +310,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
         } catch (error) {
             setIsCalculatingDistance(false);
-            setCalculatedDeliveryCost(tenantDeliveryBaseFee);
+            setCalculatedDeliveryCost(tenantBasePrice);
             console.error("Error Geocoding: ", error);
         }
     };
@@ -382,6 +440,19 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     toast.error("Error al generar pago en MercadoPago. Tu pedido quedó pendiente de pago.");
                 }
             }
+
+            // OPTIMIZACIÓN: Guardar ubicación en caché para evitar cargos futuros de Maps
+            const cacheData = {
+                address: data.deliveryMethod === "DELIVERY" ? data.address : null,
+                lat: selectedCoords?.lat || null,
+                lng: selectedCoords?.lng || null,
+                distance_km: calculatedDistance,
+                shipping_cost: calculatedDeliveryCost,
+                client_name: data.fullName,
+                phone: data.phone
+            };
+            localStorage.setItem('pedidosposta_user_location', JSON.stringify(cacheData));
+            setMapSessionToken(null); // Reset session token for next time
 
             // 4. Cleanup & Redirect for non-MP
             try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
@@ -575,16 +646,37 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                         <div>
                                             <div className="relative">
                                                 <MapPin size={16} className={`absolute left-4 top-4 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
-                                                <input
-                                                    value={addressValue}
-                                                    onChange={(e) => {
-                                                        setAddressValue(e.target.value);
-                                                        setValue("address", e.target.value);
-                                                    }}
-                                                    disabled={!ready || !isLoaded}
-                                                    placeholder="Ej: Calle 13 34, Mercedes, Buenos Aires"
-                                                    className={`${inputCls(!!errors.address)} pl-11`}
-                                                />
+                                                {isUsingCachedAddress ? (
+                                                    <div className={`${inputCls(false)} pl-11 flex items-center justify-between`}>
+                                                        <span className="truncate">Envío a: {addressValue}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setIsUsingCachedAddress(false);
+                                                                setAddressValue("");
+                                                                setValue("address", "");
+                                                                setCalculatedDistance(null);
+                                                                setSelectedCoords(null);
+                                                                // Rotar el token para la nueva búsqueda
+                                                                setMapSessionToken(Math.random().toString(36).substring(2, 15));
+                                                            }}
+                                                            className="text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0"
+                                                        >
+                                                            Cambiar dirección
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        value={addressValue}
+                                                        onChange={(e) => {
+                                                            setAddressValue(e.target.value);
+                                                            setValue("address", e.target.value);
+                                                        }}
+                                                        disabled={!ready || !isLoaded}
+                                                        placeholder="Ej: Calle 13 34, Mercedes, Buenos Aires"
+                                                        className={`${inputCls(!!errors.address)} pl-11`}
+                                                    />
+                                                )}
                                             </div>
                                             <p className="mt-1.5 ml-1 text-[11px] text-zinc-500 font-medium">
                                                 Ingresá calle, número y ciudad para calcular el costo de envío exacto.
@@ -837,11 +929,22 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                             </div>
                             <button
                                 type="submit"
-                                disabled={isSubmitting || (selectedPayment === "TRANSFER" && ((tenantAlias && !receiptFile) || !tenantAlias))}
-                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 font-black tracking-widest text-[13px] text-primary-foreground shadow-[0_4px_25px_var(--brand-color)] shadow-primary/30 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={
+                                    isSubmitting ||
+                                    isOutOfBounds ||
+                                    (deliveryMethod === "DELIVERY" && !addressValue) ||
+                                    (selectedPayment === "TRANSFER" && ((tenantAlias && !receiptFile) || !tenantAlias))
+                                }
+                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 font-black tracking-widest text-[13px] text-primary-foreground shadow-[0_4px_25px_var(--brand-color)] shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                             >
-                                {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />}
-                                {isSubmitting ? "PROCESANDO..." : "CONFIRMAR PEDIDO"}
+                                {isSubmitting ? (
+                                    <Loader2 size={20} className="animate-spin" />
+                                ) : isOutOfBounds ? (
+                                    <X size={20} />
+                                ) : (
+                                    <CheckCircle2 size={20} />
+                                )}
+                                {isSubmitting ? "PROCESANDO..." : isOutOfBounds ? "FUERA DE RADIO" : "CONFIRMAR PEDIDO"}
                             </button>
                         </div>
                     </form>

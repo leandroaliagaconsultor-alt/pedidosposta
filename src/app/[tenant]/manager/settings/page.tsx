@@ -7,12 +7,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart, Calendar, Plus, Trash2, CreditCard, Key, Lock, ArrowRightLeft, User, Instagram, Facebook, Phone, Megaphone } from "lucide-react";
+import {
+    Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart,
+    Calendar, Plus, Trash2, CreditCard, Key, Lock,
+    ArrowRightLeft, User, Instagram, Facebook, Phone, Megaphone
+} from "lucide-react";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
 } from "use-places-autocomplete";
-import { useJsApiLoader } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap, Circle, Marker } from "@react-google-maps/api";
 
 const libraries: ("places")[] = ["places"];
 
@@ -31,11 +35,12 @@ const settingsSchema = z.object({
     mp_public_key: z.string().optional().nullable(),
     transfer_alias: z.string().optional().nullable(),
     transfer_account_name: z.string().optional().nullable(),
-    store_address: z.string().optional().nullable(),
-    delivery_base_fee: z.coerce.number().min(0).optional().nullable(),
-    delivery_base_km: z.coerce.number().min(0).optional().nullable(),
-    delivery_per_km: z.coerce.number().min(0).optional().nullable(),
-    delivery_type: z.enum(['fixed', 'variable']).default('fixed'),
+    delivery_pricing_type: z.enum(['fixed', 'distance']).default('fixed'),
+    delivery_radius_km: z.coerce.number().min(0).default(5),
+    fixed_delivery_price: z.coerce.number().min(0).default(1500),
+    base_delivery_price: z.coerce.number().min(0).default(1500),
+    base_delivery_km: z.coerce.number().min(0).default(2),
+    extra_price_per_km: z.coerce.number().min(0).default(500),
     instagram_url: z.string().optional().nullable(),
     facebook_url: z.string().optional().nullable(),
     public_phone: z.string().optional().nullable(),
@@ -43,6 +48,7 @@ const settingsSchema = z.object({
     show_whatsapp_checkout: z.boolean().default(false),
     enable_kitchen_tickets: z.boolean().default(false),
     enable_delivery_tickets: z.boolean().default(false),
+    store_address: z.string().optional().nullable(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -55,6 +61,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -78,12 +85,6 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
         debounce: 300,
     });
 
-    useEffect(() => {
-        if (isLoaded) {
-            init();
-        }
-    }, [isLoaded, init]);
-
     const form = useForm({
         resolver: zodResolver(settingsSchema),
         defaultValues: {
@@ -99,11 +100,12 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             mp_public_key: "",
             transfer_alias: "",
             transfer_account_name: "",
-            store_address: "",
-            delivery_base_fee: 0,
-            delivery_base_km: 0,
-            delivery_per_km: 0,
-            delivery_type: "fixed" as "fixed" | "variable",
+            delivery_pricing_type: "fixed" as "fixed" | "distance",
+            delivery_radius_km: 5,
+            fixed_delivery_price: 1500,
+            base_delivery_price: 1500,
+            base_delivery_km: 2,
+            extra_price_per_km: 500,
             instagram_url: "",
             facebook_url: "",
             public_phone: "",
@@ -111,10 +113,40 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             show_whatsapp_checkout: false,
             enable_kitchen_tickets: false,
             enable_delivery_tickets: false,
+            store_address: "",
         },
     });
 
     const watchValues = form.watch();
+
+    const circleOptions = React.useMemo(() => ({
+        fillColor: '#EF4444',
+        fillOpacity: 0.15,
+        strokeColor: '#EF4444',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+    }), []);
+
+    useEffect(() => {
+        if (isLoaded) {
+            init();
+        }
+    }, [isLoaded, init]);
+
+    // Geocode store address to center map
+    useEffect(() => {
+        if (!isLoaded || !watchValues.store_address || watchValues.store_address.length < 5) {
+            setMapCenter(null);
+            return;
+        }
+
+        getGeocode({ address: watchValues.store_address })
+            .then((results) => getLatLng(results[0]))
+            .then(({ lat, lng }) => setMapCenter({ lat, lng }))
+            .catch((err) => {
+                console.warn("Dirección no encontrada por Google Maps o error de Geocoding:", err);
+            });
+    }, [isLoaded, watchValues.store_address]);
 
     // Fetch initial profile
     useEffect(() => {
@@ -135,11 +167,12 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     mp_public_key: data.mp_public_key || "",
                     transfer_alias: data.transfer_alias || "",
                     transfer_account_name: data.transfer_account_name || "",
-                    store_address: data.store_address || "",
-                    delivery_base_fee: data.delivery_base_fee || 0,
-                    delivery_base_km: data.delivery_base_km || 0,
-                    delivery_per_km: data.delivery_per_km || 0,
-                    delivery_type: data.delivery_type || "fixed",
+                    delivery_pricing_type: data.delivery_pricing_type || "fixed",
+                    delivery_radius_km: data.delivery_radius_km || 5,
+                    fixed_delivery_price: data.fixed_delivery_price || 1500,
+                    base_delivery_price: data.base_delivery_price || 1500,
+                    base_delivery_km: data.base_delivery_km || 2,
+                    extra_price_per_km: data.extra_price_per_km || 500,
                     instagram_url: data.instagram_url || "",
                     facebook_url: data.facebook_url || "",
                     public_phone: data.public_phone || "",
@@ -147,6 +180,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     show_whatsapp_checkout: !!data.show_whatsapp_checkout,
                     enable_kitchen_tickets: !!data.enable_kitchen_tickets,
                     enable_delivery_tickets: !!data.enable_delivery_tickets,
+                    store_address: data.store_address || "",
                 });
 
                 if (data.store_address) {
@@ -156,7 +190,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             setLoading(false);
         };
         fetchTenant();
-    }, [supabase, tenant, form]);
+    }, [supabase, tenant, form, setAddressValue]);
 
     const onSubmit = async (data: SettingsForm) => {
         if (!tenantId) return;
@@ -179,10 +213,12 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     transfer_alias: data.transfer_alias,
                     transfer_account_name: data.transfer_account_name,
                     store_address: data.store_address,
-                    delivery_base_fee: data.delivery_base_fee,
-                    delivery_base_km: data.delivery_base_km,
-                    delivery_per_km: data.delivery_per_km,
-                    delivery_type: data.delivery_type,
+                    delivery_pricing_type: data.delivery_pricing_type,
+                    delivery_radius_km: data.delivery_radius_km,
+                    fixed_delivery_price: data.fixed_delivery_price,
+                    base_delivery_price: data.base_delivery_price,
+                    base_delivery_km: data.base_delivery_km,
+                    extra_price_per_km: data.extra_price_per_km,
                     instagram_url: data.instagram_url,
                     facebook_url: data.facebook_url,
                     public_phone: data.public_phone,
@@ -625,37 +661,43 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     </div>
                 </div>
 
-                {/* ── Logistics Integration ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                {/* ── Logistics & Zones ── */}
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6 overflow-hidden">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
-                            <MapPin className="text-emerald-500" size={24} /> Logística de Envíos (Google Maps)
+                            <Bike className="text-emerald-500" size={24} /> Logística y Zonas de Entrega
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá tu dirección de origen y las reglas de cobro para calcular envíos dinámicos según la distancia real al cliente.</p>
-
-                    <div className="space-y-6">
-                        {/* ── Tipo de Cobro ── */}
-                        <div>
-                            <label className="mb-3 block text-sm font-semibold text-zinc-300">Tipo de Envío</label>
-                            <div className="flex gap-4">
-                                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all ${watchValues.delivery_type === "fixed" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300"}`}>
-                                    <input type="radio" value="fixed" className="sr-only" {...form.register("delivery_type")} />
-                                    Costo Fijo
-                                </label>
-                                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all ${watchValues.delivery_type === "variable" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300"}`}>
-                                    <input type="radio" value="variable" className="sr-only" {...form.register("delivery_type")} />
-                                    Costo Variable por KM
-                                </label>
-                            </div>
-                        </div>
-
-                        {watchValues.delivery_type === "variable" && (
+                    <div className="grid gap-8 lg:grid-cols-2">
+                        {/* Configuración */}
+                        <div className="space-y-6">
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Física de Origen (Google Maps)</label>
+                                <label className="mb-3 block text-sm font-semibold text-zinc-300">Tipo de Cobro</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => form.setValue("delivery_pricing_type", "fixed", { shouldDirty: true })}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "fixed" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50"}`}
+                                    >
+                                        Costo Fijo
+                                        <span className="text-[10px] font-normal opacity-60">Precio único</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => form.setValue("delivery_pricing_type", "distance", { shouldDirty: true })}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "distance" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50"}`}
+                                    >
+                                        Por Distancia
+                                        <span className="text-[10px] font-normal opacity-60">Base + extra x KM</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Múltiple/Física del Local (Google Maps)</label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-3 top-4 text-zinc-500" size={18} />
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                     <input
                                         type="text"
                                         value={addressValue}
@@ -664,12 +706,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                             form.setValue("store_address", e.target.value, { shouldDirty: true });
                                         }}
                                         disabled={!ready || !isLoaded}
-                                        placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección exacta del local..."}
+                                        placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección del local..."}
                                         className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                                     />
-                                    {/* Suggested Places List */}
                                     {status === "OK" && (
-                                        <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
+                                        <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
                                             {data.map(({ place_id, description }) => (
                                                 <li
                                                     key={place_id}
@@ -678,7 +719,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                         clearSuggestions();
                                                         form.setValue("store_address", description, { shouldDirty: true });
                                                     }}
-                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0"
                                                 >
                                                     {description}
                                                 </li>
@@ -686,53 +727,98 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         </ul>
                                     )}
                                 </div>
-                                <p className="mt-2 text-xs text-zinc-500">
-                                    Debe ser una dirección exacta elegida del listado de Google para poder calcular los envíos con éxito.
-                                </p>
                             </div>
-                        )}
 
-                        <div className="grid gap-6 md:grid-cols-3">
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">{watchValues.delivery_type === "fixed" ? "Costo Fijo de Envío ($)" : "Tarifa Base ($)"}</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    {...form.register("delivery_base_fee")}
-                                    placeholder="Ej: 1500"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
-                                />
-                                <p className="mt-1 text-xs text-zinc-500">{watchValues.delivery_type === "fixed" ? "Costo único de envío para cualquier pedido." : "Costo mínimo del envío al cliente."}</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Radio de Entrega (KM)</label>
+                                    <input
+                                        type="number"
+                                        {...form.register("delivery_radius_km")}
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                    <p className="text-xs text-zinc-500 mt-1">Ej: 5 (Hasta cuántos kilómetros viaja tu cadete como máximo. Dibuja el círculo en el mapa).</p>
+                                </div>
+
+                                {watchValues.delivery_pricing_type === "fixed" ? (
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Fijo Envío ($)</label>
+                                        <input
+                                            type="number"
+                                            {...form.register("fixed_delivery_price")}
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Base ($)</label>
+                                        <input
+                                            type="number"
+                                            {...form.register("base_delivery_price")}
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Ej: 1500 (El costo mínimo o inicial del envío).</p>
+                                    </div>
+                                )}
                             </div>
-                            {watchValues.delivery_type === "variable" && (
-                                <>
+
+                            {watchValues.delivery_pricing_type === "distance" && (
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Distancia Base Activa (KM)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">KMs Base incluidos</label>
                                         <input
                                             type="number"
-                                            min="0"
-                                            step="0.1"
-                                            {...form.register("delivery_base_km")}
-                                            placeholder="Ej: 2.5"
+                                            {...form.register("base_delivery_km")}
                                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="mt-1 text-xs text-zinc-500">KM que cubre esa Tarifa Base inicial.</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Ej: 2 (Hasta cuántos kilómetros se cobra solo el precio base. Debe ser MENOR al Radio de Entrega).</p>
+                                        {Number(watchValues.base_delivery_km) > Number(watchValues.delivery_radius_km) && (
+                                            <p className="text-xs text-red-500 mt-1 font-medium">Los KMs base no pueden ser mayores al Radio de Entrega máximo.</p>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Costo por KM Extra ($)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Extra x KM ($)</label>
                                         <input
                                             type="number"
-                                            min="0"
-                                            step="0.01"
-                                            {...form.register("delivery_per_km")}
-                                            placeholder="Ej: 500"
+                                            {...form.register("extra_price_per_km")}
                                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="mt-1 text-xs text-zinc-500">Valor a sumar por cada KM superado.</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Ej: 500 (Cuánto se suma por cada kilómetro adicional que supere los KMs Base).</p>
                                     </div>
-                                </>
+                                </div>
                             )}
+                        </div>
+
+                        {/* Mapa Visual */}
+                        <div className="h-[400px] w-full rounded-2xl border border-zinc-800 overflow-hidden relative group">
+                            {isLoaded ? (
+                                <GoogleMap
+                                    mapContainerStyle={{ width: '100%', height: '100%', minHeight: '400px', borderRadius: '0.5rem' }}
+                                    center={mapCenter || { lat: -34.6514, lng: -59.4322 }}
+                                    zoom={13}
+                                    options={{ disableDefaultUI: true, zoomControl: true }}
+                                >
+                                    {mapCenter ? (
+                                        <>
+                                            <Marker position={mapCenter} />
+                                            {watchValues.delivery_radius_km && Number(watchValues.delivery_radius_km) > 0 ? (
+                                                <Circle
+                                                    center={mapCenter}
+                                                    radius={Number(watchValues.delivery_radius_km) * 1000}
+                                                    options={circleOptions}
+                                                />
+                                            ) : null}
+                                        </>
+                                    ) : null}
+                                </GoogleMap>
+                            ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-zinc-950 text-zinc-500 text-sm italic">
+                                    Cargando mapa de cobertura...
+                                </div>
+                            )}
+                            <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-widest pointer-events-none">
+                                Vista de Cobertura
+                            </div>
                         </div>
                     </div>
                 </div>

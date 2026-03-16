@@ -67,7 +67,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [scheduleType, setScheduleType] = useState<"asap" | "scheduled">("asap");
 
     const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const deliveryCost = 2000;
+    const [deliveryCost, setDeliveryCost] = useState(0);
+    const [isOutOfBounds, setIsOutOfBounds] = useState(false);
+    const [pricingRules, setPricingRules] = useState<any>(null);
 
     const {
         register,
@@ -94,13 +96,47 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             try {
                 const { data: tenantData } = await supabase
                     .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, transfer_alias, show_whatsapp_checkout, public_phone")
+                    .select("id, schedule, max_orders_per_slot, transfer_alias, show_whatsapp_checkout, public_phone, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
                     .eq("slug", tenantSlug)
                     .single();
                 if (!tenantData) return;
 
                 setTenantAlias(tenantData.transfer_alias);
                 setWhatsappSettings({ show: !!tenantData.show_whatsapp_checkout, phone: tenantData.public_phone });
+                setPricingRules(tenantData);
+
+                // Initial fallbacks based on pricing type
+                if (tenantData.delivery_pricing_type === 'fixed') {
+                    setDeliveryCost(tenantData.fixed_delivery_price || 0);
+                } else {
+                    setDeliveryCost(tenantData.base_delivery_price || 0);
+                }
+
+                // Cargar datos desde caché si existen
+                const cached = localStorage.getItem('pedidosposta_user_location');
+                if (cached) {
+                    try {
+                        const d = JSON.parse(cached);
+                        if (d.client_name) {
+                            const parts = d.client_name.split(' ');
+                            setValue("firstName", parts[0] || "");
+                            setValue("lastName", parts.slice(1).join(' ') || "");
+                        }
+                        if (d.email) setValue("email", d.email);
+                        if (d.phone) setValue("phone", d.phone);
+                        if (d.address) setValue("address", d.address);
+
+                        // Si hay costo en caché, usarlo (es el calculado en el CartDrawer con Distance Matrix)
+                        if (d.shipping_cost !== undefined) {
+                            setDeliveryCost(d.shipping_cost);
+                        }
+
+                        // Validar radio desde el caché
+                        if (d.distance_km && tenantData.delivery_radius_km && d.distance_km > tenantData.delivery_radius_km) {
+                            setIsOutOfBounds(true);
+                        }
+                    } catch (e) { }
+                }
 
                 const today = new Date().toISOString().split('T')[0];
                 const { data: orders } = await supabase
@@ -122,6 +158,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 setIsLoadingSlots(false);
             }
         };
+
         fetchAvailability();
     }, [tenantSlug, supabase, scheduleType, setValue]);
 
@@ -219,6 +256,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             // 4. Done! Save to localStorage for recovery banner
+            // OPTIMIZACIÓN: Guardar datos en caché
+            const cacheData = {
+                address: data.deliveryMethod === "DELIVERY" ? data.address : null,
+                lat: null,
+                lng: null,
+                distance_km: 0,
+                shipping_cost: deliveryCost,
+                client_name: `${data.firstName} ${data.lastName}`,
+                email: data.email,
+                phone: data.phone
+            };
+            localStorage.setItem('pedidosposta_user_location', JSON.stringify(cacheData));
+
             try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
             clearCart();
             router.push(`/${tenantSlug}/order/${order.id}`);
@@ -476,9 +526,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 disabled={
                                     items.length === 0 ||
                                     isSubmitting ||
+                                    isOutOfBounds ||
                                     (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                                 }
-                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-extrabold text-[#09090b] shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide"
+                                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-extrabold shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${isOutOfBounds ? "bg-red-500 text-white" : "bg-primary text-[#09090b]"}`}
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2">
@@ -488,6 +539,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         </svg>
                                         CONFIRMANDO...
                                     </span>
+                                ) : isOutOfBounds ? (
+                                    "FUERA DE RADIO DE ENTREGA"
                                 ) : (
                                     <>
                                         Confirmar Pedido • ${total.toLocaleString("es-AR")}
