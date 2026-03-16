@@ -55,6 +55,19 @@ export function ProductCard({
                 {/* Content */}
                 <div className="flex flex-1 flex-col justify-between py-1 sm:py-2">
                     <div className="mb-2">
+                        {product.badges && product.badges.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-1.5">
+                                {product.badges.map(badge => {
+                                    const labels: Record<string, string> = { nuevo: 'Nuevo', popular: ' Popular', vegano: 'Vegano 🌱', sintacc: 'Sin TACC 🌾', picante: 'Picante 🌶️' };
+                                    const colors: Record<string, string> = { nuevo: 'bg-emerald-500/20 text-emerald-400', popular: 'bg-amber-500/20 text-amber-400', vegano: 'bg-green-500/20 text-green-400', sintacc: 'bg-blue-500/20 text-blue-400', picante: 'bg-red-500/20 text-red-400' };
+                                    return (
+                                        <span key={badge} className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-current ${colors[badge] || 'bg-zinc-800 text-zinc-300'}`}>
+                                            {labels[badge] || badge}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        )}
                         <h3 className={`text-base sm:text-lg font-black uppercase tracking-tight leading-tight transition-colors ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-900 group-hover:text-black' : 'text-zinc-100 group-hover:text-white'}`}>
                             {product.name}
                         </h3>
@@ -63,9 +76,22 @@ export function ProductCard({
 
                     {/* Footer Flex Between */}
                     <div className="flex items-center justify-between mt-auto">
-                        <span className="text-sm sm:text-base font-black tracking-widest" style={{ color: "var(--brand-color)", textShadow: "0 0 10px rgba(var(--brand-color), 0.2)" }}>
-                            ${product.price.toLocaleString("es-AR")}
-                        </span>
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                            {product.promotionalPrice ? (
+                                <>
+                                    <span className="text-sm sm:text-base font-black tracking-widest" style={{ color: "var(--brand-color)", textShadow: "0 0 10px rgba(var(--brand-color), 0.2)" }}>
+                                        ${product.promotionalPrice.toLocaleString("es-AR")}
+                                    </span>
+                                    <span className={`text-[10px] sm:text-xs font-bold line-through ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                                        ${product.price.toLocaleString("es-AR")}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-sm sm:text-base font-black tracking-widest" style={{ color: "var(--brand-color)", textShadow: "0 0 10px rgba(var(--brand-color), 0.2)" }}>
+                                    ${product.price.toLocaleString("es-AR")}
+                                </span>
+                            )}
+                        </div>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation(); // avoid double-open

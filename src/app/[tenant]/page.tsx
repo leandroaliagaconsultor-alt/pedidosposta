@@ -107,6 +107,7 @@ export default function StorefrontPage() {
                         name: curr.name,
                         additionalPrice: curr.additional_price,
                         isDefault: curr.is_default ?? false,
+                        isAvailable: curr.is_available ?? true,
                     });
                     return acc;
                 }, {});
@@ -133,6 +134,8 @@ export default function StorefrontPage() {
                         name: p.name,
                         description: p.description || "",
                         price: p.price,
+                        promotionalPrice: p.promotional_price || undefined,
+                        badges: p.badges || [],
                         imageUrl: p.image_url || undefined,
                         modifiers: productModifiers
                     };

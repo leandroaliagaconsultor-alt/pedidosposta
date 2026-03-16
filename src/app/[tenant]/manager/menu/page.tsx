@@ -24,6 +24,8 @@ type Product = {
     is_available: boolean;
     sort_order: number;
     modifier_ids?: string[];
+    promotional_price?: number | null;
+    badges?: string[] | null;
 };
 
 type ModifierOption = {
@@ -32,6 +34,7 @@ type ModifierOption = {
     name: string;
     additional_price: number;
     is_default: boolean;
+    is_available?: boolean;
 };
 type Modifier = {
     id: string;
@@ -61,6 +64,8 @@ const productSchema = z.object({
     category_id: z.string().min(1, "Selecciona una categoría"),
     modifier_ids: z.array(z.string()).default([]),
     image_url: z.string().optional().nullable(),
+    promotional_price: z.preprocess(numericPreprocess, z.number().min(0).optional().nullable()),
+    badges: z.array(z.string()).default([]),
 });
 type ProductForm = z.infer<typeof productSchema>;
 
@@ -72,6 +77,7 @@ const modSchema = z.object({
         name: z.string().min(1, "Nombre requerido"),
         additional_price: z.coerce.number().min(0, { message: "El precio no puede ser negativo" }).default(0),
         is_default: z.boolean().default(false),
+        is_available: z.boolean().default(true),
     })).min(1, "Debes agregar al menos una opción"),
 });
 type ModForm = z.infer<typeof modSchema>;
@@ -110,7 +116,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
     const catForm = useForm({ resolver: zodResolver(categorySchema) });
     const prodForm = useForm({
         resolver: zodResolver(productSchema),
-        defaultValues: { name: "", description: "", cost_price: 0, profit_margin: 0, price: 0 as any, category_id: "", modifier_ids: [], image_url: "" as any }
+        defaultValues: { name: "", description: "", cost_price: 0, profit_margin: 0, price: 0 as any, promotional_price: null as any, category_id: "", modifier_ids: [], badges: [], image_url: "" as any }
     });
 
     // Import useFieldArray dynamically, we need it for forms
@@ -118,7 +124,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
     const modForm = useForm({
         resolver: zodResolver(modSchema),
-        defaultValues: { name: "", is_required: false, is_multiple: false, options: [{ name: "", additional_price: 0 as any, is_default: false }] }
+        defaultValues: { name: "", is_required: false, is_multiple: false, options: [{ name: "", additional_price: 0 as any, is_default: false, is_available: true }] }
     });
 
     const { fields: optionFields, append: optionAppend, remove: optionRemove } = useFieldArray({
@@ -234,10 +240,12 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 price: prod.price,
                 category_id: prod.category_id || "",
                 modifier_ids: prod.modifier_ids || [],
+                badges: prod.badges || [],
+                promotional_price: prod.promotional_price || null,
                 image_url: prod.image_url || "",
             });
         } else {
-            prodForm.reset({ name: "", description: "", cost_price: 0, profit_margin: 0, price: 0 as any, category_id: categories[0]?.id || "", modifier_ids: [], image_url: "" as any });
+            prodForm.reset({ name: "", description: "", cost_price: 0, profit_margin: 0, price: 0 as any, promotional_price: null as any, badges: [], category_id: categories[0]?.id || "", modifier_ids: [], image_url: "" as any });
         }
         setProdModalOpen(true);
     };
@@ -316,6 +324,8 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                         cost_price: data.cost_price,
                         profit_margin: data.profit_margin,
                         price: data.price,
+                        promotional_price: data.promotional_price || null,
+                        badges: data.badges || [],
                         category_id: data.category_id,
                         image_url: finalImageUrl,
                     })
@@ -334,6 +344,8 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                         cost_price: data.cost_price,
                         profit_margin: data.profit_margin,
                         price: data.price,
+                        promotional_price: data.promotional_price || null,
+                        badges: data.badges || [],
                         category_id: data.category_id,
                         image_url: finalImageUrl,
                         sort_order: sortOrder,
@@ -400,10 +412,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 name: mod.name,
                 is_multiple: mod.is_multiple,
                 is_required: mod.is_required,
-                options: mod.options?.length ? mod.options.map(o => ({ name: o.name, additional_price: o.additional_price, is_default: o.is_default ?? false })) : [{ name: "", additional_price: 0 as any, is_default: false }],
+                options: mod.options?.length ? mod.options.map(o => ({ name: o.name, additional_price: o.additional_price, is_default: o.is_default ?? false, is_available: o.is_available ?? true })) : [{ name: "", additional_price: 0 as any, is_default: false, is_available: true }],
             });
         } else {
-            modForm.reset({ name: "", is_multiple: false, is_required: false, options: [{ name: "", additional_price: 0 as any, is_default: false }] });
+            modForm.reset({ name: "", is_multiple: false, is_required: false, options: [{ name: "", additional_price: 0 as any, is_default: false, is_available: true }] });
         }
         setModModalOpen(true);
     };
@@ -435,7 +447,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                 const { data: insertedOpts, error: optsErr } = await supabase
                     .from("modifier_options")
-                    .insert(data.options.map(opt => ({ modifier_id: editingMod.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default })))
+                    .insert(data.options.map(opt => ({ modifier_id: editingMod.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default, is_available: opt.is_available })))
                     .select();
                 if (optsErr) throw optsErr;
 
@@ -452,7 +464,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 // Insert Options
                 const { data: insertedOpts, error: optsErr } = await supabase
                     .from("modifier_options")
-                    .insert(data.options.map(opt => ({ modifier_id: newBase.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default })))
+                    .insert(data.options.map(opt => ({ modifier_id: newBase.id, name: opt.name, additional_price: opt.additional_price, is_default: opt.is_default, is_available: opt.is_available })))
                     .select();
                 if (optsErr) throw optsErr;
 
@@ -789,6 +801,46 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Precio Promocional (Opcional)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">$</span>
+                                        <input
+                                            type="number"
+                                            inputMode="decimal"
+                                            {...prodForm.register("promotional_price")}
+                                            className={`w-full rounded-xl border bg-zinc-900 pl-8 pr-4 py-3 text-sm text-primary font-bold outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.promotional_price ? "border-red-500/50" : "border-zinc-800"}`}
+                                            placeholder="Ej: 4500 (Oferta)"
+                                        />
+                                    </div>
+                                    <p className="mt-1 text-xs text-zinc-500">Dejar vacío o en 0 si no hay oferta.</p>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Etiquetas Destacadas</label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {[
+                                            { id: 'nuevo', label: 'Nuevo' },
+                                            { id: 'popular', label: 'Popular' },
+                                            { id: 'vegano', label: 'Vegano 🌱' },
+                                            { id: 'sintacc', label: 'Sin TACC 🌾' },
+                                            { id: 'picante', label: 'Picante 🌶️' }
+                                        ].map(badge => (
+                                            <label key={badge.id} className="cursor-pointer flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5 hover:bg-zinc-800 transition">
+                                                <input
+                                                    type="checkbox"
+                                                    value={badge.id}
+                                                    {...prodForm.register("badges")}
+                                                    className="w-3.5 h-3.5 bg-zinc-950 border-zinc-700 text-primary rounded-sm focus:ring-primary/50"
+                                                />
+                                                <span className="text-xs font-semibold text-zinc-300">{badge.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="mb-1 block text-sm font-semibold text-zinc-300">Nombre del producto</label>
                                 <input
@@ -905,7 +957,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                     <label className="block text-sm font-semibold text-zinc-300">Opciones</label>
                                     <button
                                         type="button"
-                                        onClick={() => optionAppend({ name: "", additional_price: 0, is_default: false })}
+                                        onClick={() => optionAppend({ name: "", additional_price: 0, is_default: false, is_available: true })}
                                         className="text-xs font-bold text-primary hover:text-white"
                                     >
                                         + Agregar Opción
@@ -954,6 +1006,23 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                     className="sr-only"
                                                 />
                                                 <span className="text-xs font-bold whitespace-nowrap">★</span>
+                                            </label>
+                                            <label
+                                                className={`flex items-center gap-1.5 cursor-pointer rounded-lg px-2 py-2 transition-colors ${!modForm.watch(`options.${index}.is_available`)
+                                                    ? "text-red-400 bg-red-500/10"
+                                                    : "text-zinc-500 hover:text-zinc-300"
+                                                    }`}
+                                                title="Marcar como agotado"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!modForm.watch(`options.${index}.is_available`)}
+                                                    onChange={(e) => {
+                                                        modForm.setValue(`options.${index}.is_available`, !e.target.checked);
+                                                    }}
+                                                    className="sr-only"
+                                                />
+                                                <span className="text-xs font-bold whitespace-nowrap line-through opacity-80">Agotado</span>
                                             </label>
                                             <button
                                                 type="button"

@@ -14,6 +14,7 @@ export interface ModifierOption {
     name: string;
     additionalPrice: number;
     isDefault?: boolean;
+    isAvailable?: boolean;
 }
 
 export interface Modifier {
@@ -30,6 +31,8 @@ export interface Product {
     name: string;
     description: string;
     price: number;
+    promotionalPrice?: number;
+    badges?: string[];
     imageUrl?: string;
     modifiers?: Modifier[];
 }
@@ -53,7 +56,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
     const initDefaults = () => {
         const defaults = new Map<string, Set<string>>();
         (product.modifiers ?? []).forEach((mod) => {
-            const defaultOpts = mod.options.filter((o) => o.isDefault);
+            const defaultOpts = mod.options.filter((o) => o.isDefault && (o.isAvailable !== false));
             if (defaultOpts.length > 0) {
                 if (mod.isMultiple) {
                     defaults.set(mod.id, new Set(defaultOpts.map((o) => o.id)));
@@ -79,7 +82,8 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
         return extra;
     }, [selectedOptions, product.modifiers]);
 
-    const unitPrice = product.price + modifiersPrice;
+    const basePrice = product.promotionalPrice ?? product.price;
+    const unitPrice = basePrice + modifiersPrice;
     const totalPrice = unitPrice * quantity;
 
     const handleOptionClick = (modifier: Modifier, optionId: string) => {
@@ -177,9 +181,32 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
 
                         <div className="p-5">
                             {/* Title & Description */}
-                            <DialogPrimitive.Title className="mb-1 text-2xl font-extrabold tracking-tight text-white">
-                                {product.name}
-                            </DialogPrimitive.Title>
+                            <div className="flex gap-2 items-center flex-wrap mb-1">
+                                <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-white leading-none">
+                                    {product.name}
+                                </DialogPrimitive.Title>
+                                {product.badges && product.badges.map(badge => {
+                                    const labels: Record<string, string> = { nuevo: 'Nuevo', popular: ' Popular', vegano: 'Vegano 🌱', sintacc: 'Sin TACC 🌾', picante: 'Picante 🌶️' };
+                                    const colors: Record<string, string> = { nuevo: 'bg-emerald-500/20 text-emerald-400', popular: 'bg-amber-500/20 text-amber-400', vegano: 'bg-green-500/20 text-green-400', sintacc: 'bg-blue-500/20 text-blue-400', picante: 'bg-red-500/20 text-red-400' };
+                                    return (
+                                        <span key={badge} className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-current ${colors[badge] || 'bg-zinc-800 text-zinc-300'}`}>
+                                            {labels[badge] || badge}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center gap-2 mb-2">
+                                {product.promotionalPrice ? (
+                                    <>
+                                        <span className="text-lg font-black text-primary">${product.promotionalPrice.toLocaleString("es-AR")}</span>
+                                        <span className="text-sm font-bold text-zinc-600 line-through">${product.price.toLocaleString("es-AR")}</span>
+                                    </>
+                                ) : (
+                                    <span className="text-lg font-black text-primary">${product.price.toLocaleString("es-AR")}</span>
+                                )}
+                            </div>
+
                             <p className="mb-5 text-sm text-zinc-400">{product.description}</p>
 
                             {/* Modifiers */}
@@ -201,30 +228,42 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                                     <div className="space-y-2">
                                         {modifier.options.map((option) => {
                                             const isSelected = selectedOptions.get(modifier.id)?.has(option.id) ?? false;
+                                            const isSoldOut = option.isAvailable === false;
+
                                             return (
                                                 <button
                                                     key={option.id}
                                                     type="button"
-                                                    onClick={() => handleOptionClick(modifier, option.id)}
-                                                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all ${isSelected
-                                                        ? "border-primary bg-primary/10 text-white"
-                                                        : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600"
+                                                    disabled={isSoldOut}
+                                                    onClick={() => !isSoldOut && handleOptionClick(modifier, option.id)}
+                                                    className={`relative flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all overflow-hidden ${isSoldOut
+                                                        ? "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 cursor-not-allowed opacity-50"
+                                                        : isSelected
+                                                            ? "border-primary bg-primary/10 text-white"
+                                                            : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600"
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         {/* Indicator: circle for radio, square for checkbox */}
                                                         <span
-                                                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${modifier.isMultiple ? "md" : "full"} border transition-all ${isSelected
-                                                                ? "border-primary bg-primary"
-                                                                : "border-zinc-600 bg-transparent"
+                                                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${modifier.isMultiple ? "md" : "full"} border transition-all ${isSoldOut
+                                                                ? "border-zinc-700 bg-transparent"
+                                                                : isSelected
+                                                                    ? "border-primary bg-primary"
+                                                                    : "border-zinc-600 bg-transparent"
                                                                 }`}
                                                         >
-                                                            {isSelected && <Check size={11} strokeWidth={3} />}
+                                                            {isSelected && !isSoldOut && <Check size={11} strokeWidth={3} />}
                                                         </span>
-                                                        <span className="font-medium">{option.name}</span>
+                                                        <span className={`font-medium flex items-center gap-2 ${isSoldOut ? 'line-through' : ''}`}>
+                                                            {option.name}
+                                                            {isSoldOut && (
+                                                                <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded border border-red-500/20 font-bold uppercase tracking-wider no-underline">Agotado</span>
+                                                            )}
+                                                        </span>
                                                     </div>
                                                     {option.additionalPrice > 0 && (
-                                                        <span className="text-xs font-semibold text-primary">
+                                                        <span className={`text-xs font-semibold ${isSoldOut ? 'text-zinc-500' : 'text-primary'}`}>
                                                             +${option.additionalPrice.toLocaleString("es-AR")}
                                                         </span>
                                                     )}
@@ -270,7 +309,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                             >
                                 <span className="flex items-center gap-2">
                                     <ShoppingBag size={18} />
-                                    AGREGAR AL PEDIDO
+                                    <span>AGREGAR <span className="hidden sm:inline">AL PEDIDO</span></span>
                                 </span>
                                 <span>${totalPrice.toLocaleString("es-AR")}</span>
                             </button>
