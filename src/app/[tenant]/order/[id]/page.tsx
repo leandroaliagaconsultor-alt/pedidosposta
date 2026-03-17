@@ -139,7 +139,10 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         }
 
         try {
-            const registration = await navigator.serviceWorker.register("/sw.js");
+            // 1. Registrar el Service Worker
+            await navigator.serviceWorker.register("/sw.js");
+            
+            // 2. Pedir permiso
             const permission = await Notification.requestPermission();
             
             if (permission !== "granted") {
@@ -147,6 +150,10 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 return;
             }
 
+            // 3. Esperar a que el SW esté ACTIVO y LISTO
+            const registration = await navigator.serviceWorker.ready;
+
+            // 4. Recién ahora nos suscribimos usando la llave convertida
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!)
