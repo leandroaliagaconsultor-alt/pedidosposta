@@ -175,10 +175,43 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
     };
 
     useEffect(() => {
-        if (order?.push_subscription) {
-            setIsSubscribed(true);
+        const checkExistingSubscription = async () => {
+            // Si la orden ya tiene suscripción en DB, marcamos como suscrito
+            if (order?.push_subscription) {
+                setIsSubscribed(true);
+                return;
+            }
+
+            if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+            try {
+                // Verificamos si existe una suscripción activa en el navegador
+                const registration = await navigator.serviceWorker.ready;
+                const existingSubscription = await registration.pushManager.getSubscription();
+
+                if (existingSubscription) {
+                    const subscriptionJson = JSON.parse(JSON.stringify(existingSubscription));
+                    
+                    // Si el navegador está suscrito pero la orden no tiene el dato en DB, lo auto-vinculamos
+                    const { error } = await supabase
+                        .from("orders")
+                        .update({ push_subscription: subscriptionJson })
+                        .eq("id", orderId);
+
+                    if (!error) {
+                        setIsSubscribed(true);
+                        console.log("Suscripción previa vinculada automáticamente a la orden.");
+                    }
+                }
+            } catch (err) {
+                console.warn("Error checking existing push subscription:", err);
+            }
+        };
+
+        if (order && orderId) {
+            checkExistingSubscription();
         }
-    }, [order]);
+    }, [order?.id, orderId]);
 
     // ── Loading ──────────────────────────────────────────────────────────
     if (loading || !order) {
