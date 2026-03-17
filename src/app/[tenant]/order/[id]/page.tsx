@@ -117,12 +117,63 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         };
     }, [supabase, orderId, order?.delivery_method]);
 
-    // ── Request notification permission on mount ─────────────────────────
-    useEffect(() => {
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
+    // ── Web Push Logic ──────────────────────────────────────────────────
+    const [isSubscribed, setIsSubscribed] = useState(false);
+
+    function urlBase64ToUint8Array(base64String: string) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
         }
-    }, []);
+        return outputArray;
+    }
+
+    const subscribeToPush = async () => {
+        if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+            console.warn("Push messaging is not supported");
+            return;
+        }
+
+        try {
+            const registration = await navigator.serviceWorker.register("/sw.js");
+            const permission = await Notification.requestPermission();
+            
+            if (permission !== "granted") {
+                toast.error("No se otorgaron permisos para notificaciones.");
+                return;
+            }
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!)
+            });
+
+            // Guardar en la tabla de órdenes en Supabase
+            const { error: updateErr } = await supabase
+                .from("orders")
+                .update({ push_subscription: subscription.toJSON() })
+                .eq("id", orderId);
+
+            if (updateErr) throw updateErr;
+
+            setIsSubscribed(true);
+            toast.success("¡Notificaciones activadas! Te avisaremos cuando cambie el estado.");
+        } catch (err) {
+            console.error("Subscription error:", err);
+            toast.error("Error al activar notificaciones.");
+        }
+    };
+
+    useEffect(() => {
+        if (order?.push_subscription) {
+            setIsSubscribed(true);
+        }
+    }, [order]);
 
     // ── Loading ──────────────────────────────────────────────────────────
     if (loading || !order) {
@@ -271,6 +322,27 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                         <p className="text-lg font-bold text-white drop-shadow-sm leading-tight capitalize">
                             {currentStep === 0 ? "A confirmar" : (order?.estimated_time || "45-60 min")}
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Web Push Banner ── */}
+            {!isSubscribed && !isCancelled && currentStep < 3 && (
+                <div className="mb-8 w-full max-w-sm rounded-2xl border border-primary/20 bg-primary/5 p-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-primary/10 p-2 text-primary">
+                            <CheckCircle2 size={18} />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs font-bold text-white">¿Querés que te avisemos?</p>
+                            <p className="text-[10px] text-zinc-400">Activá las notificaciones para saber cuándo sale tu pedido.</p>
+                        </div>
+                        <button
+                            onClick={subscribeToPush}
+                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-zinc-950 transition hover:brightness-110 active:scale-95"
+                        >
+                            ACTIVAR
+                        </button>
                     </div>
                 </div>
             )}

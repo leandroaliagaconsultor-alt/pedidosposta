@@ -35,6 +35,7 @@ interface Order {
     }[];
     extra_charge?: number;
     internal_notes?: string | null;
+    push_subscription?: any;
 }
 
 // ── Tab config ───────────────────────────────────────────────────────────────
@@ -218,6 +219,28 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
             setConfirmingOrderId(null);
             setCustomTime("");
+
+            // ── 🔔 Send Push Notification ──
+            if (orderRef?.push_subscription) {
+                const title = "Actualización de tu pedido";
+                let body = `El estado de tu pedido #${orderRef.order_number} es: ${newStatus}`;
+
+                if (newStatus === "preparing") body = "¡Tu pedido fue confirmado! Ya está en preparación. 👨‍🍳";
+                if (newStatus === "on_the_way") body = isTakeaway ? "¡Tu pedido está listo para retirar! 🏪" : "¡Tu pedido está en camino a tu domicilio! 🛵";
+                if (newStatus === "delivered") body = "¡Pedido entregado! Que lo disfrutes. 🎉";
+                if (newStatus === "cancelled") body = "Lo sentimos, tu pedido ha sido cancelado. ❌";
+
+                fetch("/api/send-push", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        subscription: orderRef.push_subscription,
+                        title,
+                        body,
+                        url: `${window.location.origin}/${tenant}/order/${orderId}`
+                    })
+                }).catch(err => console.error("Error sending push notify:", err));
+            }
         }
     };
 

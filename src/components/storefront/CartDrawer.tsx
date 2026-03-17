@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { calculateDistance } from "@/lib/utils/geo";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
@@ -33,7 +34,8 @@ const checkoutSchema = z
         phone: z.string().min(8, "Teléfono / WhatsApp inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         address: z.string().optional(),
-        cross_streets: z.string().optional(),
+        houseNumber: z.string().optional(),
+        apartment: z.string().optional(),
         delivery_notes: z.string().optional(),
         notes: z.string().optional(),
         deliveryTime: z.string().optional(),
@@ -41,8 +43,8 @@ const checkoutSchema = z
         paymentMethod: z.enum(["CASH", "TRANSFER", "MP"])
     })
     .refine(
-        (data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.trim().length >= 5),
-        { message: "Ingresá una dirección válida", path: ["address"] }
+        (data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.trim().length >= 3 && data.houseNumber && data.houseNumber.length >= 1),
+        { message: "Ingresá calle y número", path: ["address"] }
     );
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -86,8 +88,11 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
     const [tenantBaseKm, setTenantBaseKm] = useState(0);
     const [tenantExtraKmPrice, setTenantExtraKmPrice] = useState(0);
     const [isUsingCachedAddress, setIsUsingCachedAddress] = useState(false);
-    const [mapSessionToken, setMapSessionToken] = useState<string | null>(null);
+    const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number, lng: number } | null>(null);
+    const [isLocating, setIsLocating] = useState(false);
+    const [usedGPS, setUsedGPS] = useState(false);
+    const houseNumberRef = React.useRef<HTMLInputElement>(null);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -108,9 +113,9 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
         requestOptions: {
             /* Restrict to Argentina boundaries mostly if needed, or omit */
             componentRestrictions: { country: "ar" },
-            sessionToken: mapSessionToken || undefined,
+            sessionToken: mapSessionToken ?? undefined,
         },
-        debounce: 300,
+        debounce: 600,
     });
 
     React.useEffect(() => {
@@ -121,10 +126,10 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
 
     // OPTIMIZACIÓN: Generar un sessionToken único por sesión de checkout
     React.useEffect(() => {
-        if (open && isCheckoutMode && !mapSessionToken) {
-            setMapSessionToken(Math.random().toString(36).substring(2, 15));
+        if (open && isCheckoutMode && !mapSessionToken && isLoaded && window.google?.maps?.places) {
+            setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
         }
-    }, [open, isCheckoutMode, mapSessionToken]);
+    }, [open, isCheckoutMode, mapSessionToken, isLoaded]);
 
     const {
         register,
@@ -261,58 +266,96 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             const originResults = await getGeocode({ address: tenantStoreAddress! });
             const originLatLng = await getLatLng(originResults[0]);
 
-            // Using DistanceMatrixService for exact routing distance
-            const service = new window.google.maps.DistanceMatrixService();
-            service.getDistanceMatrix(
-                {
-                    origins: [originLatLng],
-                    destinations: [{ lat, lng }],
-                    travelMode: window.google.maps.TravelMode.DRIVING,
-                    unitSystem: window.google.maps.UnitSystem.METRIC,
-                },
-                (response, status) => {
-                    setIsCalculatingDistance(false);
-                    if (status !== "OK" || !response) {
-                        toast.error("Error al calcular la distancia. Se aplicará tarifa base.");
-                        setCalculatedDeliveryCost(tenantBasePrice);
-                        return;
-                    }
+            // REEMPLAZO: Usar Haversine local en lugar de DistanceMatrixService para ahorro extremo
+            const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
+            const finalDistance = Math.round(rawDistance * 10) / 10;
+            setIsCalculatingDistance(false);
+            setCalculatedDistance(finalDistance);
 
-                    const result = response.rows[0].elements[0];
-                    setIsCalculatingDistance(false);
+            // VALIDAR RADIO
+            if (finalDistance > tenantDeliveryRadius) {
+                setIsOutOfBounds(true);
+                toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
+                return;
+            }
+            setIsOutOfBounds(false);
 
-                    if (result.status !== "OK") {
-                        toast.error("No se pudo calcular la ruta. Se aplicará tarifa base.");
-                        setCalculatedDeliveryCost(tenantBasePrice);
-                        return;
-                    }
-
-                    const distanceKm = result.distance.value / 1000;
-                    setCalculatedDistance(distanceKm);
-
-                    // VALIDAR RADIO
-                    if (distanceKm > tenantDeliveryRadius) {
-                        setIsOutOfBounds(true);
-                        toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
-                        return;
-                    }
-                    setIsOutOfBounds(false);
-
-                    if (distanceKm <= tenantBaseKm) {
-                        setCalculatedDeliveryCost(tenantBasePrice);
-                    } else {
-                        const extraKm = distanceKm - tenantBaseKm;
-                        const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
-                        setCalculatedDeliveryCost(cost);
-                    }
-                }
-            );
-
+            if (finalDistance <= tenantBaseKm) {
+                setCalculatedDeliveryCost(Math.round(tenantBasePrice));
+            } else {
+                const extraKm = finalDistance - tenantBaseKm;
+                const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
+                setCalculatedDeliveryCost(Math.round(cost));
+            }
         } catch (error) {
             setIsCalculatingDistance(false);
             setCalculatedDeliveryCost(tenantBasePrice);
             console.error("Error Geocoding: ", error);
         }
+    };
+
+    // ─── GPS Geolocalización ───────────────────────────────────────────────────
+    const handleGeolocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Tu navegador no soporta geolocalización.");
+            return;
+        }
+
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                try {
+                    const results = await getGeocode({ location: { lat, lng } });
+                    
+                    // Extraer solo la calle si es posible
+                    const streetName = results[0].address_components.find(c => c.types.includes("route"))?.long_name || results[0].formatted_address.split(',')[0];
+                    
+                    setAddressValue(streetName, false);
+                    setValue("address", streetName, { shouldValidate: true });
+                    setUsedGPS(true);
+
+                    // Auto-focus en la altura
+                    setTimeout(() => houseNumberRef.current?.focus(), 100);
+
+                    setSelectedCoords({ lat, lng });
+                    setIsUsingCachedAddress(false);
+
+                    // Calcular distancia usando Haversine con coordenadas GPS
+                    if (tenantStoreAddress) {
+                        const originResults = await getGeocode({ address: tenantStoreAddress });
+                        const originLatLng = await getLatLng(originResults[0]);
+                        const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
+                        const finalDistance = Math.round(rawDistance * 10) / 10;
+                        setCalculatedDistance(finalDistance);
+
+                        if (finalDistance > tenantDeliveryRadius) {
+                            setIsOutOfBounds(true);
+                            toast.error(`Tu ubicación está fuera del radio de entrega (${tenantDeliveryRadius}km).`);
+                        } else {
+                            setIsOutOfBounds(false);
+                            if (finalDistance <= tenantBaseKm) {
+                                setCalculatedDeliveryCost(Math.round(tenantBasePrice));
+                            } else {
+                                const extraKm = finalDistance - tenantBaseKm;
+                                const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
+                                setCalculatedDeliveryCost(Math.round(cost));
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("Geocoding error:", error);
+                    toast.error("No pudimos obtener tu dirección exacta.");
+                } finally {
+                    setIsLocating(false);
+                }
+            },
+            (error) => {
+                setIsLocating(false);
+                toast.error("No pudimos obtener tu ubicación. Por favor, escribila manualmente.");
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
     };
 
     // ─── Submit Order ───────────────────────────────────────────────────────────
@@ -366,6 +409,10 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
             }
 
             // 2. Insert Order
+            const finalAddress = data.deliveryMethod === "DELIVERY"
+                ? `${data.address} ${data.houseNumber}${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                : null;
+
             const { data: order, error: orderErr } = await supabase
                 .from("orders")
                 .insert({
@@ -374,8 +421,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                     first_name: firstName,
                     last_name: lastName || "",
                     customer_phone: data.phone,
-                    customer_address: data.deliveryMethod === "DELIVERY" ? data.address : null,
-                    cross_streets: data.deliveryMethod === "DELIVERY" ? data.cross_streets : null,
+                    customer_address: finalAddress,
                     delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
                     customer_notes: data.notes || null,
                     delivery_method: data.deliveryMethod,
@@ -452,7 +498,11 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                 phone: data.phone
             };
             localStorage.setItem('pedidosposta_user_location', JSON.stringify(cacheData));
-            setMapSessionToken(null); // Reset session token for next time
+            
+            // Reset session token for next time
+            if (isLoaded && window.google?.maps?.places) {
+                setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+            }
 
             // 4. Cleanup & Redirect for non-MP
             try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
@@ -658,7 +708,9 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                                                 setCalculatedDistance(null);
                                                                 setSelectedCoords(null);
                                                                 // Rotar el token para la nueva búsqueda
-                                                                setMapSessionToken(Math.random().toString(36).substring(2, 15));
+                                                                if (isLoaded && window.google?.maps?.places) {
+                                                                    setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+                                                                }
                                                             }}
                                                             className="text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0"
                                                         >
@@ -682,6 +734,26 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                                 Ingresá calle, número y ciudad para calcular el costo de envío exacto.
                                             </p>
 
+                                            <button
+                                                type="button"
+                                                onClick={handleGeolocation}
+                                                disabled={isLocating}
+                                                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+                                            >
+                                                {isLocating ? (
+                                                    <Loader2 size={14} className="animate-spin text-primary" />
+                                                ) : (
+                                                    <MapPin size={14} className="text-primary" />
+                                                )}
+                                                📍 Usar mi ubicación actual (GPS)
+                                            </button>
+
+                                            {usedGPS && (
+                                                <p className="mt-1 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
+                                                    ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
+                                                </p>
+                                            )}
+
                                             {/* Google Maps Suggestions */}
                                             {status === "OK" && (
                                                 <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl animate-in fade-in">
@@ -700,13 +772,26 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                             {errors.address && <p className="mt-1.5 ml-1 text-[11px] font-medium text-red-500">{errors.address.message}</p>}
                                         </div>
 
-                                        <div>
-                                            <div className="relative">
-                                                <MapPin size={16} className="absolute left-4 top-4 text-zinc-500 opacity-50" />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="mb-1.5 block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Altura / Nº *</label>
                                                 <input
-                                                    {...register("cross_streets")}
-                                                    placeholder="Entre calles (Opcional). Ej: Entre 14 y 16"
-                                                    className={`${inputCls(false)} pl-11`}
+                                                    {...register("houseNumber")}
+                                                    ref={(e) => {
+                                                        register("houseNumber").ref(e);
+                                                        // @ts-ignore
+                                                        houseNumberRef.current = e;
+                                                    }}
+                                                    placeholder="Ej: 1226"
+                                                    className={inputCls(!!errors.houseNumber)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Piso / Depto</label>
+                                                <input
+                                                    {...register("apartment")}
+                                                    placeholder="Ej: 3B"
+                                                    className={inputCls(!!errors.apartment)}
                                                 />
                                             </div>
                                         </div>

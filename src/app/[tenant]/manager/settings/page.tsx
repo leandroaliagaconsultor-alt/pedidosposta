@@ -62,6 +62,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+    const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -81,6 +82,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
         initOnMount: false,
         requestOptions: {
             componentRestrictions: { country: "ar" },
+            sessionToken: mapSessionToken ?? undefined,
         },
         debounce: 300,
     });
@@ -130,8 +132,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     useEffect(() => {
         if (isLoaded) {
             init();
+            if (window.google?.maps?.places && !mapSessionToken) {
+                setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+            }
         }
-    }, [isLoaded, init]);
+    }, [isLoaded, init, mapSessionToken]);
 
     // Geocode store address to center map
     useEffect(() => {
@@ -718,6 +723,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                         setAddressValue(description, false);
                                                         clearSuggestions();
                                                         form.setValue("store_address", description, { shouldDirty: true });
+                                                        // Reset session token after a selection to begin a new session
+                                                        if (window.google?.maps?.places) {
+                                                            setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+                                                        }
                                                     }}
                                                     className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0"
                                                 >

@@ -18,11 +18,20 @@ import {
     Upload,
     FileText,
     MessageCircle,
+    Loader2,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
 import { createClient } from "@/lib/supabase/client";
 import { generateAvailableSlots } from "@/lib/utils/timeSlots";
+import { calculateDistance } from "@/lib/utils/geo";
+import usePlacesAutocomplete, {
+    getGeocode,
+    getLatLng,
+} from "use-places-autocomplete";
+import { useJsApiLoader } from "@react-google-maps/api";
+
+const libraries: ("places")[] = ["places"];
 
 // ─── Zod Schema ────────────────────────────────────────────────────────────────
 
@@ -34,6 +43,8 @@ const checkoutSchema = z
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         address: z.string().optional(),
+        houseNumber: z.string().optional(),
+        apartment: z.string().optional(),
         notes: z.string().optional(),
         deliveryTime: z.string().optional(),
         is_asap: z.boolean(),
@@ -42,8 +53,8 @@ const checkoutSchema = z
     .refine(
         (data) =>
             data.deliveryMethod === "TAKEAWAY" ||
-            (data.address && data.address.length >= 5),
-        { message: "Ingresá tu dirección", path: ["address"] }
+            (data.address && data.address.length >= 3 && data.houseNumber && data.houseNumber.length >= 1),
+        { message: "Ingresá calle y número de altura", path: ["address"] }
     );
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -70,6 +81,43 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [deliveryCost, setDeliveryCost] = useState(0);
     const [isOutOfBounds, setIsOutOfBounds] = useState(false);
     const [pricingRules, setPricingRules] = useState<any>(null);
+
+    const [isLocating, setIsLocating] = useState(false);
+    const [usedGPS, setUsedGPS] = useState(false);
+    const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+    const houseNumberRef = React.useRef<HTMLInputElement>(null);
+
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+        libraries,
+    });
+
+    const {
+        ready,
+        value: addressValue,
+        suggestions: { status, data },
+        setValue: setAddressValue,
+        clearSuggestions,
+        init,
+    } = usePlacesAutocomplete({
+        initOnMount: false,
+        requestOptions: {
+            componentRestrictions: { country: "ar" },
+            sessionToken: mapSessionToken ?? undefined,
+        },
+        debounce: 600,
+    });
+
+    React.useEffect(() => {
+        if (isLoaded) {
+            init();
+            if (window.google?.maps?.places && !mapSessionToken) {
+                setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+            }
+        }
+    }, [isLoaded, init, mapSessionToken]);
 
     const {
         register,
@@ -162,6 +210,101 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         fetchAvailability();
     }, [tenantSlug, supabase, scheduleType, setValue]);
 
+    const handleAddressSelect = async (addressStr: string) => {
+        setAddressValue(addressStr, false);
+        clearSuggestions();
+        setValue("address", addressStr, { shouldValidate: true });
+
+        if (!pricingRules || pricingRules.delivery_pricing_type === "fixed") return;
+
+        try {
+            const results = await getGeocode({ address: addressStr });
+            const { lat, lng } = await getLatLng(results[0]);
+            setSelectedCoords({ lat, lng });
+
+            if (pricingRules.store_address) {
+                const originResults = await getGeocode({ address: pricingRules.store_address });
+                const originLatLng = await getLatLng(originResults[0]);
+                const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
+                const finalDistance = Math.round(rawDistance * 10) / 10;
+
+                if (finalDistance > pricingRules.delivery_radius_km) {
+                    setIsOutOfBounds(true);
+                    toast.error(`Fuera del radio de entrega (${pricingRules.delivery_radius_km}km)`);
+                } else {
+                    setIsOutOfBounds(false);
+                    if (finalDistance <= pricingRules.base_delivery_km) {
+                        setDeliveryCost(Math.round(pricingRules.base_delivery_price));
+                    } else {
+                        const extraKm = finalDistance - pricingRules.base_delivery_km;
+                        const cost = pricingRules.base_delivery_price + (extraKm * pricingRules.extra_price_per_km);
+                        setDeliveryCost(Math.round(cost));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleGeolocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Tu navegador no soporta geolocalización.");
+            return;
+        }
+
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                try {
+                    const results = await getGeocode({ location: { lat, lng } });
+                    
+                    // Extraer solo la calle si es posible para que el usuario ponga el número manual
+                    const streetName = results[0].address_components.find(c => c.types.includes("route"))?.long_name || results[0].formatted_address.split(',')[0];
+                    
+                    setAddressValue(streetName, false);
+                    setValue("address", streetName, { shouldValidate: true });
+                    setUsedGPS(true);
+                    setSelectedCoords({ lat, lng });
+
+                    // Auto-focus en la altura
+                    setTimeout(() => houseNumberRef.current?.focus(), 100);
+
+                    if (pricingRules?.store_address) {
+                        const originResults = await getGeocode({ address: pricingRules.store_address });
+                        const originLatLng = await getLatLng(originResults[0]);
+                        const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
+                        const finalDistance = Math.round(rawDistance * 10) / 10;
+
+                        if (finalDistance > pricingRules.delivery_radius_km) {
+                            setIsOutOfBounds(true);
+                            toast.error(`Ubicación fuera de radio (${pricingRules.delivery_radius_km}km)`);
+                        } else {
+                            setIsOutOfBounds(false);
+                            if (finalDistance <= pricingRules.base_delivery_km) {
+                                setDeliveryCost(Math.round(pricingRules.base_delivery_price));
+                            } else {
+                                const extraKm = finalDistance - pricingRules.base_delivery_km;
+                                const cost = pricingRules.base_delivery_price + (extraKm * pricingRules.extra_price_per_km);
+                                setDeliveryCost(Math.round(cost));
+                            }
+                        }
+                    }
+                } catch (e) {
+                    toast.error("No pudimos obtener tu dirección exacta.");
+                } finally {
+                    setIsLocating(false);
+                }
+            },
+            () => {
+                setIsLocating(false);
+                toast.error("Error al obtener ubicación.");
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    };
+
     // ─── Submit ──────────────────────────────────────────────────────────────────
 
     const onSubmit = async (data: CheckoutForm) => {
@@ -209,6 +352,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             // 2. Insert the order
+            const finalAddress = data.deliveryMethod === "DELIVERY"
+                ? `${data.address} ${data.houseNumber}${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                : null;
+
             const { data: order, error: orderErr } = await supabase
                 .from("orders")
                 .insert({
@@ -217,7 +364,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     last_name: data.lastName,
                     email: data.email,
                     customer_phone: data.phone,
-                    customer_address: data.deliveryMethod === "DELIVERY" ? data.address : null,
+                    customer_address: finalAddress,
                     customer_notes: data.notes || null,
                     delivery_method: data.deliveryMethod,
                     is_asap: data.is_asap,
@@ -259,9 +406,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             // OPTIMIZACIÓN: Guardar datos en caché
             const cacheData = {
                 address: data.deliveryMethod === "DELIVERY" ? data.address : null,
-                lat: null,
-                lng: null,
-                distance_km: 0,
+                lat: selectedCoords?.lat || null,
+                lng: selectedCoords?.lng || null,
+                distance_km: 0, // Could be recalculated if needed
                 shipping_cost: deliveryCost,
                 client_name: `${data.firstName} ${data.lastName}`,
                 email: data.email,
@@ -353,13 +500,72 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 <div className="relative">
                                     <MapPin size={16} className="absolute left-3 top-3.5 text-zinc-500" />
                                     <input
-                                        {...register("address")}
-                                        placeholder="Av. Corrientes 1234, CABA"
+                                        value={addressValue}
+                                        onChange={(e) => {
+                                            setAddressValue(e.target.value);
+                                            setValue("address", e.target.value);
+                                        }}
+                                        disabled={!ready || !isLoaded}
+                                        placeholder="Ej: Calle San Martín"
                                         className={`${inputCls(!!errors.address)} pl-9`}
                                     />
                                 </div>
+                                {usedGPS && (
+                                    <p className="mt-1 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
+                                        ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
+                                    </p>
+                                )}
+
+                                {status === "OK" && (
+                                    <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl relative z-20">
+                                        {data.map(({ place_id, description }) => (
+                                            <li
+                                                key={place_id}
+                                                onClick={() => handleAddressSelect(description)}
+                                                className="px-4 py-3 text-sm text-zinc-300 hover:bg-primary/20 hover:text-primary cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                            >
+                                                {description}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
+                                        <input
+                                            {...register("houseNumber")}
+                                            ref={(e) => {
+                                                register("houseNumber").ref(e);
+                                                // @ts-ignore
+                                                houseNumberRef.current = e;
+                                            }}
+                                            placeholder="Ej: 1226"
+                                            className={inputCls(!!errors.houseNumber)}
+                                        />
+                                    </Field>
+                                    <Field label="Piso / Depto" error={errors.apartment?.message}>
+                                        <input
+                                            {...register("apartment")}
+                                            placeholder="Ej: 3B"
+                                            className={inputCls(!!errors.apartment)}
+                                        />
+                                    </Field>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleGeolocation}
+                                    disabled={isLocating}
+                                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+                                >
+                                    {isLocating ? (
+                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                    ) : (
+                                        <MapPin size={14} className="text-primary" />
+                                    )}
+                                    📍 Usar mi ubicación actual (GPS)
+                                </button>
                             </Field>
-                            <Field label="Notas de entrega (opcional)" error={undefined}>
+                            <Field label="Notas de envío (opcional)" error={undefined}>
                                 <textarea
                                     {...register("notes")}
                                     placeholder="Timbre no funciona, piso 3, etc."
