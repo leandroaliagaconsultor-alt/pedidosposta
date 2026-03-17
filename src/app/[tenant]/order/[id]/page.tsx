@@ -78,8 +78,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
 
                     setOrder((prev: any) => ({
                         ...prev,
-                        status: newStatus,
-                        estimated_time: payload.new.estimated_time || prev?.estimated_time
+                        ...payload.new
                     }));
 
                     // ── Status-specific notifications ────────────────
@@ -153,13 +152,19 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!)
             });
 
+            const subscriptionJson = JSON.parse(JSON.stringify(subscription));
+            console.log("Saving subscription:", subscriptionJson);
+
             // Guardar en la tabla de órdenes en Supabase
             const { error: updateErr } = await supabase
                 .from("orders")
-                .update({ push_subscription: subscription.toJSON() })
+                .update({ push_subscription: subscriptionJson })
                 .eq("id", orderId);
 
-            if (updateErr) throw updateErr;
+            if (updateErr) {
+                console.error('Error Supabase update:', updateErr);
+                throw updateErr;
+            }
 
             setIsSubscribed(true);
             toast.success("¡Notificaciones activadas! Te avisaremos cuando cambie el estado.");
