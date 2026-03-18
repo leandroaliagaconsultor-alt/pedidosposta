@@ -43,6 +43,7 @@ const checkoutSchema = z
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         address: z.string().optional(),
+        betweenStreets: z.string().optional(),
         houseNumber: z.string().optional(),
         apartment: z.string().optional(),
         notes: z.string().optional(),
@@ -50,12 +51,18 @@ const checkoutSchema = z
         is_asap: z.boolean(),
         paymentMethod: z.enum(["CASH", "TRANSFER"]),
     })
-    .refine(
-        (data) =>
-            data.deliveryMethod === "TAKEAWAY" ||
-            (data.address && data.address.length >= 3 && data.houseNumber && data.houseNumber.length >= 1),
-        { message: "Ingresá calle y número de altura", path: ["address"] }
-    );
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.length >= 3), {
+        message: "Ingresá la calle de entrega",
+        path: ["address"],
+    })
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.length >= 3), {
+        message: "Ingresá las entre calles o esquina",
+        path: ["betweenStreets"],
+    })
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.houseNumber && data.houseNumber.length >= 1), {
+        message: "Ingresá el número/altura",
+        path: ["houseNumber"],
+    });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
 
@@ -86,6 +93,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [usedGPS, setUsedGPS] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+    const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
     const houseNumberRef = React.useRef<HTMLInputElement>(null);
 
     const { isLoaded } = useJsApiLoader({
@@ -268,8 +276,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     setUsedGPS(true);
                     setSelectedCoords({ lat, lng });
 
-                    // Auto-focus en la altura
-                    setTimeout(() => houseNumberRef.current?.focus(), 100);
+                    // Auto-focus en entre calles y luego altura
+                    setTimeout(() => betweenStreetsRef.current?.focus(), 100);
 
                     if (pricingRules?.store_address) {
                         const originResults = await getGeocode({ address: pricingRules.store_address });
@@ -353,7 +361,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             // 2. Insert the order
             const finalAddress = data.deliveryMethod === "DELIVERY"
-                ? `${data.address} ${data.houseNumber}${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                ? `${data.address} ${data.houseNumber} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
                 : null;
 
             const { data: order, error: orderErr } = await supabase
@@ -453,20 +461,20 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                     {/* ── 1. Datos del Cliente ── */}
                     <Section title="Datos del Cliente">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-4">
                             <Field label="Nombre" error={errors.firstName?.message}>
                                 <input {...register("firstName")} placeholder="Juan" className={inputCls(!!errors.firstName)} />
                             </Field>
                             <Field label="Apellido" error={errors.lastName?.message}>
                                 <input {...register("lastName")} placeholder="Pérez" className={inputCls(!!errors.lastName)} />
                             </Field>
+                            <Field label="Email" error={errors.email?.message}>
+                                <input {...register("email")} type="email" placeholder="juan@email.com" className={inputCls(!!errors.email)} />
+                            </Field>
+                            <Field label="Teléfono / WhatsApp" error={errors.phone?.message}>
+                                <input {...register("phone")} type="tel" placeholder="+54 9 11 0000 0000" className={inputCls(!!errors.phone)} />
+                            </Field>
                         </div>
-                        <Field label="Email" error={errors.email?.message}>
-                            <input {...register("email")} type="email" placeholder="juan@email.com" className={inputCls(!!errors.email)} />
-                        </Field>
-                        <Field label="Teléfono / WhatsApp" error={errors.phone?.message}>
-                            <input {...register("phone")} type="tel" placeholder="+54 9 11 0000 0000" className={inputCls(!!errors.phone)} />
-                        </Field>
                     </Section>
 
                     {/* ── 2. Método de Entrega ── */}
@@ -493,11 +501,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                         {/* Dirección — solo si Delivery */}
                         <div
-                            className={`overflow-hidden transition-all duration-300 ${deliveryMethod === "DELIVERY" ? "max-h-56 opacity-100 mt-4" : "max-h-0 opacity-0"
+                            className={`overflow-hidden transition-all duration-300 ${deliveryMethod === "DELIVERY" ? "max-h-[1000px] opacity-100 mt-6" : "max-h-0 opacity-0"
                                 }`}
                         >
-                            <Field label="Dirección de entrega" error={errors.address?.message}>
-                                <div className="relative">
+                            <div className="flex flex-col gap-5">
+                                <Field label="Calle de entrega" error={errors.address?.message}>
+                                    <div className="relative">
                                     <MapPin size={16} className="absolute left-3 top-3.5 text-zinc-500" />
                                     <input
                                         value={addressValue}
@@ -530,27 +539,40 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     </ul>
                                 )}
 
-                                <div className="mt-3 grid grid-cols-2 gap-3">
-                                    <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
+                                    <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
                                         <input
-                                            {...register("houseNumber")}
+                                            {...register("betweenStreets")}
                                             ref={(e) => {
-                                                register("houseNumber").ref(e);
+                                                register("betweenStreets").ref(e);
                                                 // @ts-ignore
-                                                houseNumberRef.current = e;
+                                                betweenStreetsRef.current = e;
                                             }}
-                                            placeholder="Ej: 1226"
-                                            className={inputCls(!!errors.houseNumber)}
+                                            placeholder="Ej: Calle 16 y Calle 18"
+                                            className={inputCls(!!errors.betweenStreets)}
                                         />
                                     </Field>
-                                    <Field label="Piso / Depto" error={errors.apartment?.message}>
-                                        <input
-                                            {...register("apartment")}
-                                            placeholder="Ej: 3B"
-                                            className={inputCls(!!errors.apartment)}
-                                        />
-                                    </Field>
-                                </div>
+
+                                    <div className="flex flex-col gap-5">
+                                        <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
+                                            <input
+                                                {...register("houseNumber")}
+                                                ref={(e) => {
+                                                    register("houseNumber").ref(e);
+                                                    // @ts-ignore
+                                                    houseNumberRef.current = e;
+                                                }}
+                                                placeholder="Ej: 1226"
+                                                className={inputCls(!!errors.houseNumber)}
+                                            />
+                                        </Field>
+                                        <Field label="Piso / Depto" error={errors.apartment?.message}>
+                                            <input
+                                                {...register("apartment")}
+                                                placeholder="Ej: 3B"
+                                                className={inputCls(!!errors.apartment)}
+                                            />
+                                        </Field>
+                                    </div>
                                 <button
                                     type="button"
                                     onClick={handleGeolocation}
@@ -564,7 +586,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     )}
                                     📍 Usar mi ubicación actual (GPS)
                                 </button>
-                            </Field>
+                                </Field>
+                            </div>
                             <Field label="Notas de envío (opcional)" error={undefined}>
                                 <textarea
                                     {...register("notes")}
@@ -716,44 +739,42 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         </div>
                     </Section>
 
-                    {/* ── CTA FIJO (SMART BUTTON) ── */}
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-900 p-4 pb-6 sm:pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                        <div className="mx-auto max-w-lg">
-                            {whatsappSettings.show && whatsappSettings.phone && (
-                                <div className="mb-4">
-                                    <a href={`https://wa.me/${whatsappSettings.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-zinc-800 hover:text-emerald-400 w-full">
-                                        <MessageCircle size={18} />
-                                        ¿Alguna consulta? Escribinos por WhatsApp
-                                    </a>
-                                </div>
+                    {/* ── BOTÓN FINAL (NO STICKY) ── */}
+                    <div className="mt-8 mb-12">
+                        {whatsappSettings.show && whatsappSettings.phone && (
+                            <div className="mb-4">
+                                <a href={`https://wa.me/${whatsappSettings.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-zinc-800 hover:text-emerald-400 w-full">
+                                    <MessageCircle size={18} />
+                                    ¿Alguna consulta? Escribinos por WhatsApp
+                                </a>
+                            </div>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={
+                                items.length === 0 ||
+                                isSubmitting ||
+                                (isOutOfBounds && deliveryMethod === "DELIVERY") ||
+                                (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
+                            }
+                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-base font-extrabold shadow-[0_0_20px_var(--brand-color)] shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${(isOutOfBounds && deliveryMethod === "DELIVERY") ? "bg-red-500 text-white shadow-red-500/20" : "bg-primary text-[#09090b]"}`}
+                        >
+                            {isSubmitting ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="h-5 w-5 animate-spin text-black" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                    </svg>
+                                    CONFIRMANDO...
+                                </span>
+                            ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
+                                "FUERA DE RADIO DE ENTREGA"
+                            ) : (
+                                <>
+                                    Confirmar Pedido • ${total.toLocaleString("es-AR")}
+                                </>
                             )}
-                            <button
-                                type="submit"
-                                disabled={
-                                    items.length === 0 ||
-                                    isSubmitting ||
-                                    (isOutOfBounds && deliveryMethod === "DELIVERY") ||
-                                    (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
-                                }
-                                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-extrabold shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${(isOutOfBounds && deliveryMethod === "DELIVERY") ? "bg-red-500 text-white" : "bg-primary text-[#09090b]"}`}
-                            >
-                                {isSubmitting ? (
-                                    <span className="flex items-center gap-2">
-                                        <svg className="h-5 w-5 animate-spin text-black" viewBox="0 0 24 24" fill="none">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                        </svg>
-                                        CONFIRMANDO...
-                                    </span>
-                                ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
-                                    "FUERA DE RADIO DE ENTREGA"
-                                ) : (
-                                    <>
-                                        Confirmar Pedido • ${total.toLocaleString("es-AR")}
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -764,7 +785,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 // ─── Micro-components ──────────────────────────────────────────────────────────
 
 function inputCls(hasError: boolean) {
-    return `w-full rounded-lg border bg-zinc-950 px-4 py-3 text-base text-zinc-100 placeholder-zinc-600 outline-none transition focus:ring-2 focus:ring-primary ${hasError ? "border-red-500/50 focus:ring-red-500" : "border-zinc-800 focus:border-primary/50"
+    return `w-full rounded-xl border bg-zinc-900 px-5 py-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/40 focus:border-primary ${hasError ? "border-red-500/50 focus:ring-red-500/30" : "border-zinc-800 focus:bg-zinc-900/80"
         }`;
 }
 
