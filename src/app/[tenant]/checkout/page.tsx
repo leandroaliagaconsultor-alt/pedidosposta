@@ -507,77 +507,78 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             <div className="flex flex-col gap-5">
                                 <Field label="Calle de entrega" error={errors.address?.message}>
                                     <div className="relative">
-                                    <MapPin size={16} className="absolute left-3 top-3.5 text-zinc-500" />
-                                    <input
-                                        value={addressValue}
-                                        onChange={(e) => {
-                                            setAddressValue(e.target.value);
-                                            setValue("address", e.target.value);
-                                        }}
-                                        disabled={!ready || !isLoaded}
-                                        placeholder="Ej: Calle San Martín"
-                                        className={`${inputCls(!!errors.address)} pl-9`}
-                                    />
-                                </div>
-                                {usedGPS && (
-                                    <p className="mt-1 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
-                                        ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
-                                    </p>
-                                )}
-
-                                {status === "OK" && (
-                                    <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl relative z-20">
-                                        {data.map(({ place_id, description }) => (
-                                            <li
-                                                key={place_id}
-                                                onClick={() => handleAddressSelect(description)}
-                                                className="px-4 py-3 text-sm text-zinc-300 hover:bg-primary/20 hover:text-primary cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
-                                            >
-                                                {description}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-
-                                    <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
+                                        <MapPin size={16} className="absolute left-3 top-3.5 text-zinc-500" />
                                         <input
-                                            {...register("betweenStreets")}
-                                            ref={(e) => {
-                                                register("betweenStreets").ref(e);
-                                                // @ts-ignore
-                                                betweenStreetsRef.current = e;
+                                            value={addressValue}
+                                            onChange={(e) => {
+                                                setAddressValue(e.target.value);
+                                                setValue("address", e.target.value);
                                             }}
-                                            placeholder="Ej: Calle 16 y Calle 18"
-                                            className={inputCls(!!errors.betweenStreets)}
+                                            disabled={!ready || !isLoaded}
+                                            placeholder="Ej: Calle San Martín"
+                                            className={`${inputCls(!!errors.address)} pl-9`}
                                         />
-                                    </Field>
-
-                                    <div className="flex flex-col gap-5">
-                                        <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
-                                            <input
-                                                {...register("houseNumber")}
-                                                ref={(e) => {
-                                                    register("houseNumber").ref(e);
-                                                    // @ts-ignore
-                                                    houseNumberRef.current = e;
-                                                }}
-                                                placeholder="Ej: 1226"
-                                                className={inputCls(!!errors.houseNumber)}
-                                            />
-                                        </Field>
-                                        <Field label="Piso / Depto" error={errors.apartment?.message}>
-                                            <input
-                                                {...register("apartment")}
-                                                placeholder="Ej: 3B"
-                                                className={inputCls(!!errors.apartment)}
-                                            />
-                                        </Field>
                                     </div>
+                                    {usedGPS && (
+                                        <p className="mt-1 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
+                                            ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
+                                        </p>
+                                    )}
+
+                                    {status === "OK" && (
+                                        <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl relative z-20">
+                                            {data.map(({ place_id, description }) => (
+                                                <li
+                                                    key={place_id}
+                                                    onClick={() => handleAddressSelect(description)}
+                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-primary/20 hover:text-primary cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
+                                                >
+                                                    {description}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </Field>
+
+                                <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
+                                    <input
+                                        {...register("betweenStreets")}
+                                        ref={(e) => {
+                                            register("betweenStreets").ref(e);
+                                            // @ts-ignore
+                                            betweenStreetsRef.current = e;
+                                        }}
+                                        placeholder="Entre calles o esquina / Ej: Calle 16 y 18"
+                                        className={inputCls(!!errors.betweenStreets)}
+                                    />
+                                </Field>
+
+                                <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
+                                    <input
+                                        {...register("houseNumber")}
+                                        ref={(e) => {
+                                            register("houseNumber").ref(e);
+                                            // @ts-ignore
+                                            houseNumberRef.current = e;
+                                        }}
+                                        placeholder="Ej: 1226"
+                                        className={inputCls(!!errors.houseNumber)}
+                                    />
+                                </Field>
+
+                                <Field label="Piso / Depto" error={errors.apartment?.message}>
+                                    <input
+                                        {...register("apartment")}
+                                        placeholder="Ej: 3B"
+                                        className={inputCls(!!errors.apartment)}
+                                    />
+                                </Field>
+
                                 <button
                                     type="button"
                                     onClick={handleGeolocation}
                                     disabled={isLocating}
-                                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-4 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
                                 >
                                     {isLocating ? (
                                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -586,7 +587,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     )}
                                     📍 Usar mi ubicación actual (GPS)
                                 </button>
-                                </Field>
                             </div>
                             <Field label="Notas de envío (opcional)" error={undefined}>
                                 <textarea
@@ -785,7 +785,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 // ─── Micro-components ──────────────────────────────────────────────────────────
 
 function inputCls(hasError: boolean) {
-    return `w-full rounded-xl border bg-zinc-900 px-5 py-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/40 focus:border-primary ${hasError ? "border-red-500/50 focus:ring-red-500/30" : "border-zinc-800 focus:bg-zinc-900/80"
+    return `w-full rounded-xl border bg-[#0a0a0a] px-5 py-5 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/40 focus:border-primary ${hasError ? "border-red-500/50 focus:ring-red-500/30" : "border-zinc-800 focus:bg-[#111111]"
         }`;
 }
 
