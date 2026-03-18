@@ -161,14 +161,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 setWhatsappSettings({ show: !!tenantData.show_whatsapp_checkout, phone: tenantData.public_phone });
                 setPricingRules(tenantData);
 
-                // Initial fallbacks based on pricing type
                 if (tenantData.delivery_pricing_type === 'fixed') {
                     setDeliveryCost(tenantData.fixed_delivery_price || 0);
                 } else {
                     setDeliveryCost(tenantData.base_delivery_price || 0);
                 }
 
-                // Cargar datos desde caché si existen
                 const cached = localStorage.getItem('pedidosposta_user_location');
                 if (cached) {
                     try {
@@ -182,12 +180,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         if (d.phone) setValue("phone", d.phone);
                         if (d.address) setValue("address", d.address);
 
-                        // Si hay costo en caché, usarlo (es el calculado en el CartDrawer con Distance Matrix)
                         if (d.shipping_cost !== undefined) {
                             setDeliveryCost(d.shipping_cost);
                         }
 
-                        // Validar radio desde el caché
                         if (d.distance_km && tenantData.delivery_radius_km && d.distance_km > tenantData.delivery_radius_km) {
                             setIsOutOfBounds(true);
                         }
@@ -267,8 +263,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 const { latitude: lat, longitude: lng } = position.coords;
                 try {
                     const results = await getGeocode({ location: { lat, lng } });
-                    
-                    // Extraer solo la calle si es posible para que el usuario ponga el número manual
                     const streetName = results[0].address_components.find(c => c.types.includes("route"))?.long_name || results[0].formatted_address.split(',')[0];
                     
                     setAddressValue(streetName, false);
@@ -276,7 +270,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     setUsedGPS(true);
                     setSelectedCoords({ lat, lng });
 
-                    // Auto-focus en entre calles y luego altura
                     setTimeout(() => betweenStreetsRef.current?.focus(), 100);
 
                     if (pricingRules?.store_address) {
@@ -313,8 +306,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         );
     };
 
-    // ─── Submit ──────────────────────────────────────────────────────────────────
-
     const onSubmit = async (data: CheckoutForm) => {
         if (items.length === 0) {
             toast.error("Tu carrito está vacío");
@@ -323,7 +314,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         setIsSubmitting(true);
 
         try {
-            // 1. Resolve tenant_id from slug
             const { data: tenant, error: tenantErr } = await supabase
                 .from("tenants")
                 .select("id")
@@ -332,17 +322,14 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             if (tenantErr || !tenant) throw new Error("Local no encontrado");
 
-            // Preparar scheduled_time si no es ASAP
             let scheduledTime = null;
             if (!data.is_asap && data.deliveryTime) {
-                // Formatear la hora ("HH:mm") a un TIMESTAMPTZ representativo del día de hoy
                 const [hours, mins] = data.deliveryTime.split(':').map(Number);
                 const scheduledDate = new Date();
                 scheduledDate.setHours(hours, mins, 0, 0);
                 scheduledTime = scheduledDate.toISOString();
             }
 
-            // Upload receipt if transfer
             let receiptUrl: string | null = null;
             if (data.paymentMethod === "TRANSFER" && receiptFile) {
                 const fileExt = receiptFile.name.split(".").pop();
@@ -359,7 +346,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 }
             }
 
-            // 2. Insert the order
             const finalAddress = data.deliveryMethod === "DELIVERY"
                 ? `${data.address} ${data.houseNumber} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
                 : null;
@@ -381,6 +367,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     status: "pending",
                     total_amount: total,
                     customer_name: `${data.firstName} ${data.lastName}`,
+                    order_number_manual: null,
                     receipt_url: receiptUrl,
                 })
                 .select("id, order_number")
@@ -388,7 +375,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             if (orderErr || !order) throw orderErr;
 
-            // 3. Insert order_items
             const orderItems = items.map((item) => ({
                 order_id: order.id,
                 product_id: item.productId,
@@ -402,21 +388,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 .from("order_items")
                 .insert(orderItems);
 
-            if (itemsErr) {
-                throw new Error(
-                    "DB Error -> Mensaje: " + (itemsErr.message || 'N/A') +
-                    " | Detalles: " + (itemsErr.details || 'N/A') +
-                    " | Hint: " + (itemsErr.hint || 'N/A')
-                );
-            }
+            if (itemsErr) throw itemsErr;
 
-            // 4. Done! Save to localStorage for recovery banner
-            // OPTIMIZACIÓN: Guardar datos en caché
             const cacheData = {
                 address: data.deliveryMethod === "DELIVERY" ? data.address : null,
                 lat: selectedCoords?.lat || null,
                 lng: selectedCoords?.lng || null,
-                distance_km: 0, // Could be recalculated if needed
+                distance_km: 0,
                 shipping_cost: deliveryCost,
                 client_name: `${data.firstName} ${data.lastName}`,
                 email: data.email,
@@ -442,7 +420,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
 
             <div className="mx-auto max-w-lg px-4">
-                {/* Back */}
                 <button
                     onClick={() => router.back()}
                     className="mb-6 flex items-center gap-2 text-sm text-zinc-400 transition hover:text-zinc-100"
@@ -457,7 +434,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     Completá tus datos para confirmar el pedido.
                 </p>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
                     {/* ── 1. Datos del Cliente ── */}
                     <Section title="Datos del Cliente">
@@ -479,7 +456,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                     {/* ── 2. Método de Entrega ── */}
                     <Section title="Método de Entrega">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-3 mb-6">
                             {(["DELIVERY", "TAKEAWAY"] as const).map((m) => {
                                 const isActive = deliveryMethod === m;
                                 return (
@@ -499,15 +476,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             })}
                         </div>
 
-                        {/* Dirección — solo si Delivery */}
-                        <div
-                            className={`overflow-hidden transition-all duration-300 ${deliveryMethod === "DELIVERY" ? "max-h-[1000px] opacity-100 mt-6" : "max-h-0 opacity-0"
-                                }`}
-                        >
-                            <div className="flex flex-col gap-5">
+                        {/* BLOQUE DE DIRECCIÓN (RESTAURADO) */}
+                        {deliveryMethod === "DELIVERY" && (
+                            <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <Field label="Calle de entrega" error={errors.address?.message}>
                                     <div className="relative">
-                                        <MapPin size={16} className="absolute left-3 top-3.5 text-zinc-500" />
+                                        <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                                         <input
                                             value={addressValue}
                                             onChange={(e) => {
@@ -516,11 +490,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                             }}
                                             disabled={!ready || !isLoaded}
                                             placeholder="Ej: Calle San Martín"
-                                            className={`${inputCls(!!errors.address)} pl-9`}
+                                            className={`${inputCls(!!errors.address)} pl-10`}
                                         />
                                     </div>
                                     {usedGPS && (
-                                        <p className="mt-1 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
+                                        <p className="mt-2 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
                                             ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
                                         </p>
                                     )}
@@ -588,10 +562,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     📍 Usar mi ubicación actual (GPS)
                                 </button>
                             </div>
-                            <Field label="Notas de envío (opcional)" error={undefined}>
+                        )}
+
+                        <div className="mt-5">
+                            <Field label="Notas de envío o para el local (opcional)" error={undefined}>
                                 <textarea
                                     {...register("notes")}
-                                    placeholder="Timbre no funciona, piso 3, etc."
+                                    placeholder="Timbre no funciona, portón negro, etc."
                                     rows={2}
                                     className={`${inputCls(false)} resize-none`}
                                 />
@@ -604,7 +581,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <button
                                 type="button"
-                                onClick={() => { setScheduleType("asap"); setValue("is_asap", true, { shouldValidate: true }); setValue("deliveryTime", "") }}
+                                onClick={() => { setScheduleType("asap"); setValue("is_asap", true); setValue("deliveryTime", "") }}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border text-sm font-semibold transition ${scheduleType === "asap" ? "border-primary bg-primary/10 text-primary" : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
                                     }`}
                             >
@@ -612,7 +589,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             </button>
                             <button
                                 type="button"
-                                onClick={() => { setScheduleType("scheduled"); setValue("is_asap", false); setValue("deliveryTime", "", { shouldValidate: true }) }}
+                                onClick={() => { setScheduleType("scheduled"); setValue("is_asap", false); setValue("deliveryTime", "") }}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border text-sm font-semibold transition ${scheduleType === "scheduled" ? "border-primary bg-primary/10 text-primary" : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
                                     }`}
                             >
@@ -623,11 +600,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         {scheduleType === "scheduled" && (
                             <Field label="Elegí tu horario" error={errors.deliveryTime?.message}>
                                 <div className="relative">
-                                    <Clock size={16} className="pointer-events-none absolute left-3 top-3.5 text-zinc-500" />
-                                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-zinc-500" />
+                                    <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                                     <select
                                         {...register("deliveryTime")}
-                                        className={`${inputCls(!!errors.deliveryTime)} appearance-none pl-9 pr-8 bg-zinc-950`}
+                                        className={`${inputCls(!!errors.deliveryTime)} appearance-none pl-10 pr-8 bg-zinc-950`}
                                         defaultValue=""
                                     >
                                         <option value="" disabled>
@@ -655,7 +632,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         )}
                         <input type="hidden" {...register("paymentMethod")} />
 
-                        {/* Receipt upload — only for TRANSFER */}
                         {selectedPayment === "TRANSFER" && tenantAlias && (
                             <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 animate-in fade-in slide-in-from-top-4">
                                 <h4 className="mb-2 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
@@ -698,14 +674,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        )}
-
-                        {selectedPayment === "TRANSFER" && !tenantAlias && (
-                            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 animate-in fade-in">
-                                <p className="text-xs text-red-400 text-center font-medium">
-                                    El local no ha configurado un alias para transferencias. Por favor, elegí Efectivo o contactá al local.
-                                </p>
                             </div>
                         )}
                     </Section>
@@ -761,10 +729,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center gap-2">
-                                    <svg className="h-5 w-5 animate-spin text-black" viewBox="0 0 24 24" fill="none">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                    </svg>
+                                    <Loader2 className="animate-spin text-black" size={20} />
                                     CONFIRMANDO...
                                 </span>
                             ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
@@ -800,10 +765,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
-        <div className="mb-4 last:mb-0">
-            <label className="mb-1.5 block text-xs font-semibold text-zinc-300">{label}</label>
+        <div className="flex flex-col gap-1.5 translate-y-0">
+            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-tight">{label}</label>
             {children}
-            {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-1 ml-1 text-xs text-red-500 font-medium">{error}</p>}
         </div>
     );
 }
@@ -824,13 +789,13 @@ function PaymentCard({ icon, label, selected, onClick }: {
         <button
             type="button"
             onClick={onClick}
-            className={`flex flex-col items-center justify-center gap-2 rounded-xl border py-4 text-sm font-semibold transition-all ${selected
-                ? "border-primary bg-primary/10 text-primary shadow-[0_0_12px_var(--brand-color)] shadow-primary/20"
-                : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-600"
+            className={`flex flex-col items-center gap-2 rounded-xl border py-4 transition-all ${selected
+                ? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_var(--brand-color)] shadow-primary/20"
+                : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700"
                 }`}
         >
             {icon}
-            {label}
+            <span className="text-sm font-semibold">{label}</span>
         </button>
     );
 }
