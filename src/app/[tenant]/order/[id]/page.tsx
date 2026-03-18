@@ -93,12 +93,6 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                                 "¡Tu pedido está PREPARADO! Ya podés pasar a retirarlo. 🏪",
                                 { duration: 10000 }
                             );
-                            if ("Notification" in window && Notification.permission === "granted") {
-                                new Notification("🔔 ¡Pedido listo para retirar!", {
-                                    body: "Tu pedido está preparado. Acercate al local a retirarlo.",
-                                    icon: "/favicon.ico",
-                                });
-                            }
                         } else {
                             toast.success("¡Tu pedido está en camino! 🚴");
                         }

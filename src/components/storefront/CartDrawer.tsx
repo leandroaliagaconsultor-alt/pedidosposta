@@ -1016,20 +1016,24 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true }: CartDrawe
                                 type="submit"
                                 disabled={
                                     isSubmitting ||
-                                    isOutOfBounds ||
+                                    (isOutOfBounds && deliveryMethod === "DELIVERY") ||
                                     (deliveryMethod === "DELIVERY" && !addressValue) ||
                                     (selectedPayment === "TRANSFER" && ((tenantAlias && !receiptFile) || !tenantAlias))
                                 }
-                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 font-black tracking-widest text-[13px] text-primary-foreground shadow-[0_4px_25px_var(--brand-color)] shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
+                                className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 font-black tracking-widest text-[13px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale ${
+                                    (isOutOfBounds && deliveryMethod === "DELIVERY") 
+                                    ? "bg-red-500 text-white" 
+                                    : "bg-primary text-primary-foreground shadow-[0_4px_25px_var(--brand-color)] shadow-primary/30"
+                                }`}
                             >
                                 {isSubmitting ? (
                                     <Loader2 size={20} className="animate-spin" />
-                                ) : isOutOfBounds ? (
+                                ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
                                     <X size={20} />
                                 ) : (
                                     <CheckCircle2 size={20} />
                                 )}
-                                {isSubmitting ? "PROCESANDO..." : isOutOfBounds ? "FUERA DE RADIO" : "CONFIRMAR PEDIDO"}
+                                {isSubmitting ? "PROCESANDO..." : (isOutOfBounds && deliveryMethod === "DELIVERY") ? "FUERA DE RADIO" : "CONFIRMAR PEDIDO"}
                             </button>
                         </div>
                     </form>

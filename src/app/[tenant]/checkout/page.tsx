@@ -732,10 +732,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 disabled={
                                     items.length === 0 ||
                                     isSubmitting ||
-                                    isOutOfBounds ||
+                                    (isOutOfBounds && deliveryMethod === "DELIVERY") ||
                                     (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                                 }
-                                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-extrabold shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${isOutOfBounds ? "bg-red-500 text-white" : "bg-primary text-[#09090b]"}`}
+                                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-extrabold shadow-[0_0_30px_var(--brand-color)] shadow-primary/40 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${(isOutOfBounds && deliveryMethod === "DELIVERY") ? "bg-red-500 text-white" : "bg-primary text-[#09090b]"}`}
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2">
@@ -745,7 +745,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         </svg>
                                         CONFIRMANDO...
                                     </span>
-                                ) : isOutOfBounds ? (
+                                ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
                                     "FUERA DE RADIO DE ENTREGA"
                                 ) : (
                                     <>
