@@ -8,8 +8,6 @@ import { z } from "zod";
 import {
     ArrowLeft,
     Banknote,
-    CheckCircle2,
-    ChevronDown,
     Clock,
     MapPin,
     Package,
@@ -17,8 +15,9 @@ import {
     Truck,
     Upload,
     FileText,
-    MessageCircle,
     Loader2,
+    CreditCard,
+    ChevronDown,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -33,40 +32,37 @@ import { useJsApiLoader } from "@react-google-maps/api";
 
 const libraries: ("places")[] = ["places"];
 
-// ─── Zod Schema ────────────────────────────────────────────────────────────────
+// ─── ESQUEMA DE VALIDACIÓN ──────────────────────────────────────────────
 
 const checkoutSchema = z
     .object({
         firstName: z.string().min(2, "Ingresá tu nombre"),
         lastName: z.string().min(2, "Ingresá tu apellido"),
-        email: z.string().email("Email inválido"),
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         address: z.string().optional(),
         betweenStreets: z.string().optional(),
         houseNumber: z.string().optional(),
         apartment: z.string().optional(),
-        notes: z.string().optional(),
+        delivery_notes: z.string().optional(),
         deliveryTime: z.string().optional(),
         is_asap: z.boolean(),
-        paymentMethod: z.enum(["CASH", "TRANSFER"]),
+        paymentMethod: z.enum(["CASH", "TRANSFER", "MERCADOPAGO"]),
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.length >= 3), {
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.trim().length >= 3), {
         message: "Ingresá la calle de entrega",
         path: ["address"],
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.length >= 3), {
-        message: "Ingresá las entre calles o esquina",
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.trim().length >= 3), {
+        message: "Obligatorio (Ej: Entre Calle 1 y 2)",
         path: ["betweenStreets"],
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.houseNumber && data.houseNumber.length >= 1), {
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.houseNumber && data.houseNumber.trim().length >= 1), {
         message: "Ingresá el número/altura",
         path: ["houseNumber"],
     });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
-
-// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage({ params }: { params: Promise<{ tenant: string }> }) {
     const { tenant: tenantSlug } = React.use(params);
@@ -75,26 +71,40 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const supabase = createClient();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedPayment, setSelectedPayment] = useState<"CASH" | "TRANSFER" | null>(null);
-    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    
+    // Config states
+    const [isMPActive, setIsMPActive] = useState(false);
     const [tenantAlias, setTenantAlias] = useState<string | null>(null);
-    const [whatsappSettings, setWhatsappSettings] = useState<{ show: boolean; phone: string | null }>({ show: false, phone: null });
+    const [tenantAccountName, setTenantAccountName] = useState<string | null>(null);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    
+    // Logistics states
+    const [tenantStoreAddress, setTenantStoreAddress] = useState<string | null>(null);
+    const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "distance">("fixed");
+    const [tenantDeliveryRadius, setTenantDeliveryRadius] = useState(5);
+    const [tenantFixedPrice, setTenantFixedPrice] = useState(0);
+    const [tenantBasePrice, setTenantBasePrice] = useState(0);
+    const [tenantBaseKm, setTenantBaseKm] = useState(0);
+    const [tenantExtraKmPrice, setTenantExtraKmPrice] = useState(0);
+
+    // Calculated states
+    const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
+    const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState<number>(0);
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+    const [isOutOfBounds, setIsOutOfBounds] = useState(false);
 
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
     const [scheduleType, setScheduleType] = useState<"asap" | "scheduled">("asap");
 
-    const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const [deliveryCost, setDeliveryCost] = useState(0);
-    const [isOutOfBounds, setIsOutOfBounds] = useState(false);
-    const [pricingRules, setPricingRules] = useState<any>(null);
-
     const [isLocating, setIsLocating] = useState(false);
     const [usedGPS, setUsedGPS] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+    
     const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
-    const houseNumberRef = React.useRef<HTMLInputElement>(null);
+
+    const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -105,7 +115,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const {
         ready,
         value: addressValue,
-        suggestions: { status, data },
+        suggestions: { status, data: suggestions },
         setValue: setAddressValue,
         clearSuggestions,
         init,
@@ -135,122 +145,99 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         formState: { errors },
     } = useForm<CheckoutForm>({
         resolver: zodResolver(checkoutSchema),
-        defaultValues: { deliveryMethod: "DELIVERY", is_asap: true },
+        defaultValues: { deliveryMethod: "DELIVERY", is_asap: true, paymentMethod: "CASH" },
     });
 
     const deliveryMethod = watch("deliveryMethod");
-    const total = subtotal + (deliveryMethod === "DELIVERY" ? deliveryCost : 0);
+    const selectedPayment = watch("paymentMethod");
+    const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
 
-    const selectPayment = (m: "CASH" | "TRANSFER") => {
-        setSelectedPayment(m);
-        setValue("paymentMethod", m, { shouldValidate: true });
-    };
-
+    // Fetch initial configuration
     React.useEffect(() => {
-        const fetchAvailability = async () => {
+        const fetchConfig = async () => {
             setIsLoadingSlots(true);
-            try {
-                const { data: tenantData } = await supabase
-                    .from("tenants")
-                    .select("id, schedule, max_orders_per_slot, transfer_alias, show_whatsapp_checkout, public_phone, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
-                    .eq("slug", tenantSlug)
-                    .single();
-                if (!tenantData) return;
+            const { data: tenantData } = await supabase
+                .from("tenants")
+                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
+                .eq("slug", tenantSlug)
+                .single();
 
-                setTenantAlias(tenantData.transfer_alias);
-                setWhatsappSettings({ show: !!tenantData.show_whatsapp_checkout, phone: tenantData.public_phone });
-                setPricingRules(tenantData);
+            if (tenantData) {
+                setIsMPActive(!!tenantData.is_mp_active);
+                setTenantAlias(tenantData.transfer_alias || null);
+                setTenantAccountName(tenantData.transfer_account_name || null);
+                setTenantStoreAddress(tenantData.store_address || null);
 
-                if (tenantData.delivery_pricing_type === 'fixed') {
-                    setDeliveryCost(tenantData.fixed_delivery_price || 0);
-                } else {
-                    setDeliveryCost(tenantData.base_delivery_price || 0);
-                }
+                const pricingType = tenantData.delivery_pricing_type || "fixed";
+                setTenantDeliveryType(pricingType);
+                setTenantDeliveryRadius(tenantData.delivery_radius_km || 5);
+                setTenantFixedPrice(tenantData.fixed_delivery_price || 0);
+                setTenantBasePrice(tenantData.base_delivery_price || 0);
+                setTenantBaseKm(tenantData.base_delivery_km || 0);
+                setTenantExtraKmPrice(tenantData.extra_price_per_km || 0);
 
-                const cached = localStorage.getItem('pedidosposta_user_location');
-                if (cached) {
-                    try {
-                        const d = JSON.parse(cached);
-                        if (d.client_name) {
-                            const parts = d.client_name.split(' ');
-                            setValue("firstName", parts[0] || "");
-                            setValue("lastName", parts.slice(1).join(' ') || "");
-                        }
-                        if (d.email) setValue("email", d.email);
-                        if (d.phone) setValue("phone", d.phone);
-                        if (d.address) setValue("address", d.address);
-
-                        if (d.shipping_cost !== undefined) {
-                            setDeliveryCost(d.shipping_cost);
-                        }
-
-                        if (d.distance_km && tenantData.delivery_radius_km && d.distance_km > tenantData.delivery_radius_km) {
-                            setIsOutOfBounds(true);
-                        }
-                    } catch (e) { }
-                }
+                setCalculatedDeliveryCost(pricingType === 'fixed' ? (tenantData.fixed_delivery_price || 0) : (tenantData.base_delivery_price || 0));
 
                 const today = new Date().toISOString().split('T')[0];
-                const { data: orders } = await supabase
-                    .from("orders")
-                    .select("is_asap, scheduled_time")
-                    .eq("tenant_id", tenantData.id)
-                    .in("status", ["pending", "confirmed", "in_preparation", "ready", "delivered"])
-                    .gte("created_at", today);
-
-                const validated = generateAvailableSlots(tenantData.schedule, tenantData.max_orders_per_slot, orders || []);
-                setTimeSlots(validated);
-                if (scheduleType === "asap") {
-                    setValue("is_asap", true);
-                    setValue("deliveryTime", "");
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setIsLoadingSlots(false);
+                const { data: orders } = await supabase.from("orders").select("scheduled_time").eq("tenant_id", tenantData.id).gte("created_at", today);
+                setTimeSlots(generateAvailableSlots(tenantData.schedule, tenantData.max_orders_per_slot, orders || []));
             }
+            setIsLoadingSlots(false);
         };
+        fetchConfig();
+    }, [tenantSlug, supabase]);
 
-        fetchAvailability();
-    }, [tenantSlug, supabase, scheduleType, setValue]);
-
+    // Calcular Distancia MANUAL u Autocomplete
     const handleAddressSelect = async (addressStr: string) => {
         setAddressValue(addressStr, false);
         clearSuggestions();
         setValue("address", addressStr, { shouldValidate: true });
 
-        if (!pricingRules || pricingRules.delivery_pricing_type === "fixed") return;
+        if (tenantDeliveryType === "fixed") {
+            setCalculatedDeliveryCost(tenantFixedPrice);
+            return;
+        }
 
+        if (!tenantStoreAddress && tenantDeliveryType === "distance") {
+            toast.error("El local no tiene configurada su dirección de envío.");
+            return;
+        }
+
+        setIsCalculatingDistance(true);
         try {
             const results = await getGeocode({ address: addressStr });
             const { lat, lng } = await getLatLng(results[0]);
             setSelectedCoords({ lat, lng });
 
-            if (pricingRules.store_address) {
-                const originResults = await getGeocode({ address: pricingRules.store_address });
-                const originLatLng = await getLatLng(originResults[0]);
-                const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
-                const finalDistance = Math.round(rawDistance * 10) / 10;
+            const originResults = await getGeocode({ address: tenantStoreAddress! });
+            const originLatLng = await getLatLng(originResults[0]);
 
-                if (finalDistance > pricingRules.delivery_radius_km) {
-                    setIsOutOfBounds(true);
-                    toast.error(`Fuera del radio de entrega (${pricingRules.delivery_radius_km}km)`);
+            const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
+            const finalDistance = Math.round(rawDistance * 10) / 10;
+            setIsCalculatingDistance(false);
+            setCalculatedDistance(finalDistance);
+
+            if (finalDistance > tenantDeliveryRadius) {
+                setIsOutOfBounds(true);
+                toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
+            } else {
+                setIsOutOfBounds(false);
+                if (finalDistance <= tenantBaseKm) {
+                    setCalculatedDeliveryCost(Math.round(tenantBasePrice));
                 } else {
-                    setIsOutOfBounds(false);
-                    if (finalDistance <= pricingRules.base_delivery_km) {
-                        setDeliveryCost(Math.round(pricingRules.base_delivery_price));
-                    } else {
-                        const extraKm = finalDistance - pricingRules.base_delivery_km;
-                        const cost = pricingRules.base_delivery_price + (extraKm * pricingRules.extra_price_per_km);
-                        setDeliveryCost(Math.round(cost));
-                    }
+                    const extraKm = finalDistance - tenantBaseKm;
+                    const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
+                    setCalculatedDeliveryCost(Math.round(cost));
                 }
             }
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            setIsCalculatingDistance(false);
+            setCalculatedDeliveryCost(tenantBasePrice);
+            console.error("Geocoding Error: ", error);
         }
     };
 
+    // Calcular Distancia GPS
     const handleGeolocation = () => {
         if (!navigator.geolocation) {
             toast.error("Tu navegador no soporta geolocalización.");
@@ -270,39 +257,40 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     setUsedGPS(true);
                     setSelectedCoords({ lat, lng });
 
-                    setTimeout(() => betweenStreetsRef.current?.focus(), 100);
+                    setTimeout(() => betweenStreetsRef.current?.focus(), 200);
 
-                    if (pricingRules?.store_address) {
-                        const originResults = await getGeocode({ address: pricingRules.store_address });
+                    if (tenantStoreAddress) {
+                        const originResults = await getGeocode({ address: tenantStoreAddress });
                         const originLatLng = await getLatLng(originResults[0]);
                         const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
                         const finalDistance = Math.round(rawDistance * 10) / 10;
+                        setCalculatedDistance(finalDistance);
 
-                        if (finalDistance > pricingRules.delivery_radius_km) {
+                        if (finalDistance > tenantDeliveryRadius) {
                             setIsOutOfBounds(true);
-                            toast.error(`Ubicación fuera de radio (${pricingRules.delivery_radius_km}km)`);
+                            toast.error(`Tu ubicación está fuera del radio de entrega (${tenantDeliveryRadius}km).`);
                         } else {
                             setIsOutOfBounds(false);
-                            if (finalDistance <= pricingRules.base_delivery_km) {
-                                setDeliveryCost(Math.round(pricingRules.base_delivery_price));
+                            if (finalDistance <= tenantBaseKm) {
+                                setCalculatedDeliveryCost(Math.round(tenantBasePrice));
                             } else {
-                                const extraKm = finalDistance - pricingRules.base_delivery_km;
-                                const cost = pricingRules.base_delivery_price + (extraKm * pricingRules.extra_price_per_km);
-                                setDeliveryCost(Math.round(cost));
+                                const extraKm = finalDistance - tenantBaseKm;
+                                const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
+                                setCalculatedDeliveryCost(Math.round(cost));
                             }
                         }
                     }
-                } catch (e) {
+                } catch (error) {
                     toast.error("No pudimos obtener tu dirección exacta.");
                 } finally {
                     setIsLocating(false);
                 }
             },
-            () => {
+            (error) => {
                 setIsLocating(false);
-                toast.error("Error al obtener ubicación.");
+                toast.error("No pudimos obtener tu ubicación.");
             },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
     };
 
@@ -311,16 +299,16 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             toast.error("Tu carrito está vacío");
             return;
         }
-        setIsSubmitting(true);
 
+        setIsSubmitting(true);
         try {
-            const { data: tenant, error: tenantErr } = await supabase
+            const { data: tenantData, error: tenantErr } = await supabase
                 .from("tenants")
                 .select("id")
                 .eq("slug", tenantSlug)
                 .single();
 
-            if (tenantErr || !tenant) throw new Error("Local no encontrado");
+            if (tenantErr || !tenantData) throw new Error("Local no encontrado.");
 
             let scheduledTime = null;
             if (!data.is_asap && data.deliveryTime) {
@@ -330,15 +318,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 scheduledTime = scheduledDate.toISOString();
             }
 
+            // Manejo de Comprobante
             let receiptUrl: string | null = null;
             if (data.paymentMethod === "TRANSFER" && receiptFile) {
                 const fileExt = receiptFile.name.split(".").pop();
-                const filePath = `${tenant.id}/${Date.now()}.${fileExt}`;
+                const filePath = `${tenantData.id}/${Date.now()}.${fileExt}`;
                 const { error: uploadErr } = await supabase.storage
                     .from("receipts")
                     .upload(filePath, receiptFile);
-                if (uploadErr) console.error("Upload error:", uploadErr);
-                else {
+                if (uploadErr) {
+                    console.error("Upload error:", uploadErr);
+                } else {
                     const { data: publicUrl } = supabase.storage
                         .from("receipts")
                         .getPublicUrl(filePath);
@@ -353,24 +343,22 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             const { data: order, error: orderErr } = await supabase
                 .from("orders")
                 .insert({
-                    tenant_id: tenant.id,
+                    tenant_id: tenantData.id,
+                    customer_name: `${data.firstName} ${data.lastName}`,
                     first_name: data.firstName,
                     last_name: data.lastName,
-                    email: data.email,
                     customer_phone: data.phone,
                     customer_address: finalAddress,
-                    customer_notes: data.notes || null,
+                    delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
                     delivery_method: data.deliveryMethod,
+                    payment_method: data.paymentMethod,
                     is_asap: data.is_asap,
                     scheduled_time: scheduledTime,
-                    payment_method: data.paymentMethod,
-                    status: "pending",
                     total_amount: total,
-                    customer_name: `${data.firstName} ${data.lastName}`,
-                    order_number_manual: null,
+                    status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
                     receipt_url: receiptUrl,
                 })
-                .select("id, order_number")
+                .select("id")
                 .single();
 
             if (orderErr || !order) throw orderErr;
@@ -384,131 +372,132 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 notes: item.modifiersText || null,
             }));
 
-            const { error: itemsErr } = await supabase
-                .from("order_items")
-                .insert(orderItems);
-
+            const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
             if (itemsErr) throw itemsErr;
 
-            const cacheData = {
-                address: data.deliveryMethod === "DELIVERY" ? data.address : null,
-                lat: selectedCoords?.lat || null,
-                lng: selectedCoords?.lng || null,
-                distance_km: 0,
-                shipping_cost: deliveryCost,
-                client_name: `${data.firstName} ${data.lastName}`,
-                email: data.email,
-                phone: data.phone
-            };
-            localStorage.setItem('pedidosposta_user_location', JSON.stringify(cacheData));
+            // Integración MP
+            if (data.paymentMethod === "MERCADOPAGO") {
+                const resMP = await fetch("/api/checkout/mercadopago", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        items,
+                        deliveryFee: data.deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0,
+                        tenantId: tenantData.id,
+                        orderId: order.id,
+                        tenantSlug: tenantSlug
+                    })
+                });
+
+                const mpData = await resMP.json();
+
+                if (mpData.init_point) {
+                    clearCart();
+                    window.location.href = mpData.init_point;
+                    return;
+                } else {
+                    toast.error("Error al generar pago en MercadoPago. Tu pedido quedó pendiente.");
+                }
+            }
 
             try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
             clearCart();
             router.push(`/${tenantSlug}/order/${order.id}`);
+
         } catch (err: any) {
             console.error(err);
-            toast.error("Error al confirmar el pedido", {
-                description: err?.message ?? "Intentá de nuevo en un momento.",
-            });
+            toast.error(err.message || "Error al confirmar el pedido. Reintente por favor.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <main className="min-h-screen bg-zinc-950 pb-32 pt-6">
-            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
+        <main className="min-h-screen bg-black text-zinc-100 pb-20 pt-8">
+            <Toaster position="top-center" richColors />
+            <div className="mx-auto max-w-xl px-4">
 
-            <div className="mx-auto max-w-lg px-4">
-                <button
-                    onClick={() => router.back()}
-                    className="mb-6 flex items-center gap-2 text-sm text-zinc-400 transition hover:text-zinc-100"
-                >
-                    <ArrowLeft size={16} /> Volver al menú
+                <button onClick={() => router.back()} className="mb-8 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
+                    <ArrowLeft size={18} /> <span className="text-sm font-medium">Volver al menú</span>
                 </button>
 
-                <h1 className="mb-1 text-3xl font-extrabold tracking-tight text-white">
-                    Checkout <span className="text-primary">Pulse</span>
-                </h1>
-                <p className="mb-8 text-sm text-zinc-400">
-                    Completá tus datos para confirmar el pedido.
-                </p>
+                <header className="mb-10">
+                    <h1 className="text-4xl font-black tracking-tight text-white mb-2">Finalizar Pedido</h1>
+                    <p className="text-zinc-500">Completá los detalles para que empecemos a cocinar.</p>
+                </header>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
 
-                    {/* ── 1. Datos del Cliente ── */}
-                    <Section title="Datos del Cliente">
-                        <div className="flex flex-col gap-4">
+                    {/* SECCIÓN 1: IDENTIDAD */}
+                    <section className="space-y-6">
+                        <SectionHeader number="1" title="Tus Datos" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Field label="Nombre" error={errors.firstName?.message}>
-                                <input {...register("firstName")} placeholder="Juan" className={inputCls(!!errors.firstName)} />
+                                <input {...register("firstName")} placeholder="Ej: Juan" className={inputStyle(!!errors.firstName)} />
                             </Field>
                             <Field label="Apellido" error={errors.lastName?.message}>
-                                <input {...register("lastName")} placeholder="Pérez" className={inputCls(!!errors.lastName)} />
-                            </Field>
-                            <Field label="Email" error={errors.email?.message}>
-                                <input {...register("email")} type="email" placeholder="juan@email.com" className={inputCls(!!errors.email)} />
-                            </Field>
-                            <Field label="Teléfono / WhatsApp" error={errors.phone?.message}>
-                                <input {...register("phone")} type="tel" placeholder="+54 9 11 0000 0000" className={inputCls(!!errors.phone)} />
+                                <input {...register("lastName")} placeholder="Ej: Pérez" className={inputStyle(!!errors.lastName)} />
                             </Field>
                         </div>
-                    </Section>
+                        <Field label="WhatsApp / Teléfono" error={errors.phone?.message}>
+                            <input {...register("phone")} type="tel" placeholder="Ej: 11 1234 5678" className={inputStyle(!!errors.phone)} />
+                        </Field>
+                    </section>
 
-                    {/* ── 2. Método de Entrega ── */}
-                    <Section title="Método de Entrega">
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            {(["DELIVERY", "TAKEAWAY"] as const).map((m) => {
-                                const isActive = deliveryMethod === m;
-                                return (
-                                    <button
-                                        key={m}
-                                        type="button"
-                                        onClick={() => setValue("deliveryMethod", m, { shouldValidate: true })}
-                                        className={`flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-semibold transition-all ${isActive
-                                            ? "border-primary bg-primary/10 text-primary shadow-[0_0_14px_var(--brand-color)] shadow-primary/20"
-                                            : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-600"
-                                            }`}
-                                    >
-                                        {m === "DELIVERY" ? <Truck size={22} /> : <Package size={22} />}
-                                        {m === "DELIVERY" ? "Delivery" : "Retiro en Local"}
-                                    </button>
-                                );
-                            })}
+                    {/* SECCIÓN 2: ENTREGA */}
+                    <section className="space-y-6">
+                        <SectionHeader number="2" title="Entrega" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <MethodButton
+                                active={deliveryMethod === "DELIVERY"}
+                                onClick={() => setValue("deliveryMethod", "DELIVERY")}
+                                icon={<Truck size={24} />}
+                                label="Delivery"
+                            />
+                            <MethodButton
+                                active={deliveryMethod === "TAKEAWAY"}
+                                onClick={() => setValue("deliveryMethod", "TAKEAWAY")}
+                                icon={<Package size={24} />}
+                                label="Takeaway"
+                            />
                         </div>
 
-                        {/* BLOQUE DE DIRECCIÓN (RESTAURADO) */}
                         {deliveryMethod === "DELIVERY" && (
-                            <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="space-y-5 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <button
+                                    type="button"
+                                    onClick={handleGeolocation}
+                                    disabled={isLocating}
+                                    className="w-full py-5 rounded-2xl border border-zinc-800 bg-[#0a0a0a] flex items-center justify-center gap-3 text-sm font-bold text-primary hover:border-primary/50 transition-all shadow-[0_0_15px_rgba(34,197,94,0.05)]"
+                                >
+                                    {isLocating ? <Loader2 className="animate-spin" /> : <MapPin size={18} />}
+                                    📍 USAR MI UBICACIÓN ACTUAL (GPS)
+                                </button>
+
                                 <Field label="Calle de entrega" error={errors.address?.message}>
                                     <div className="relative">
-                                        <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                        <MapPin size={16} className={`absolute left-5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
                                         <input
                                             value={addressValue}
-                                            onChange={(e) => {
-                                                setAddressValue(e.target.value);
-                                                setValue("address", e.target.value);
-                                            }}
+                                            onChange={(e) => { setAddressValue(e.target.value); setValue("address", e.target.value); }}
                                             disabled={!ready || !isLoaded}
                                             placeholder="Ej: Calle San Martín"
-                                            className={`${inputCls(!!errors.address)} pl-10`}
+                                            className={`${inputStyle(!!errors.address)} pl-12`}
                                         />
                                     </div>
+                                    
                                     {usedGPS && (
-                                        <p className="mt-2 ml-1 text-[10px] font-bold text-amber-500 animate-pulse">
+                                        <p className="mt-2 ml-1 text-xs font-bold text-amber-500 animate-pulse">
                                             ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
                                         </p>
                                     )}
 
                                     {status === "OK" && (
-                                        <ul className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl relative z-20">
-                                            {data.map(({ place_id, description }) => (
-                                                <li
-                                                    key={place_id}
-                                                    onClick={() => handleAddressSelect(description)}
-                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-primary/20 hover:text-primary cursor-pointer border-b border-zinc-800/50 last:border-0 transition-colors"
-                                                >
-                                                    {description}
-                                                </li>
+                                        <ul className="mt-2 bg-[#0a0a0a] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative z-20">
+                                            {suggestions.map((s) => (
+                                                <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className="w-full text-left px-5 py-4 text-sm text-zinc-300 hover:bg-zinc-900 transition-colors border-b border-zinc-800/50 last:border-0">
+                                                    {s.description}
+                                                </button>
                                             ))}
                                         </ul>
                                     )}
@@ -517,285 +506,224 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
                                     <input
                                         {...register("betweenStreets")}
-                                        ref={(e) => {
-                                            register("betweenStreets").ref(e);
-                                            // @ts-ignore
-                                            betweenStreetsRef.current = e;
-                                        }}
-                                        placeholder="Entre calles o esquina / Ej: Calle 16 y 18"
-                                        className={inputCls(!!errors.betweenStreets)}
+                                        ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
+                                        placeholder="Ej: Entre Calle 16 y 18"
+                                        className={inputStyle(!!errors.betweenStreets)}
                                     />
                                 </Field>
 
-                                <Field label="Altura / Nº *" error={errors.houseNumber?.message}>
-                                    <input
-                                        {...register("houseNumber")}
-                                        ref={(e) => {
-                                            register("houseNumber").ref(e);
-                                            // @ts-ignore
-                                            houseNumberRef.current = e;
-                                        }}
-                                        placeholder="Ej: 1226"
-                                        className={inputCls(!!errors.houseNumber)}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Field label="Altura / N° *" error={errors.houseNumber?.message}>
+                                        <input {...register("houseNumber")} placeholder="Ej: 1226" className={inputStyle(!!errors.houseNumber)} />
+                                    </Field>
+                                    <Field label="Piso / Depto" error={errors.apartment?.message}>
+                                        <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment)} />
+                                    </Field>
+                                </div>
+                                
+                                <Field label="Notas de envío (Opcional)" error={errors.delivery_notes?.message}>
+                                    <input {...register("delivery_notes")} placeholder="Ej: Portón negro, timbre no funciona..." className={inputStyle(!!errors.delivery_notes)} />
                                 </Field>
 
-                                <Field label="Piso / Depto" error={errors.apartment?.message}>
-                                    <input
-                                        {...register("apartment")}
-                                        placeholder="Ej: 3B"
-                                        className={inputCls(!!errors.apartment)}
-                                    />
-                                </Field>
-
-                                <button
-                                    type="button"
-                                    onClick={handleGeolocation}
-                                    disabled={isLocating}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-4 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
-                                >
-                                    {isLocating ? (
-                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                    ) : (
-                                        <MapPin size={14} className="text-primary" />
-                                    )}
-                                    📍 Usar mi ubicación actual (GPS)
-                                </button>
+                                {/* Cartel de Distancia Calculada */}
+                                {calculatedDistance !== null && (
+                                    <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-2xl py-3 px-5 shadow-inner mt-2">
+                                        <span className="text-sm text-zinc-400 font-medium">Distancia a recorrer:</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-black tracking-widest text-zinc-200 bg-black px-2 py-1 rounded-md">
+                                                {calculatedDistance.toFixed(1)} km
+                                            </span>
+                                            <span className="text-sm font-black text-primary">
+                                                ${calculatedDeliveryCost.toFixed(0)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
+                    </section>
 
-                        <div className="mt-5">
-                            <Field label="Notas de envío o para el local (opcional)" error={undefined}>
-                                <textarea
-                                    {...register("notes")}
-                                    placeholder="Timbre no funciona, portón negro, etc."
-                                    rows={2}
-                                    className={`${inputCls(false)} resize-none`}
-                                />
-                            </Field>
+                    {/* SECCIÓN 3: PAGO */}
+                    <section className="space-y-6">
+                        <SectionHeader number="3" title="Pago" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <MethodButton
+                                active={selectedPayment === "CASH"}
+                                onClick={() => { setValue("paymentMethod", "CASH", { shouldValidate: true }); setReceiptFile(null); }}
+                                icon={<Banknote size={24} />}
+                                label="Efectivo"
+                            />
+                            <MethodButton
+                                active={selectedPayment === "TRANSFER"}
+                                onClick={() => { setValue("paymentMethod", "TRANSFER", { shouldValidate: true }); }}
+                                icon={<Smartphone size={24} />}
+                                label="Transferencia"
+                            />
                         </div>
-                    </Section>
-
-                    {/* ── 3. Horario ── */}
-                    <Section title="Cuándo querés tu pedido">
-                        <div className="grid grid-cols-2 gap-3 mb-4">
+                        {isMPActive && (
                             <button
                                 type="button"
-                                onClick={() => { setScheduleType("asap"); setValue("is_asap", true); setValue("deliveryTime", "") }}
-                                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-sm font-semibold transition ${scheduleType === "asap" ? "border-primary bg-primary/10 text-primary" : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
-                                    }`}
+                                onClick={() => { setValue("paymentMethod", "MERCADOPAGO", { shouldValidate: true }); setReceiptFile(null); }}
+                                className={`w-full flex items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${selectedPayment === "MERCADOPAGO" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.15)]" : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"}`}
                             >
-                                Lo antes posible (ASAP)
+                                <CreditCard size={24} /> <span className="font-black uppercase tracking-widest">MercadoPago</span>
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => { setScheduleType("scheduled"); setValue("is_asap", false); setValue("deliveryTime", "") }}
-                                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-sm font-semibold transition ${scheduleType === "scheduled" ? "border-primary bg-primary/10 text-primary" : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
-                                    }`}
-                            >
-                                Programar horario
-                            </button>
-                        </div>
-
-                        {scheduleType === "scheduled" && (
-                            <Field label="Elegí tu horario" error={errors.deliveryTime?.message}>
-                                <div className="relative">
-                                    <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                    <select
-                                        {...register("deliveryTime")}
-                                        className={`${inputCls(!!errors.deliveryTime)} appearance-none pl-10 pr-8 bg-zinc-950`}
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>
-                                            {isLoadingSlots ? "Cargando horarios..." : "Seleccioná una hora..."}
-                                        </option>
-                                        {timeSlots.map((slot) => (
-                                            <option key={slot.time} value={slot.time} disabled={!slot.available}>
-                                                {slot.time} hs {!slot.available && "(Agotado)"}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </Field>
                         )}
-                    </Section>
+                        {errors.paymentMethod && <p className="text-red-500 text-xs ml-1 font-bold">{errors.paymentMethod.message}</p>}
 
-                    {/* ── 4. Método de Pago ── */}
-                    <Section title="Método de Pago">
-                        <div className="grid grid-cols-2 gap-3">
-                            <PaymentCard icon={<Banknote size={22} />} label="Efectivo" selected={selectedPayment === "CASH"} onClick={() => { selectPayment("CASH"); setReceiptFile(null); }} />
-                            <PaymentCard icon={<Smartphone size={22} />} label="Transferencia" selected={selectedPayment === "TRANSFER"} onClick={() => selectPayment("TRANSFER")} />
-                        </div>
-                        {errors.paymentMethod && (
-                            <p className="mt-2 text-xs text-red-400">{errors.paymentMethod.message}</p>
-                        )}
-                        <input type="hidden" {...register("paymentMethod")} />
-
+                        {/* INFO PARA TRANSFERENCIA */}
                         {selectedPayment === "TRANSFER" && tenantAlias && (
-                            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 animate-in fade-in slide-in-from-top-4">
-                                <h4 className="mb-2 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
-                                <p className="mb-4 text-xs text-zinc-400 leading-relaxed">
-                                    Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU:
+                            <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 animate-in fade-in slide-in-from-top-4">
+                                <h4 className="mb-2 text-base font-extrabold text-amber-400">Datos para la Transferencia</h4>
+                                <p className="mb-5 text-sm text-zinc-400 leading-relaxed">
+                                    Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
+                                    {tenantAccountName ? <> a nombre de <strong className="text-white">{tenantAccountName}</strong>:</> : <>:</>}
                                 </p>
 
-                                <div className="mb-5 flex items-center justify-between rounded-lg bg-zinc-950/50 p-3 ring-1 ring-zinc-800">
-                                    <span className="font-mono text-sm font-bold text-white tracking-wider">{tenantAlias}</span>
+                                <div className="mb-6 flex items-center justify-between rounded-xl bg-black p-4 ring-1 ring-zinc-800">
+                                    <span className="font-mono text-base font-bold text-white tracking-wider">{tenantAlias}</span>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             navigator.clipboard.writeText(tenantAlias);
                                             toast.success("Alias copiado al portapapeles");
                                         }}
-                                        className="text-[10px] font-bold uppercase tracking-widest text-amber-500 hover:text-amber-400"
+                                        className="text-[11px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
                                     >
                                         Copiar
                                     </button>
                                 </div>
 
-                                <div className="rounded-xl border border-dashed border-amber-500/30 p-4">
-                                    <p className="mb-2 text-xs font-bold text-zinc-300">Comprobante de transferencia <span className="text-red-400">*</span></p>
-                                    <p className="mb-3 text-[11px] text-zinc-500">Es obligatorio adjuntar una foto o PDF del comprobante para verificar el pago.</p>
-                                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
-                                        <Upload size={16} />
-                                        {receiptFile ? receiptFile.name : "Subir comprobante"}
-                                        <input
-                                            type="file"
-                                            accept="image/*,.pdf"
-                                            className="sr-only"
-                                            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                                        />
+                                <div className="rounded-xl border-2 border-dashed border-amber-500/30 p-5 bg-black/50">
+                                    <p className="mb-2 text-sm font-bold text-zinc-200">Comprobante de transferencia <span className="text-red-500">*</span></p>
+                                    <p className="mb-4 text-xs text-zinc-500">Obligatorio adjuntar una foto o PDF para verificar el pago.</p>
+                                    <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 py-6 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition-all">
+                                        <Upload size={24} className={receiptFile ? "text-primary" : "text-zinc-600"} />
+                                        {receiptFile ? <span className="text-primary truncate px-4">{receiptFile.name}</span> : <span>Toca para subir comprobante</span>}
+                                        <input type="file" accept="image/*,.pdf" className="sr-only" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
                                     </label>
-                                    {receiptFile && (
-                                        <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                                            <FileText size={14} />
-                                            <span className="truncate">{receiptFile.name}</span>
-                                            <span className="shrink-0 text-amber-500/50">({(receiptFile.size / 1024).toFixed(0)} KB)</span>
+                                </div>
+                            </div>
+                        )}
+                        {selectedPayment === "TRANSFER" && !tenantAlias && (
+                            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 animate-in fade-in text-center">
+                                <p className="text-sm font-bold text-red-500">Este local aún no ha configurado su Alias. Por favor elegí otro medio de pago.</p>
+                            </div>
+                        )}
+                    </section>
+
+                    {/* RESUMEN FINAL */}
+                    <section className="pt-8 border-t-2 border-dashed border-zinc-900">
+                        <SectionHeader number="4" title="Resumen del Pedido" />
+                        
+                        <div className="mt-6 mb-8 bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800 shadow-inner">
+                            {/* Lista de Productos */}
+                            <ul className="space-y-4 mb-6 pb-6 border-b border-zinc-800/80">
+                                {items.map((item, idx) => (
+                                    <li key={idx} className="flex justify-between text-sm">
+                                        <div className="pr-4">
+                                            <p className="font-bold text-zinc-200 tracking-wide">
+                                                <span className="text-primary mr-2">{item.quantity}x</span>
+                                                {item.name}
+                                            </p>
+                                            {item.modifiersText && (
+                                                <p className="mt-1 text-xs text-zinc-500 font-medium leading-relaxed">
+                                                    {item.modifiersText}
+                                                </p>
+                                            )}
                                         </div>
-                                    )}
+                                        <div className="font-mono text-zinc-300 font-medium shrink-0">
+                                            ${(item.price * item.quantity).toLocaleString("es-AR")}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            {/* Totales */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between text-zinc-400 font-medium text-sm">
+                                    <span>Subtotal</span>
+                                    <span className="text-white">${subtotal.toLocaleString("es-AR")}</span>
+                                </div>
+                                {deliveryMethod === "DELIVERY" && (
+                                    <div className="flex justify-between text-zinc-400 font-medium text-sm">
+                                        <span>Envío</span>
+                                        <span className="text-white">+ ${calculatedDeliveryCost.toLocaleString("es-AR")}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-end text-2xl font-black text-white pt-4 border-t border-zinc-800 mt-2">
+                                    <span className="text-base uppercase tracking-widest text-zinc-500">Total</span>
+                                    <span className="text-primary tracking-tight">${total.toLocaleString("es-AR")}</span>
                                 </div>
                             </div>
-                        )}
-                    </Section>
-
-                    {/* ── 5. Resumen ── */}
-                    <Section title="Resumen del Pedido">
-                        <div className="space-y-2 text-sm">
-                            {items.map((item) => (
-                                <div key={item.id} className="flex justify-between">
-                                    <span className="text-zinc-300">
-                                        {item.quantity}× {item.name}
-                                        {item.modifiersText && (
-                                            <span className="ml-1 text-zinc-500">({item.modifiersText})</span>
-                                        )}
-                                    </span>
-                                    <span className="font-medium text-zinc-200">
-                                        ${(item.price * item.quantity).toLocaleString("es-AR")}
-                                    </span>
-                                </div>
-                            ))}
                         </div>
-                        <div className="mt-4 space-y-1 border-t border-zinc-800 pt-4">
-                            <Row label="Subtotal" value={`$${subtotal.toLocaleString("es-AR")}`} />
-                            {deliveryMethod === "DELIVERY" && (
-                                <Row label="Envío" value={`$${deliveryCost.toLocaleString("es-AR")}`} />
-                            )}
-                            <div className="flex justify-between pt-2 text-base font-bold text-white">
-                                <span>Total</span>
-                                <span className="text-primary">${total.toLocaleString("es-AR")}</span>
-                            </div>
-                        </div>
-                    </Section>
 
-                    {/* ── BOTÓN FINAL (NO STICKY) ── */}
-                    <div className="mt-8 mb-12">
-                        {whatsappSettings.show && whatsappSettings.phone && (
-                            <div className="mb-4">
-                                <a href={`https://wa.me/${whatsappSettings.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-zinc-800 hover:text-emerald-400 w-full">
-                                    <MessageCircle size={18} />
-                                    ¿Alguna consulta? Escribinos por WhatsApp
-                                </a>
-                            </div>
-                        )}
                         <button
                             type="submit"
                             disabled={
-                                items.length === 0 ||
-                                isSubmitting ||
+                                isSubmitting || 
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") ||
                                 (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                             }
-                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-base font-extrabold shadow-[0_0_20px_var(--brand-color)] shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 uppercase tracking-wide ${(isOutOfBounds && deliveryMethod === "DELIVERY") ? "bg-red-500 text-white shadow-red-500/20" : "bg-primary text-[#09090b]"}`}
+                            className={`w-full py-5 rounded-2xl font-black text-lg shadow-[0_10px_40px_-10px_rgba(34,197,94,0.5)] transition-all uppercase tracking-tighter flex items-center justify-center gap-3 ${
+                                (isOutOfBounds && deliveryMethod === "DELIVERY")
+                                ? "bg-red-500 text-white shadow-red-500/20 grayscale-0 opacity-100 disabled:cursor-not-allowed"
+                                : "bg-primary text-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
+                            }`}
                         >
                             {isSubmitting ? (
-                                <span className="flex items-center gap-2">
-                                    <Loader2 className="animate-spin text-black" size={20} />
-                                    CONFIRMANDO...
-                                </span>
+                                <><Loader2 className="animate-spin" /> PROCESANDO PEDIDO...</>
                             ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
                                 "FUERA DE RADIO DE ENTREGA"
                             ) : (
-                                <>
-                                    Confirmar Pedido • ${total.toLocaleString("es-AR")}
-                                </>
+                                "Confirmar Pedido"
                             )}
                         </button>
-                    </div>
+                    </section>
+
                 </form>
             </div>
         </main>
     );
 }
 
-// ─── Micro-components ──────────────────────────────────────────────────────────
+// ─── COMPONENTES AUXILIARES ──────────────────────────────────────────────────
 
-function inputCls(hasError: boolean) {
-    return `w-full rounded-xl border bg-[#0a0a0a] px-5 py-5 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/40 focus:border-primary ${hasError ? "border-red-500/50 focus:ring-red-500/30" : "border-zinc-800 focus:bg-[#111111]"
-        }`;
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionHeader({ number, title }: { number: string; title: string }) {
     return (
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-zinc-500">{title}</h2>
-            {children}
-        </section>
+        <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-black border border-primary/20">
+                {number}
+            </span>
+            <h2 className="text-xl font-bold text-white uppercase tracking-tight">{title}</h2>
+        </div>
     );
 }
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
-        <div className="flex flex-col gap-1.5 translate-y-0">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-tight">{label}</label>
+        <div className="space-y-3">
+            <label className="text-xs font-black tracking-widest text-zinc-500 uppercase ml-2">{label}</label>
             {children}
-            {error && <p className="mt-1 ml-1 text-xs text-red-500 font-medium">{error}</p>}
+            {error && <p className="text-[11px] text-red-500 font-bold ml-2">× {error}</p>}
         </div>
     );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex justify-between text-sm text-zinc-400">
-            <span>{label}</span>
-            <span>{value}</span>
-        </div>
-    );
+function inputStyle(hasError: boolean) {
+    return `w-full bg-[#0a0a0a] border ${hasError ? 'border-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary'} rounded-2xl py-5 px-6 text-white text-sm font-medium outline-none transition-all placeholder:text-zinc-600 shadow-inner`;
 }
 
-function PaymentCard({ icon, label, selected, onClick }: {
-    icon: React.ReactNode; label: string; selected: boolean; onClick: () => void;
-}) {
+function MethodButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`flex flex-col items-center gap-2 rounded-xl border py-4 transition-all ${selected
-                ? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_var(--brand-color)] shadow-primary/20"
-                : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700"
+            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${active ? 'border-primary bg-primary/10 text-primary shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800'
                 }`}
         >
             {icon}
-            <span className="text-sm font-semibold">{label}</span>
+            <span className="text-sm font-black uppercase tracking-widest">{label}</span>
         </button>
     );
 }

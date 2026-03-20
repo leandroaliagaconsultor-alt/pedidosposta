@@ -18,7 +18,11 @@ interface CartState {
     clearCart: () => void;
 }
 
-export const useCartStore = create<CartState>((set) => ({
+import { persist } from "zustand/middleware";
+
+export const useCartStore = create<CartState>()(
+    persist(
+        (set) => ({
     items: [],
     addItem: (item) =>
         set((state) => ({ items: [...state.items, item] })),
@@ -31,4 +35,7 @@ export const useCartStore = create<CartState>((set) => ({
             ),
         })),
     clearCart: () => set({ items: [] }),
-}));
+        }),
+        { name: "cart-storage" }
+    )
+);

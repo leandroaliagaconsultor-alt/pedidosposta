@@ -119,6 +119,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 },
                 async (payload) => {
                     const newOrderRow = payload.new as Order;
+                    if (newOrderRow.status === "awaiting_payment") return;
+
                     const { data: fullOrder } = await supabase
                         .from("orders")
                         .select("*, order_items(*, product:products(name))")
@@ -145,16 +147,43 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     table: "orders",
                     filter: `tenant_id=eq.${tenantId}`,
                 },
-                (payload) => {
+                async (payload) => {
                     const updated = payload.new as Order;
-                    if (updated.status === "cancelled") {
+                    if (updated.status === "cancelled" || updated.status === "awaiting_payment") {
                         setOrders((prev) => prev.filter((o) => o.id !== updated.id));
                     } else {
-                        setOrders((prev) =>
-                            prev.map((o) =>
-                                o.id === updated.id ? { ...o, ...updated } : o
-                            )
-                        );
+                        setOrders((prev) => {
+                            const exists = prev.some((o) => o.id === updated.id);
+                            if (exists) {
+                                return prev.map((o) =>
+                                    o.id === updated.id ? { ...o, ...updated } : o
+                                );
+                            }
+                            // If it wasn't in state (e.g., it evolved from awaiting_payment)
+                            return prev;
+                        });
+
+                        // If it doesn't exist, it means it just became 'pending' or another visible state. Fetch full.
+                        setOrders((prev) => {
+                            const exists = prev.some((o) => o.id === updated.id);
+                            if (!exists) {
+                                // Fire a side effect to fetch the full order and append it.
+                                supabase
+                                    .from("orders")
+                                    .select("*, order_items(*, product:products(name))")
+                                    .eq("id", updated.id)
+                                    .single()
+                                    .then(({ data: fullOrder }) => {
+                                        if (fullOrder) {
+                                            setOrders((p) => [fullOrder as unknown as Order, ...p]);
+                                            toast("¡💳 Pago confirmado! Nuevo pedido.", { duration: 5000 });
+                                            const audio = new Audio("/timbrenotificacion.mp3");
+                                            audio.play().catch(() => { });
+                                        }
+                                    });
+                            }
+                            return prev;
+                        });
                     }
                 }
             )
