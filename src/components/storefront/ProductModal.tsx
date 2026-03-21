@@ -152,7 +152,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                 <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
                 {/* Panel — slide from bottom on mobile, centered on desktop */}
-                <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[90vh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+                <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
 
                     {/* Drag handle pill (mobile) */}
                     <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-zinc-700 sm:hidden" />
@@ -163,7 +163,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                     </DialogPrimitive.Close>
 
                     {/* Scrollable body */}
-                    <div className="overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto pb-24">
                         {/* Hero image */}
                         {product.imageUrl && (
                             <div className="relative h-52 w-full bg-zinc-900">
@@ -277,7 +277,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                     </div>
 
                     {/* Sticky Footer */}
-                    <div className="border-t border-zinc-800 bg-zinc-950 p-4">
+                    <div className="sticky bottom-0 left-0 w-full bg-black/90 backdrop-blur-md p-4 border-t border-zinc-800">
                         <div className="flex items-center gap-4">
                             {/* Quantity stepper */}
                             <div className="flex items-center gap-3 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5">

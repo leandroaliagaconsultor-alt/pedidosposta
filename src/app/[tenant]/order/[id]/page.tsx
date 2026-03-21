@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck, MessageCircle } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck, MessageCircle, BellRing } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 
@@ -303,9 +303,37 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 {isCancelled ? "Pedido Cancelado" : activeStepData?.label}
             </h1>
 
-            <p className="mb-12 max-w-xs text-center text-sm font-medium text-zinc-400 leading-relaxed">
+            <p className="mb-6 max-w-xs text-center text-sm font-medium text-zinc-400 leading-relaxed">
                 {getMessage()}
             </p>
+
+            {/* ── Web Push / Reaseguro iOS Banner ── */}
+            {!isCancelled && currentStep < 3 && (
+                <div className="mb-12 w-full max-w-sm rounded-2xl border border-blue-500/20 bg-[#0a0f1a] p-4 shadow-lg animate-in fade-in slide-in-from-top-4">
+                    <div className="flex items-start gap-4">
+                        <div className="mt-0.5 rounded-full bg-blue-500/20 p-2 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                            <BellRing size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-base font-semibold text-white tracking-wide">Seguimiento en tiempo real activado</h3>
+                            <p className="text-sm text-zinc-300 mt-1 leading-relaxed">
+                                Tu pantalla se actualizará sola cuando haya cambios en tu pedido.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="rounded-xl bg-black/50 p-3.5 border border-zinc-800/80 space-y-3 mt-4">
+                        {!isSubscribed && (
+                            <p className="text-[13px] text-zinc-400 leading-snug">
+                                <span className="mr-1.5 inline-block">📱</span> <strong className="text-zinc-200">¿Usás Android?</strong> Podés <button onClick={subscribeToPush} className="text-blue-400 font-semibold transition hover:text-blue-300" type="button">Activar Notificaciones</button> para cerrar el navegador y que te avisemos.
+                            </p>
+                        )}
+                        <p className="text-[13px] text-zinc-400 leading-snug">
+                            <span className="mr-1.5 inline-block">🍏</span> <strong className="text-zinc-200">¿Usás iPhone?</strong> Dejá esta pestaña abierta, el estado se actualiza en vivo sin necesidad de notificaciones.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* ── Progress Stepper (full labels, no truncation) ────────── */}
             {!isCancelled && (
@@ -365,26 +393,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 </div>
             )}
 
-            {/* ── Web Push Banner ── */}
-            {!isSubscribed && !isCancelled && currentStep < 3 && (
-                <div className="mb-8 w-full max-w-sm rounded-2xl border border-primary/20 bg-primary/5 p-4 animate-in fade-in slide-in-from-top-4">
-                    <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-primary/10 p-2 text-primary">
-                            <CheckCircle2 size={18} />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-xs font-bold text-white">¿Querés que te avisemos?</p>
-                            <p className="text-[10px] text-zinc-400">Activá las notificaciones para saber cuándo sale tu pedido.</p>
-                        </div>
-                        <button
-                            onClick={subscribeToPush}
-                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-zinc-950 transition hover:brightness-110 active:scale-95"
-                        >
-                            ACTIVAR
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Removed the old Web Push Banner here in favor of the new one up top */}
 
             <div className="mt-auto w-full pt-6 border-t border-zinc-900 flex flex-col items-center pb-12">
                 <p className="mb-6 text-center text-[10px] uppercase font-bold tracking-widest text-zinc-600">

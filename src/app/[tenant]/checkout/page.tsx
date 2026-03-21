@@ -711,7 +711,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 }
 
 function inputStyle(hasError: boolean) {
-    return `w-full bg-[#0a0a0a] border ${hasError ? 'border-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary'} rounded-2xl py-5 px-6 text-white text-sm font-medium outline-none transition-all placeholder:text-zinc-600 shadow-inner`;
+    return `w-full bg-[#0a0a0a] border ${hasError ? 'border-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary'} rounded-2xl py-5 px-6 text-white text-base md:text-sm font-medium outline-none transition-all placeholder:text-zinc-600 shadow-inner`;
 }
 
 function MethodButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
