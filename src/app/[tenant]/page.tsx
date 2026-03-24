@@ -89,7 +89,7 @@ export default function StorefrontPage() {
                     supabase.from("products").select("*").eq("tenant_id", tenantData.id).eq("is_available", true).order("sort_order", { ascending: true }),
                     supabase.from("modifiers").select("*").eq("tenant_id", tenantData.id),
                     supabase.from("modifier_options").select("*, modifiers!inner(tenant_id)").eq("modifiers.tenant_id", tenantData.id),
-                    supabase.from("product_modifiers").select("*")
+                    supabase.from("product_modifiers").select("*").order("sort_order", { ascending: true })
                 ]);
 
                 // Map Pivot

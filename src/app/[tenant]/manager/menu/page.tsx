@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Edit2, Image as ImageIcon, Loader2, Plus, Trash2, X, Upload } from "lucide-react";
+import { Edit2, Image as ImageIcon, Loader2, Plus, Trash2, X, Upload, ChevronUp, ChevronDown } from "lucide-react";
 
 // ─── Types & Schemas ─────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 supabase.from("products").select("*").eq("tenant_id", tData.id).order("sort_order", { ascending: true }),
                 supabase.from("modifiers").select("*").eq("tenant_id", tData.id),
                 supabase.from("modifier_options").select("*, modifiers!inner(tenant_id)").eq("modifiers.tenant_id", tData.id),
-                supabase.from("product_modifiers").select("*")
+                supabase.from("product_modifiers").select("*").order("sort_order", { ascending: true })
             ]);
 
             if (catRes.data) setCategories(catRes.data);
@@ -359,7 +359,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             const prodId = finalProd.id;
             await supabase.from("product_modifiers").delete().eq("product_id", prodId);
             if (data.modifier_ids.length > 0) {
-                const pivotData = data.modifier_ids.map(mid => ({ product_id: prodId, modifier_id: mid }));
+                const pivotData = data.modifier_ids.map((mid: string, idx: number) => ({ product_id: prodId, modifier_id: mid, sort_order: idx }));
                 const { error: pivotErr } = await supabase.from("product_modifiers").insert(pivotData);
                 if (pivotErr) throw pivotErr;
             }
@@ -866,22 +866,86 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 <label className="mb-3 block text-sm font-semibold text-zinc-300">Modificadores Aplicables</label>
                                 <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
                                     {modifiers.length > 0 ? (
-                                        modifiers.map((mod) => (
-                                            <label key={mod.id} className="flex items-center gap-3 cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    value={mod.id}
-                                                    {...prodForm.register("modifier_ids")}
-                                                    className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-primary accent-primary"
-                                                />
-                                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                                                    {mod.name}
-                                                    <span className="ml-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
-                                                        {mod.options?.length} opciones
-                                                    </span>
-                                                </span>
-                                            </label>
-                                        ))
+                                        (() => {
+                                            const selectedIds = prodForm.watch("modifier_ids") || [];
+                                            const unselectedMods = modifiers.filter(m => !selectedIds.includes(m.id));
+                                            
+                                            return (
+                                                <div className="space-y-2">
+                                                    {selectedIds.map((id, index) => {
+                                                        const mod = modifiers.find(m => m.id === id);
+                                                        if (!mod) return null;
+                                                        return (
+                                                            <div key={mod.id} className="flex items-center gap-3 group bg-zinc-800/40 p-2.5 rounded-lg border border-zinc-800">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    value={mod.id}
+                                                                    {...prodForm.register("modifier_ids")}
+                                                                    className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-primary accent-primary cursor-pointer shrink-0 mt-0.5"
+                                                                />
+                                                                <div className="flex-1 text-sm text-zinc-200 font-medium">
+                                                                    {mod.name}
+                                                                    <span className="ml-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                                                                        {mod.options?.length} opciones
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            if (index === 0) return;
+                                                                            const newIds = [...selectedIds];
+                                                                            const temp = newIds[index - 1];
+                                                                            newIds[index - 1] = newIds[index];
+                                                                            newIds[index] = temp;
+                                                                            prodForm.setValue("modifier_ids", newIds, { shouldDirty: true });
+                                                                        }}
+                                                                        disabled={index === 0}
+                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                                    >
+                                                                        <ChevronUp size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            if (index === selectedIds.length - 1) return;
+                                                                            const newIds = [...selectedIds];
+                                                                            const temp = newIds[index + 1];
+                                                                            newIds[index + 1] = newIds[index];
+                                                                            newIds[index] = temp;
+                                                                            prodForm.setValue("modifier_ids", newIds, { shouldDirty: true });
+                                                                        }}
+                                                                        disabled={index === selectedIds.length - 1}
+                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                                    >
+                                                                        <ChevronDown size={16} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {unselectedMods.length > 0 && selectedIds.length > 0 && <div className="h-px w-full bg-zinc-800 my-2" />}
+                                                    {unselectedMods.map(mod => (
+                                                        <label key={mod.id} className="flex items-start gap-3 cursor-pointer group p-2.5 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                                                            <input
+                                                                type="checkbox"
+                                                                value={mod.id}
+                                                                {...prodForm.register("modifier_ids")}
+                                                                className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-primary accent-primary mt-0.5 cursor-pointer shrink-0"
+                                                            />
+                                                            <span className="text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors flex-1 font-medium">
+                                                                {mod.name}
+                                                                <span className="ml-2 text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                                                                    {mod.options?.length} opciones
+                                                                </span>
+                                                            </span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })()
                                     ) : (
                                         <p className="text-xs text-zinc-500 italic">No hay modificadores creados aún.</p>
                                     )}

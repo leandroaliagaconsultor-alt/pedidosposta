@@ -137,7 +137,7 @@ export default function LandingPage() {
             {/* ─── ARSENAL DE PEDIDOSPOSTA (FEATURE SHOWROOM) ─── */}
             <section className="relative z-10 border-t border-white/5 bg-black py-32">
                 <div className="mx-auto max-w-7xl px-6 lg:px-12">
-                    
+
                     {/* Encabezado de Sección */}
                     <div className="mb-20">
                         <h2 className="font-display text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
@@ -147,7 +147,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex flex-col gap-32">
-                        
+
                         {/* Bloque A: Checkout GPS */}
                         <div className="flex flex-col items-center gap-12 lg:flex-row">
                             <div className="max-w-xl lg:w-1/2">
@@ -156,7 +156,7 @@ export default function LandingPage() {
                                     Checkout en 3 Clics <br /> con GPS Inteligente.
                                 </h3>
                                 <p className="font-body text-lg leading-relaxed text-zinc-400">
-                                    Tus clientes no se pierden al pedir, tus repartidores no se pierden al entregar. 
+                                    Tus clientes no se pierden al pedir, tus repartidores no se pierden al entregar.
                                     Nuestro sistema detecta <strong className="text-white">"Entre Calles"</strong> automáticamente y calcula el costo exacto por KM.
                                 </p>
                             </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
                                     Cobrá más rápido <br /> y sin errores.
                                 </h3>
                                 <p className="font-body text-lg leading-relaxed text-zinc-400">
-                                    Integración nativa con <strong className="text-white">MercadoPago</strong> y validación automática de transferencias adjuntando comprobante. 
+                                    Integración nativa con <strong className="text-white">MercadoPago</strong> y validación automática de transferencias adjuntando comprobante.
                                     Los pedidos no entran a cocina hasta que el pago está confirmado. Cero timos.
                                 </p>
                             </div>
@@ -217,7 +217,7 @@ export default function LandingPage() {
                                     Tu cocina a la <br /> velocidad de la luz.
                                 </h3>
                                 <p className="font-body text-lg leading-relaxed text-zinc-400">
-                                    Visualizá cada pedido en vivo en nuestro <strong className="text-white">panel de cajero táctil</strong>. 
+                                    Visualizá cada pedido en vivo en nuestro <strong className="text-white">panel de cajero táctil</strong>.
                                     Cero papel, cero Excel, 100% control del local desde cualquier dispositivo.
                                 </p>
                             </div>
@@ -259,7 +259,7 @@ export default function LandingPage() {
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch pt-8">
-                        
+
                         {/* El Enemigo: Apps Tradicionales */}
                         <div className="group relative rounded-[2.5rem] border border-red-500/20 bg-zinc-900/30 p-10 backdrop-blur-xl transition-all hover:bg-zinc-900/50">
                             <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-500">
@@ -338,34 +338,34 @@ export default function LandingPage() {
                         </div>
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-2">
-                             <span className="font-display text-7xl md:text-9xl font-black text-white">$99.999</span>
-                             <div className="flex flex-col items-start font-body text-zinc-500 uppercase font-black text-xl tracking-tighter">
-                                 <span>ARS</span>
-                                 <span>/MES</span>
-                             </div>
+                            <span className="font-display text-7xl md:text-9xl font-black text-white">$99.999</span>
+                            <div className="flex flex-col items-start font-body text-zinc-500 uppercase font-black text-xl tracking-tighter">
+                                <span>ARS</span>
+                                <span>/MES</span>
+                            </div>
                         </div>
-                        
+
                         <p className="font-body text-zinc-400 text-lg mb-12">
                             Menos de lo que te cuesta el sueldo de un solo día de un empleado. <br />
                             Tu negocio abierto <strong className="text-white">24/7</strong> procesando pedidos.
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left max-w-2xl mx-auto mb-16 font-body text-sm text-zinc-300">
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Tienda Online de Clase Mundial</div>
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Checkout con GPS Inteligente</div>
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Panel de Gestión en Vivo</div>
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Soporte Directo vía WhatsApp</div>
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Actualizaciones Semanales</div>
-                             <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Multitenant & Branding Studio</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Tienda Online de Clase Mundial</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Checkout con GPS Inteligente</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Panel de Gestión en Vivo</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Soporte Directo vía WhatsApp</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Actualizaciones Semanales</div>
+                            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#FF5A00]" /> Multitenant & Branding Studio</div>
                         </div>
 
                         <button className="group relative w-full rounded-2xl bg-[#FF5A00] py-6 font-display text-2xl font-black uppercase text-black transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_-5px_#FF5A00]">
-                             Empezar mis 7 Días Gratis
-                             <ArrowRight size={24} className="absolute right-8 top-1/2 -translate-y-1/2 transition-transform group-hover:translate-x-2" />
+                            Empezar mis 7 Días Gratis
+                            <ArrowRight size={24} className="absolute right-8 top-1/2 -translate-y-1/2 transition-transform group-hover:translate-x-2" />
                         </button>
-                        
+
                         <p className="mt-8 font-body text-zinc-600 text-xs font-medium uppercase tracking-[0.2em]">
-                             No pedimos tarjeta de crédito para empezar a probar.
+                            No pedimos tarjeta de crédito para empezar a probar.
                         </p>
                     </div>
                 </div>
@@ -381,7 +381,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
-                        
+
                         {/* Q1 */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 text-[#FF5A00]">
@@ -441,10 +441,10 @@ export default function LandingPage() {
 
                         {/* Links */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 font-body text-xs font-bold uppercase tracking-widest text-zinc-500">
-                             <a href="#pricing" className="hover:text-white transition-colors">Precios</a>
-                             <a href="/angus" className="hover:text-white transition-colors">Ver Demo</a>
-                             <a href="/login-posta" className="hover:text-white transition-colors">Ingresar</a>
-                             <a href="#" className="hover:text-white transition-colors">Términos</a>
+                            <a href="#pricing" className="hover:text-white transition-colors">Precios</a>
+                            <a href="/angus" className="hover:text-white transition-colors">Ver Demo</a>
+                            <a href="/login-posta" className="hover:text-white transition-colors">Ingresar</a>
+                            <a href="#" className="hover:text-white transition-colors">Términos</a>
                         </div>
                     </div>
 
