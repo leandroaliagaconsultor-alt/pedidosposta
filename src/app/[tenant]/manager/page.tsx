@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck,
@@ -51,6 +52,7 @@ const TABS: { key: TabKey; label: string; statuses: string[]; icon: React.Elemen
 // ── Component ────────────────────────────────────────────────────────────────
 export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: string }> }) {
     const { tenant } = React.use(params);
+    const router = useRouter();
     const supabase = createClient();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -121,14 +123,22 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     const newOrderRow = payload.new as Order;
                     if (newOrderRow.status === "awaiting_payment") return;
 
+                    // Fetch con items en un solo viaje (JOIN profundo)
                     const { data: fullOrder } = await supabase
                         .from("orders")
                         .select("*, order_items(*, product:products(name))")
                         .eq("id", newOrderRow.id)
+                        .eq("tenant_id", tenantId)
                         .single();
 
-                    const newOrder = (fullOrder || newOrderRow) as unknown as Order;
-                    setOrders((prev) => [newOrder, ...prev]);
+                    if (!fullOrder) return;
+                    const newOrder = fullOrder as unknown as Order;
+
+                    // Evitar duplicados si el realtime dispara dos veces
+                    setOrders((prev) => {
+                        if (prev.some((o) => o.id === newOrder.id)) return prev;
+                        return [newOrder, ...prev];
+                    });
 
                     toast("¡🔔 Nuevo pedido recibido!", {
                         description: `#${newOrder.order_number} - ${newOrder.first_name} ${newOrder.last_name}`,
@@ -149,41 +159,44 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 },
                 async (payload) => {
                     const updated = payload.new as Order;
+
                     if (updated.status === "cancelled" || updated.status === "awaiting_payment") {
                         setOrders((prev) => prev.filter((o) => o.id !== updated.id));
-                    } else {
-                        setOrders((prev) => {
-                            const exists = prev.some((o) => o.id === updated.id);
-                            if (exists) {
-                                return prev.map((o) =>
-                                    o.id === updated.id ? { ...o, ...updated } : o
-                                );
-                            }
-                            // If it wasn't in state (e.g., it evolved from awaiting_payment)
-                            return prev;
-                        });
+                        return;
+                    }
 
-                        // If it doesn't exist, it means it just became 'pending' or another visible state. Fetch full.
-                        setOrders((prev) => {
-                            const exists = prev.some((o) => o.id === updated.id);
-                            if (!exists) {
-                                // Fire a side effect to fetch the full order and append it.
-                                supabase
-                                    .from("orders")
-                                    .select("*, order_items(*, product:products(name))")
-                                    .eq("id", updated.id)
-                                    .single()
-                                    .then(({ data: fullOrder }) => {
-                                        if (fullOrder) {
-                                            setOrders((p) => [fullOrder as unknown as Order, ...p]);
-                                            toast("¡💳 Pago confirmado! Nuevo pedido.", { duration: 5000 });
-                                            const audio = new Audio("/timbrenotificacion.mp3");
-                                            audio.play().catch(() => { });
-                                        }
-                                    });
-                            }
-                            return prev;
-                        });
+                    // Verificar si la orden ya existe en el estado local
+                    setOrders((prev) => {
+                        const exists = prev.some((o) => o.id === updated.id);
+                        if (exists) {
+                            // Actualizar in-place conservando order_items existentes
+                            return prev.map((o) =>
+                                o.id === updated.id ? { ...o, ...updated } : o
+                            );
+                        }
+                        return prev;
+                    });
+
+                    // Si no existía (ej: transición desde awaiting_payment), fetch completo UNA sola vez
+                    // Usamos un check síncrono para evitar race conditions con el setOrders anterior
+                    const existsInState = orders.some((o) => o.id === updated.id);
+                    if (!existsInState && updated.status === "pending") {
+                        const { data: fullOrder } = await supabase
+                            .from("orders")
+                            .select("*, order_items(*, product:products(name))")
+                            .eq("id", updated.id)
+                            .eq("tenant_id", tenantId)
+                            .single();
+
+                        if (fullOrder) {
+                            setOrders((p) => {
+                                if (p.some((o) => o.id === updated.id)) return p;
+                                return [fullOrder as unknown as Order, ...p];
+                            });
+                            toast("¡💳 Pago confirmado! Nuevo pedido.", { duration: 5000 });
+                            const audio = new Audio("/timbrenotificacion.mp3");
+                            audio.play().catch(() => { });
+                        }
                     }
                 }
             )
@@ -210,9 +223,18 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         const { error } = await supabase
             .from("orders")
             .update(updateData)
-            .eq("id", orderId);
+            .eq("id", orderId)
+            .eq("tenant_id", tenantId);
 
         if (error) {
+            // Intercepción de fallos de sesión expirada
+            if (error.code === 'PGRST301' || error.message?.toLowerCase().includes('jwt') || error.message?.toLowerCase().includes('expired')) {
+                toast.error("Tu sesión ha expirado por seguridad. Redirigiendo...", { duration: 5000 });
+                await supabase.auth.signOut();
+                router.push('/login');
+                return;
+            }
+
             toast.error("Error al actualizar", {
                 description: error.message.includes("check constraint")
                     ? `Estado '${newStatus}' no permitido.`
@@ -288,7 +310,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 internal_notes: adjustmentNotes,
                 total_amount: newTotal
             })
-            .eq("id", adjustingOrder.id);
+            .eq("id", adjustingOrder.id)
+            .eq("tenant_id", tenantId);
 
         if (error) {
             toast.error("Error al ajustar el pedido");

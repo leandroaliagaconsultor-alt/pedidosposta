@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"mp_\\\\|mercado\\\\|payment.*status\\\\|confirm.*payment\" /Users/leandrotomas/Documents/pedidoposta.com/src --include=*.ts --include=*.tsx -i)",
+      "Bash(find /Users/leandrotomas/Documents/pedidoposta.com -name *.env* -type f)",
+      "Bash(grep -n \"fetch\\\\|POST\\\\|response\\\\|redirect\" /Users/leandrotomas/Documents/pedidoposta.com/src/app/[tenant]/checkout/page.tsx)"
+    ]
+  }
+}

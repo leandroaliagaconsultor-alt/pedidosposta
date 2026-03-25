@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
         }
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
         const supabase = createClient(supabaseUrl, supabaseKey);
         // 1. Obtener la configuración del tenant con la key de MercadoPago
         const { data: tenantData, error: tenantError } = await supabase
@@ -68,11 +68,9 @@ export async function POST(req: NextRequest) {
                 pending: `${baseUrl}/${tenantSlug}/order/${orderId}?status=pending`
             },
             auto_return: "approved",
+            notification_url: `${baseUrl}/api/checkout/mercadopago/webhook`,
             statement_descriptor: tenantSlug.toUpperCase(),
         };
-
-        // IMPRIME ESTO PARA DEBUGGEAR
-        console.log("PAYLOAD ENVIADO A MP:", JSON.stringify(preferencePayload, null, 2));
 
         const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
             method: 'POST',
@@ -93,8 +91,8 @@ export async function POST(req: NextRequest) {
         // 4. Devolvemos la URL al frontend
         return NextResponse.json({ init_point: mpData.init_point });
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Error en endpoint MP:", e);
-        return NextResponse.json({ error: "Error interno del servidor", details: e.message }, { status: 500 });
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
 }

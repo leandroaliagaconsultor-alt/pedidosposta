@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
+import { useAddressStore } from "@/lib/store/addressStore";
 import { createClient } from "@/lib/supabase/client";
 import { generateAvailableSlots } from "@/lib/utils/timeSlots";
 import { calculateDistance } from "@/lib/utils/geo";
@@ -40,11 +41,9 @@ const checkoutSchema = z
         lastName: z.string().min(2, "Ingresá tu apellido"),
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
-        address: z.string().optional(), // kept for compatibility if needed internally
         street: z.string().optional(),
         streetNumber: z.string().optional(),
         apartment: z.string().optional(),
-        neighborhood: z.string().optional(),
         betweenStreets: z.string().optional(),
         delivery_notes: z.string().optional(),
         deliveryTime: z.string().optional(),
@@ -70,9 +69,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const { tenant: tenantSlug } = React.use(params);
     const router = useRouter();
     const { items, clearCart } = useCartStore();
+    const { getAddress, saveAddress } = useAddressStore();
+    const savedAddress = getAddress(tenantSlug);
     const supabase = createClient();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSavedAddress, setShowSavedAddress] = useState(!!savedAddress);
     
     // Config states
     const [isMPActive, setIsMPActive] = useState(false);
@@ -82,6 +84,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     
     // Logistics states
     const [tenantStoreAddress, setTenantStoreAddress] = useState<string | null>(null);
+    const [storeCoords, setStoreCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "distance">("fixed");
     const [tenantDeliveryRadius, setTenantDeliveryRadius] = useState(5);
     const [tenantFixedPrice, setTenantFixedPrice] = useState(0);
@@ -101,10 +104,33 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const [isLocating, setIsLocating] = useState(false);
     const [usedGPS, setUsedGPS] = useState(false);
+    const [gpsNeedsNumber, setGpsNeedsNumber] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
-    
+
     const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
+    const streetNumberRef = React.useRef<HTMLInputElement>(null);
+
+    // Helper: calcula costo de envío y actualiza estado (DRY)
+    const computeDeliveryCost = React.useCallback((customerLat: number, customerLng: number) => {
+        if (!storeCoords) return;
+        const rawDistance = calculateDistance(storeCoords.lat, storeCoords.lng, customerLat, customerLng);
+        const finalDistance = Math.round(rawDistance * 10) / 10;
+        setCalculatedDistance(finalDistance);
+
+        if (finalDistance > tenantDeliveryRadius) {
+            setIsOutOfBounds(true);
+            toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
+        } else {
+            setIsOutOfBounds(false);
+            if (finalDistance <= tenantBaseKm) {
+                setCalculatedDeliveryCost(Math.round(tenantBasePrice));
+            } else {
+                const extraKm = finalDistance - tenantBaseKm;
+                setCalculatedDeliveryCost(Math.round(tenantBasePrice + extraKm * tenantExtraKmPrice));
+            }
+        }
+    }, [storeCoords, tenantDeliveryRadius, tenantBaseKm, tenantBasePrice, tenantExtraKmPrice]);
 
     const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
 
@@ -160,13 +186,32 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
 
+    // Aplicar dirección guardada (0 API calls)
+    const applySavedAddress = React.useCallback(() => {
+        if (!savedAddress) return;
+        setAddressValue(savedAddress.street, false);
+        setValue("street", savedAddress.street, { shouldValidate: true });
+        setValue("streetNumber", savedAddress.streetNumber, { shouldValidate: true });
+        if (savedAddress.apartment) setValue("apartment", savedAddress.apartment);
+        setValue("betweenStreets", savedAddress.betweenStreets, { shouldValidate: true });
+        if (savedAddress.deliveryNotes) setValue("delivery_notes", savedAddress.deliveryNotes);
+        setShowSavedAddress(false);
+
+        if (savedAddress.coords) {
+            setSelectedCoords(savedAddress.coords);
+            if (tenantDeliveryType === "distance") {
+                computeDeliveryCost(savedAddress.coords.lat, savedAddress.coords.lng);
+            }
+        }
+    }, [savedAddress, setValue, setAddressValue, tenantDeliveryType, computeDeliveryCost]);
+
     // Fetch initial configuration
     React.useEffect(() => {
         const fetchConfig = async () => {
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
+                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
                 .eq("slug", tenantSlug)
                 .single();
 
@@ -175,6 +220,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 setTenantAlias(tenantData.transfer_alias || null);
                 setTenantAccountName(tenantData.transfer_account_name || null);
                 setTenantStoreAddress(tenantData.store_address || null);
+
+                // Cache store coords: use DB columns if available, fallback to single geocode
+                if (tenantData.store_lat && tenantData.store_lng) {
+                    setStoreCoords({ lat: tenantData.store_lat, lng: tenantData.store_lng });
+                } else if (tenantData.store_address) {
+                    try {
+                        const results = await getGeocode({ address: tenantData.store_address });
+                        const coords = getLatLng(results[0]);
+                        setStoreCoords(coords);
+                    } catch { /* store coords unavailable — distance pricing won't work */ }
+                }
 
                 const pricingType = tenantData.delivery_pricing_type || "fixed";
                 setTenantDeliveryType(pricingType);
@@ -205,7 +261,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             return;
         }
 
-        if (!tenantStoreAddress && tenantDeliveryType === "distance") {
+        if (!storeCoords) {
             toast.error("El local no tiene configurada su dirección de envío.");
             return;
         }
@@ -213,51 +269,34 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         setIsCalculatingDistance(true);
         try {
             const results = await getGeocode({ address: addressStr });
-            const { lat, lng } = await getLatLng(results[0]);
+            const { lat, lng } = getLatLng(results[0]);
             setSelectedCoords({ lat, lng });
 
-            // Extraer calle, número y barrio de la respuesta
             const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
             const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
-            const hood = results[0].address_components.find(c => c.types.includes("neighborhood") || c.types.includes("sublocality"))?.long_name || "";
-            
-            // Limpia la calle de remanentes numéricos
+
             const finalStreet = route || addressStr.split(',')[0].replace(/[0-9]/g, '').trim();
             setAddressValue(finalStreet, false);
             setValue("street", finalStreet, { shouldValidate: true });
-            
-            if (streetNum) setValue("streetNumber", streetNum, { shouldValidate: true });
-            if (hood) setValue("neighborhood", hood, { shouldValidate: true });
 
-            const originResults = await getGeocode({ address: tenantStoreAddress! });
-            const originLatLng = await getLatLng(originResults[0]);
-
-            const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
-            const finalDistance = Math.round(rawDistance * 10) / 10;
-            setIsCalculatingDistance(false);
-            setCalculatedDistance(finalDistance);
-
-            if (finalDistance > tenantDeliveryRadius) {
-                setIsOutOfBounds(true);
-                toast.error(`Lo sentimos, el local solo entrega hasta ${tenantDeliveryRadius}km de distancia.`);
+            if (streetNum) {
+                setValue("streetNumber", streetNum, { shouldValidate: true });
+                setGpsNeedsNumber(false);
+                setTimeout(() => betweenStreetsRef.current?.focus(), 200);
             } else {
-                setIsOutOfBounds(false);
-                if (finalDistance <= tenantBaseKm) {
-                    setCalculatedDeliveryCost(Math.round(tenantBasePrice));
-                } else {
-                    const extraKm = finalDistance - tenantBaseKm;
-                    const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
-                    setCalculatedDeliveryCost(Math.round(cost));
-                }
+                setGpsNeedsNumber(true);
+                setTimeout(() => streetNumberRef.current?.focus(), 200);
             }
+
+            computeDeliveryCost(lat, lng);
         } catch (error) {
-            setIsCalculatingDistance(false);
             setCalculatedDeliveryCost(tenantBasePrice);
             console.error("Geocoding Error: ", error);
+        } finally {
+            setIsCalculatingDistance(false);
         }
     };
 
-    // Calcular Distancia GPS
     const handleGeolocation = () => {
         if (!navigator.geolocation) {
             toast.error("Tu navegador no soporta geolocalización.");
@@ -269,52 +308,39 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             async (position) => {
                 const { latitude: lat, longitude: lng } = position.coords;
                 try {
+                    // 1 API call: reverse geocode GPS coords
                     const results = await getGeocode({ location: { lat, lng } });
-                    
+
                     const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
                     const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
-                    const hood = results[0].address_components.find(c => c.types.includes("neighborhood") || c.types.includes("sublocality"))?.long_name || "";
 
                     const streetName = route || results[0].formatted_address.split(',')[0].replace(/[0-9]/g, '').trim();
-                    
+
                     setAddressValue(streetName, false);
                     setValue("street", streetName, { shouldValidate: true });
-                    if(streetNum) setValue("streetNumber", streetNum, { shouldValidate: true });
-                    if(hood) setValue("neighborhood", hood, { shouldValidate: true });
-                    
                     setUsedGPS(true);
                     setSelectedCoords({ lat, lng });
 
-                    setTimeout(() => betweenStreetsRef.current?.focus(), 200);
-
-                    if (tenantStoreAddress) {
-                        const originResults = await getGeocode({ address: tenantStoreAddress });
-                        const originLatLng = await getLatLng(originResults[0]);
-                        const rawDistance = calculateDistance(originLatLng.lat, originLatLng.lng, lat, lng);
-                        const finalDistance = Math.round(rawDistance * 10) / 10;
-                        setCalculatedDistance(finalDistance);
-
-                        if (finalDistance > tenantDeliveryRadius) {
-                            setIsOutOfBounds(true);
-                            toast.error(`Tu ubicación está fuera del radio de entrega (${tenantDeliveryRadius}km).`);
-                        } else {
-                            setIsOutOfBounds(false);
-                            if (finalDistance <= tenantBaseKm) {
-                                setCalculatedDeliveryCost(Math.round(tenantBasePrice));
-                            } else {
-                                const extraKm = finalDistance - tenantBaseKm;
-                                const cost = tenantBasePrice + (extraKm * tenantExtraKmPrice);
-                                setCalculatedDeliveryCost(Math.round(cost));
-                            }
-                        }
+                    if (streetNum) {
+                        setValue("streetNumber", streetNum, { shouldValidate: true });
+                        setGpsNeedsNumber(false);
+                        setTimeout(() => betweenStreetsRef.current?.focus(), 200);
+                    } else {
+                        setGpsNeedsNumber(true);
+                        setTimeout(() => streetNumberRef.current?.focus(), 200);
                     }
-                } catch (error) {
+
+                    // Distance uses cached store coords — 0 extra API calls
+                    if (storeCoords && tenantDeliveryType === "distance") {
+                        computeDeliveryCost(lat, lng);
+                    }
+                } catch {
                     toast.error("No pudimos obtener tu dirección exacta.");
                 } finally {
                     setIsLocating(false);
                 }
             },
-            (error) => {
+            () => {
                 setIsLocating(false);
                 toast.error("No pudimos obtener tu ubicación.");
             },
@@ -365,43 +391,65 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             const finalAddress = data.deliveryMethod === "DELIVERY"
-                ? `${data.street} ${data.streetNumber}${data.neighborhood ? `, B° ${data.neighborhood}` : ""} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                ? `${data.street} ${data.streetNumber} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
                 : null;
 
-            const { data: order, error: orderErr } = await supabase
-                .from("orders")
-                .insert({
-                    tenant_id: tenantData.id,
-                    customer_name: `${data.firstName} ${data.lastName}`,
-                    first_name: data.firstName,
-                    last_name: data.lastName,
-                    customer_phone: data.phone,
-                    customer_address: finalAddress,
-                    delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
-                    delivery_method: data.deliveryMethod,
-                    payment_method: data.paymentMethod,
-                    is_asap: data.is_asap,
-                    scheduled_time: scheduledTime,
-                    total_amount: total,
-                    status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
-                    receipt_url: receiptUrl,
-                })
-                .select("id")
-                .single();
+            // Construir el payload para la transacción atómica
+            const checkoutPayload = {
+                tenant_id: tenantData.id,
+                customer_name: `${data.firstName} ${data.lastName}`,
+                first_name: data.firstName,
+                last_name: data.lastName,
+                customer_phone: data.phone,
+                customer_address: finalAddress,
+                delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
+                delivery_method: data.deliveryMethod,
+                payment_method: data.paymentMethod,
+                is_asap: data.is_asap,
+                scheduled_time: scheduledTime,
+                scheduled_slot: !data.is_asap && data.deliveryTime ? data.deliveryTime : null,
+                total_amount: total,
+                status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
+                receipt_url: receiptUrl,
+                items: items.map((item) => ({
+                    product_id: item.productId,
+                    quantity: item.quantity,
+                    unit_price: item.price,
+                    total_price: item.price * item.quantity,
+                    notes: item.modifiersText || null,
+                })),
+            };
 
-            if (orderErr || !order) throw orderErr;
+            // Transacción atómica: order + items en un solo RPC
+            const { data: rpcResult, error: rpcError } = await supabase.rpc("process_checkout", {
+                payload: checkoutPayload,
+            });
 
-            const orderItems = items.map((item) => ({
-                order_id: order.id,
-                product_id: item.productId,
-                quantity: item.quantity,
-                unit_price: item.price,
-                total_price: item.price * item.quantity,
-                notes: item.modifiersText || null,
-            }));
+            if (rpcError) {
+                // Errores específicos del RPC para UX amigable
+                if (rpcError.message.includes("SLOT_FULL")) {
+                    const friendlyMsg = rpcError.message.replace(/^.*SLOT_FULL:\s*/, "");
+                    toast.error(friendlyMsg);
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw new Error(rpcError.message);
+            }
 
-            const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
-            if (itemsErr) throw itemsErr;
+            const order = { id: rpcResult.order_id };
+
+            // Guardar dirección para futuros pedidos (0 API calls en el próximo checkout)
+            if (data.deliveryMethod === "DELIVERY" && data.street && data.streetNumber && data.betweenStreets) {
+                saveAddress(tenantSlug, {
+                    street: data.street,
+                    streetNumber: data.streetNumber,
+                    apartment: data.apartment || undefined,
+                    betweenStreets: data.betweenStreets,
+                    deliveryNotes: data.delivery_notes || undefined,
+                    coords: selectedCoords || undefined,
+                    savedAt: Date.now(),
+                });
+            }
 
             // Integración MP
             if (data.paymentMethod === "MERCADOPAGO") {
@@ -432,9 +480,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             clearCart();
             router.push(`/${tenantSlug}/order/${order.id}`);
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            toast.error(err.message || "Error al confirmar el pedido. Reintente por favor.");
+            const message = err instanceof Error ? err.message : "Error al confirmar el pedido. Reintente por favor.";
+            toast.error(message);
         } finally {
             setIsSubmitting(false);
         }
@@ -492,6 +541,25 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                         {deliveryMethod === "DELIVERY" && (
                             <div className="space-y-5 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+
+                                {showSavedAddress && savedAddress && (
+                                    <button
+                                        type="button"
+                                        onClick={applySavedAddress}
+                                        className="w-full py-4 px-5 rounded-2xl border border-primary/30 bg-primary/5 flex items-start gap-3 text-left transition-all hover:border-primary/60 hover:bg-primary/10"
+                                    >
+                                        <MapPin size={18} className="text-primary mt-0.5 shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Usar mi dirección anterior</p>
+                                            <p className="text-sm text-zinc-300 font-medium truncate">
+                                                {savedAddress.street} {savedAddress.streetNumber}
+                                                {savedAddress.apartment ? `, ${savedAddress.apartment}` : ""}
+                                            </p>
+                                            <p className="text-xs text-zinc-500 truncate">Entre: {savedAddress.betweenStreets}</p>
+                                        </div>
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
                                     onClick={handleGeolocation}
@@ -499,7 +567,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     className="w-full py-5 rounded-2xl border border-zinc-800 bg-[#0a0a0a] flex items-center justify-center gap-3 text-sm font-bold text-primary hover:border-primary/50 transition-all shadow-[0_0_15px_rgba(34,197,94,0.05)]"
                                 >
                                     {isLocating ? <Loader2 className="animate-spin" /> : <MapPin size={18} />}
-                                    📍 USAR MI UBICACIÓN ACTUAL (GPS)
+                                    USAR MI UBICACIÓN ACTUAL (GPS)
                                 </button>
 
                                 <Field label="Calle de entrega *" error={errors.street?.message}>
@@ -514,9 +582,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         />
                                     </div>
                                     
-                                    {usedGPS && (
+                                    {usedGPS && !gpsNeedsNumber && (
                                         <p className="mt-2 ml-1 text-xs font-bold text-amber-500 animate-pulse">
-                                            ⚠️ Verificá la calle y la altura. A veces el GPS marca la esquina.
+                                            Verificá la calle y la altura. A veces el GPS marca la esquina.
                                         </p>
                                     )}
 
@@ -532,17 +600,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 </Field>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Altura / N° *" error={errors.streetNumber?.message}>
-                                        <input {...register("streetNumber")} placeholder="Ej: 1226" className={inputStyle(!!errors.streetNumber)} />
+                                    <Field label={gpsNeedsNumber ? "Altura / N° * (verificar)" : "Altura / N° *"} error={errors.streetNumber?.message}>
+                                        <input
+                                            {...register("streetNumber")}
+                                            ref={(e) => { register("streetNumber").ref(e); (streetNumberRef as React.MutableRefObject<HTMLInputElement | null>).current = e; }}
+                                            placeholder="Ej: 1226"
+                                            onChange={(e) => { register("streetNumber").onChange(e); if (e.target.value) setGpsNeedsNumber(false); }}
+                                            className={gpsNeedsNumber ? inputStyle(true).replace('border-red-900', 'border-amber-500').replace('border-red-500', 'border-amber-400') : inputStyle(!!errors.streetNumber)}
+                                        />
+                                        {gpsNeedsNumber && (
+                                            <p className="mt-1 ml-1 text-xs font-bold text-amber-500 animate-pulse">
+                                                El GPS no detectó el número. Ingresalo manualmente.
+                                            </p>
+                                        )}
                                     </Field>
                                     <Field label="Piso / Depto" error={errors.apartment?.message}>
                                         <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment)} />
                                     </Field>
                                 </div>
-
-                                <Field label="Barrio (Opcional)" error={errors.neighborhood?.message}>
-                                    <input {...register("neighborhood")} placeholder="Ej: Palermo Soho" className={inputStyle(!!errors.neighborhood)} />
-                                </Field>
 
                                 <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
                                     <input

@@ -33,21 +33,31 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
     // ── Initial Fetch ────────────────────────────────────────────────────
     useEffect(() => {
         const fetchOrder = async () => {
+            // Primero obtener el tenant_id real para validar que la orden pertenece a este tenant
+            const { data: tData } = await supabase
+                .from("tenants")
+                .select("id, name, logo_url, public_phone")
+                .eq("slug", tenant)
+                .single();
+
+            if (!tData) {
+                toast.error("Local no encontrado.");
+                setLoading(false);
+                return;
+            }
+
+            setTenantData(tData);
+
+            // Filtrar por tenant_id para evitar IDOR (ver órdenes de otro tenant)
             const { data: orderData } = await supabase
                 .from("orders")
                 .select("*")
                 .eq("id", orderId)
+                .eq("tenant_id", tData.id)
                 .single();
 
             if (orderData) {
                 setOrder(orderData);
-                // Also fetch tenant logo and public_phone
-                const { data: tData } = await supabase
-                    .from("tenants")
-                    .select("name, logo_url, public_phone")
-                    .eq("slug", tenant)
-                    .single();
-                if (tData) setTenantData(tData);
             } else {
                 toast.error("No se pudo encontrar el pedido.");
             }
@@ -55,7 +65,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
         };
 
         fetchOrder();
-    }, [supabase, orderId]);
+    }, [supabase, orderId, tenant]);
 
     // ── Realtime Listener ────────────────────────────────────────────────
     useEffect(() => {

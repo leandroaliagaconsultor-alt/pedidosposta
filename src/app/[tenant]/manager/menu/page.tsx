@@ -147,7 +147,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 supabase.from("products").select("*").eq("tenant_id", tData.id).order("sort_order", { ascending: true }),
                 supabase.from("modifiers").select("*").eq("tenant_id", tData.id),
                 supabase.from("modifier_options").select("*, modifiers!inner(tenant_id)").eq("modifiers.tenant_id", tData.id),
-                supabase.from("product_modifiers").select("*").order("sort_order", { ascending: true })
+                supabase.from("product_modifiers").select("*, products!inner(tenant_id)").eq("products.tenant_id", tData.id).order("sort_order", { ascending: true })
             ]);
 
             if (catRes.data) setCategories(catRes.data);

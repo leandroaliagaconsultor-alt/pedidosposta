@@ -218,6 +218,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     transfer_alias: data.transfer_alias,
                     transfer_account_name: data.transfer_account_name,
                     store_address: data.store_address,
+                    store_lat: mapCenter?.lat ?? null,
+                    store_lng: mapCenter?.lng ?? null,
                     delivery_pricing_type: data.delivery_pricing_type,
                     delivery_radius_km: data.delivery_radius_km,
                     fixed_delivery_price: data.fixed_delivery_price,
