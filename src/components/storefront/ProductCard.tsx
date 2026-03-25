@@ -26,6 +26,14 @@ export function ProductCard({
 }: ProductCardProps) {
     const [modalOpen, setModalOpen] = useState(false);
 
+    const initials = product.name
+        .split(" ")
+        .slice(0, 2)
+        .map(w => w[0])
+        .join("")
+        .toUpperCase();
+
+
     return (
         <>
             <div
@@ -36,20 +44,30 @@ export function ProductCard({
                 {/* Image Appetizer Container */}
                 <div className={`relative shrink-0 overflow-hidden rounded-xl bg-zinc-900 border border-zinc-500/10 shadow-[inset_0_-10px_20px_rgba(0,0,0,0.6)] aspect-square h-24 w-24 sm:h-32 sm:w-32`}>
                     {product.imageUrl ? (
-                        <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-110"
-                            sizes="(max-width: 768px) 96px, 128px"
-                        />
+                        <>
+                            <Image
+                                src={product.imageUrl}
+                                alt={product.name}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                sizes="(max-width: 768px) 96px, 128px"
+                            />
+                            {/* Shadow overlay for depth */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                        </>
                     ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center text-zinc-700 opacity-60">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-center px-2">Sin<br />Imagen</span>
+                        <div 
+                            className="absolute inset-0 flex items-center justify-center rounded-xl border border-black/5 dark:border-white/5" 
+                            style={{ backgroundColor: `${primaryColor}1A` }}
+                        >
+                            <span 
+                                className="font-display font-bold text-xl sm:text-2xl tracking-widest uppercase" 
+                                style={{ color: primaryColor }}
+                            >
+                                {initials}
+                            </span>
                         </div>
                     )}
-                    {/* Shadow overlay for depth */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 {/* Content */}

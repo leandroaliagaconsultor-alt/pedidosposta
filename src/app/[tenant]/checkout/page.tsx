@@ -40,26 +40,28 @@ const checkoutSchema = z
         lastName: z.string().min(2, "Ingresá tu apellido"),
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
-        address: z.string().optional(),
-        betweenStreets: z.string().optional(),
-        houseNumber: z.string().optional(),
+        address: z.string().optional(), // kept for compatibility if needed internally
+        street: z.string().optional(),
+        streetNumber: z.string().optional(),
         apartment: z.string().optional(),
+        neighborhood: z.string().optional(),
+        betweenStreets: z.string().optional(),
         delivery_notes: z.string().optional(),
         deliveryTime: z.string().optional(),
         is_asap: z.boolean(),
         paymentMethod: z.enum(["CASH", "TRANSFER", "MERCADOPAGO"]),
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.address && data.address.trim().length >= 3), {
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.street && data.street.trim().length >= 3), {
         message: "Ingresá la calle de entrega",
-        path: ["address"],
+        path: ["street"],
     })
     .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.trim().length >= 3), {
         message: "Obligatorio (Ej: Entre Calle 1 y 2)",
         path: ["betweenStreets"],
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.houseNumber && data.houseNumber.trim().length >= 1), {
+    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.streetNumber && data.streetNumber.trim().length >= 1), {
         message: "Ingresá el número/altura",
-        path: ["houseNumber"],
+        path: ["streetNumber"],
     });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -150,6 +152,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const deliveryMethod = watch("deliveryMethod");
     const selectedPayment = watch("paymentMethod");
+    const streetVal = watch("street");
+    const streetNumVal = watch("streetNumber");
+    
+    // Validamos estricto que no esté vacío para desactivar botón
+    const isAddressIncomplete = deliveryMethod === "DELIVERY" && (!streetVal || streetVal.trim().length === 0 || !streetNumVal || streetNumVal.trim().length === 0);
+
     const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
 
     // Fetch initial configuration
@@ -187,11 +195,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         fetchConfig();
     }, [tenantSlug, supabase]);
 
-    // Calcular Distancia MANUAL u Autocomplete
     const handleAddressSelect = async (addressStr: string) => {
         setAddressValue(addressStr, false);
         clearSuggestions();
-        setValue("address", addressStr, { shouldValidate: true });
+        setValue("street", addressStr, { shouldValidate: true });
 
         if (tenantDeliveryType === "fixed") {
             setCalculatedDeliveryCost(tenantFixedPrice);
@@ -208,6 +215,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             const results = await getGeocode({ address: addressStr });
             const { lat, lng } = await getLatLng(results[0]);
             setSelectedCoords({ lat, lng });
+
+            // Extraer calle, número y barrio de la respuesta
+            const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
+            const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
+            const hood = results[0].address_components.find(c => c.types.includes("neighborhood") || c.types.includes("sublocality"))?.long_name || "";
+            
+            // Limpia la calle de remanentes numéricos
+            const finalStreet = route || addressStr.split(',')[0].replace(/[0-9]/g, '').trim();
+            setAddressValue(finalStreet, false);
+            setValue("street", finalStreet, { shouldValidate: true });
+            
+            if (streetNum) setValue("streetNumber", streetNum, { shouldValidate: true });
+            if (hood) setValue("neighborhood", hood, { shouldValidate: true });
 
             const originResults = await getGeocode({ address: tenantStoreAddress! });
             const originLatLng = await getLatLng(originResults[0]);
@@ -250,10 +270,18 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 const { latitude: lat, longitude: lng } = position.coords;
                 try {
                     const results = await getGeocode({ location: { lat, lng } });
-                    const streetName = results[0].address_components.find(c => c.types.includes("route"))?.long_name || results[0].formatted_address.split(',')[0];
+                    
+                    const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
+                    const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
+                    const hood = results[0].address_components.find(c => c.types.includes("neighborhood") || c.types.includes("sublocality"))?.long_name || "";
+
+                    const streetName = route || results[0].formatted_address.split(',')[0].replace(/[0-9]/g, '').trim();
                     
                     setAddressValue(streetName, false);
-                    setValue("address", streetName, { shouldValidate: true });
+                    setValue("street", streetName, { shouldValidate: true });
+                    if(streetNum) setValue("streetNumber", streetNum, { shouldValidate: true });
+                    if(hood) setValue("neighborhood", hood, { shouldValidate: true });
+                    
                     setUsedGPS(true);
                     setSelectedCoords({ lat, lng });
 
@@ -337,7 +365,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             const finalAddress = data.deliveryMethod === "DELIVERY"
-                ? `${data.address} ${data.houseNumber} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                ? `${data.street} ${data.streetNumber}${data.neighborhood ? `, B° ${data.neighborhood}` : ""} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
                 : null;
 
             const { data: order, error: orderErr } = await supabase
@@ -474,21 +502,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     📍 USAR MI UBICACIÓN ACTUAL (GPS)
                                 </button>
 
-                                <Field label="Calle de entrega" error={errors.address?.message}>
+                                <Field label="Calle de entrega *" error={errors.street?.message}>
                                     <div className="relative">
                                         <MapPin size={16} className={`absolute left-5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
                                         <input
                                             value={addressValue}
-                                            onChange={(e) => { setAddressValue(e.target.value); setValue("address", e.target.value); }}
+                                            onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
                                             disabled={!ready || !isLoaded}
-                                            placeholder="Ej: Calle San Martín"
-                                            className={`${inputStyle(!!errors.address)} pl-12`}
+                                            placeholder="Ej: Rivadavia"
+                                            className={`${inputStyle(!!errors.street)} pl-12`}
                                         />
                                     </div>
                                     
                                     {usedGPS && (
                                         <p className="mt-2 ml-1 text-xs font-bold text-amber-500 animate-pulse">
-                                            ⚠️ Verificá la calle. A veces el GPS marca la esquina. Podés editarla.
+                                            ⚠️ Verificá la calle y la altura. A veces el GPS marca la esquina.
                                         </p>
                                     )}
 
@@ -503,23 +531,27 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     )}
                                 </Field>
 
-                                <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
-                                    <input
-                                        {...register("betweenStreets")}
-                                        ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
-                                        placeholder="Ej: Entre Calle 16 y 18"
-                                        className={inputStyle(!!errors.betweenStreets)}
-                                    />
-                                </Field>
-
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Altura / N° *" error={errors.houseNumber?.message}>
-                                        <input {...register("houseNumber")} placeholder="Ej: 1226" className={inputStyle(!!errors.houseNumber)} />
+                                    <Field label="Altura / N° *" error={errors.streetNumber?.message}>
+                                        <input {...register("streetNumber")} placeholder="Ej: 1226" className={inputStyle(!!errors.streetNumber)} />
                                     </Field>
                                     <Field label="Piso / Depto" error={errors.apartment?.message}>
                                         <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment)} />
                                     </Field>
                                 </div>
+
+                                <Field label="Barrio (Opcional)" error={errors.neighborhood?.message}>
+                                    <input {...register("neighborhood")} placeholder="Ej: Palermo Soho" className={inputStyle(!!errors.neighborhood)} />
+                                </Field>
+
+                                <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
+                                    <input
+                                        {...register("betweenStreets")}
+                                        ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
+                                        placeholder="Ej: Sur y Guemes"
+                                        className={inputStyle(!!errors.betweenStreets)}
+                                    />
+                                </Field>
                                 
                                 <Field label="Notas de envío (Opcional)" error={errors.delivery_notes?.message}>
                                     <input {...register("delivery_notes")} placeholder="Ej: Portón negro, timbre no funciona..." className={inputStyle(!!errors.delivery_notes)} />
@@ -663,11 +695,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             disabled={
                                 isSubmitting || 
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") ||
+                                isAddressIncomplete ||
                                 (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                             }
                             className={`w-full py-5 rounded-2xl font-black text-lg shadow-[0_10px_40px_-10px_rgba(34,197,94,0.5)] transition-all uppercase tracking-tighter flex items-center justify-center gap-3 ${
-                                (isOutOfBounds && deliveryMethod === "DELIVERY")
-                                ? "bg-red-500 text-white shadow-red-500/20 grayscale-0 opacity-100 disabled:cursor-not-allowed"
+                                (isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete
+                                ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-none grayscale-0 opacity-100 disabled:cursor-not-allowed"
                                 : "bg-primary text-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
                             }`}
                         >

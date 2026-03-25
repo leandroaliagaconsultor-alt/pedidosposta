@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Edit2, Image as ImageIcon, Loader2, Plus, Trash2, X, Upload, ChevronUp, ChevronDown } from "lucide-react";
+import { Edit2, Image as ImageIcon, Loader2, Plus, Trash2, X, Upload, ChevronUp, ChevronDown, Sparkles } from "lucide-react";
+import MenuScanner from "@/components/MenuScanner";
 
 // ─── Types & Schemas ─────────────────────────────────────────────────────────
 
@@ -108,6 +109,8 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
     const [editingMod, setEditingMod] = useState<Modifier | null>(null);
 
     const [saving, setSaving] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [showScanner, setShowScanner] = useState(false);
 
     // File upload ref
     const prodImgFileRef = useRef<File | null>(null);
@@ -180,7 +183,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             setLoading(false);
         };
         fetchData();
-    }, [supabase, tenant]);
+    }, [supabase, tenant, refreshKey]);
 
     // ─── Handlers: Categories ───
     const openCatModal = (cat: Category | null = null) => {
@@ -503,6 +506,39 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                 >
                     <Plus size={18} /> NUEVO PRODUCTO
                 </button>
+            </div>
+
+            {/* ── MAGIC SCANNER ACCORDION ── */}
+            <div className="mb-8 rounded-2xl border border-dashed border-purple-500/50 bg-black shadow-[0_0_30px_-5px_var(--tw-shadow-color)] shadow-purple-500/20 overflow-hidden transition-all duration-500">
+                <button 
+                    onClick={() => setShowScanner(!showScanner)}
+                    className="w-full flex items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-purple-900/20 to-transparent hover:from-purple-900/40 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="bg-purple-500/20 p-2 rounded-xl border border-purple-500/30">
+                            <Sparkles className="text-purple-400" size={20} />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-white font-bold text-lg leading-tight">✨ Carga Automática con IA</h3>
+                            <p className="text-purple-300/70 text-sm hidden sm:block">Sube una foto de tu carta y logramos armar el menú por vos</p>
+                        </div>
+                    </div>
+                    {showScanner ? <ChevronUp className="text-purple-400" /> : <ChevronDown className="text-purple-400" />}
+                </button>
+                
+                {showScanner && (
+                    <div className="p-4 sm:p-6 border-t border-purple-500/20 bg-zinc-950/50 backdrop-blur-md">
+                        {tenantId && (
+                            <MenuScanner 
+                                tenantId={tenantId} 
+                                onComplete={() => {
+                                    setShowScanner(false);
+                                    setRefreshKey(prev => prev + 1);
+                                }} 
+                            />
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ── Tabs Navigation ── */}
