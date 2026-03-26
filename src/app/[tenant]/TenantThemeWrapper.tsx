@@ -14,6 +14,7 @@ export default function TenantThemeWrapper({
         bgColor: string;
         templateClass: string;
         fontClass: string;
+        themeMode: string;
     };
 }) {
     const pathname = usePathname();
@@ -21,18 +22,14 @@ export default function TenantThemeWrapper({
 
     const templateRaw = themeData.templateClass.replace("theme-", "");
 
-    // Inject custom hook.
-    const rawDataMap = {
+    const { tokens, fontClass, cssVars } = useTenantThemeEngine({
         template: templateRaw,
-        bg_color: themeData.bgColor,
         color_hex: themeData.colorHex,
         font_family: themeData.fontClass,
-    };
-
-    const { wrapperClasses, renderVars, currentBg } = useTenantThemeEngine(rawDataMap);
+        theme_mode: (themeData.themeMode === "light" || themeData.themeMode === "dark") ? themeData.themeMode : undefined,
+    });
 
     if (isManager) {
-        // Fallback for Manager side (don't inject the storefront aesthetic here)
         return (
             <div className="min-h-screen bg-zinc-950 font-sans text-zinc-50">
                 {children}
@@ -43,11 +40,8 @@ export default function TenantThemeWrapper({
     // Public Side (Storefront, Tracker, Checkout)
     return (
         <div
-            className={wrapperClasses}
-            style={{
-                backgroundColor: currentBg,
-                ...renderVars,
-            }}
+            className={`min-h-screen ${fontClass} ${tokens.bg} ${tokens.text} transition-colors duration-500`}
+            style={cssVars}
         >
             {children}
         </div>

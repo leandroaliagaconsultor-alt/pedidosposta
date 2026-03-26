@@ -66,7 +66,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
 
     const themeEngine = useTenantThemeEngine({
         template: brand?.theme?.template,
-        bg_color: brand?.theme?.bg_color,
+        theme_mode: brand?.theme?.mode,
         color_hex: brand?.color_hex ?? undefined,
         font_family: brand?.theme?.font_family,
     });
@@ -108,7 +108,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
         }
 
         return (
-            <main className="flex min-h-screen w-full flex-col lg:grid lg:grid-cols-12 bg-[#09090b] text-[#FAFAFA]" style={{ '--brand-color': themeEngine.primaryColor } as React.CSSProperties}>
+            <main className="flex min-h-screen w-full flex-col lg:grid lg:grid-cols-12 bg-[#09090b] text-[#FAFAFA]" style={{ '--brand-color': themeEngine.primaryColor, '--brand-accent': themeEngine.primaryColor } as React.CSSProperties}>
                 {brand?.announcement_text && (
                     <div className="lg:col-span-12 w-full bg-emerald-500 text-white text-sm py-2 px-4 text-center font-bold tracking-wide shadow-md z-50 order-first">
                         {brand.announcement_text}
@@ -249,7 +249,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                     {filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-1 gap-4">
                             {filteredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} template={brand?.theme?.template || 'midnight'} primaryColor={brand?.color_hex || '#10b981'} skin={themeEngine.skin} isPro={true} />
+                                <ProductCard key={product.id} product={product} tokens={themeEngine.tokens} accentColor={themeEngine.primaryColor} accentTextColor={themeEngine.accentIsLight ? '#18181b' : '#ffffff'} />
                             ))}
                         </div>
                     ) : (
@@ -317,14 +317,18 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
         );
     }
 
+    const t = themeEngine.tokens;
+    const accentColor = themeEngine.primaryColor;
+    const accentTextColor = themeEngine.accentIsLight ? '#18181b' : '#ffffff';
+
     if (brand?.is_suspended) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-center px-4">
+            <div className={`flex min-h-screen flex-col items-center justify-center ${t.bg} text-center px-4`}>
                 <div className="h-20 w-20 mb-6 flex items-center justify-center rounded-full bg-red-500/10 text-red-500">
                     <ShoppingCart size={32} />
                 </div>
-                <h1 className="text-2xl font-black text-white mb-2">Tienda no disponible</h1>
-                <p className="text-zinc-500 max-w-sm">
+                <h1 className={`text-2xl font-bold ${t.text} mb-2`}>Tienda no disponible</h1>
+                <p className={`${t.textMuted} max-w-sm`}>
                     La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde.
                 </p>
             </div>
@@ -332,28 +336,28 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
     }
 
     return (
-        <main className="mx-auto flex min-h-screen w-full flex-col pb-28">
+        <main className={`mx-auto flex min-h-screen w-full flex-col pb-28 ${t.bg} ${t.text} transition-colors duration-300`} style={themeEngine.cssVars}>
             {brand?.announcement_text && (
-                <div className="w-full bg-emerald-500 text-white text-sm py-2 px-4 text-center font-bold tracking-wide shadow-sm z-50">
+                <div
+                    className="w-full text-sm py-2.5 px-4 text-center font-semibold tracking-wide shadow-sm z-50"
+                    style={{ backgroundColor: accentColor, color: accentTextColor }}
+                >
                     {brand.announcement_text}
                 </div>
             )}
-            {/* ─── Sonner Toast Provider ─── */}
             <Toaster
                 position="top-center"
                 toastOptions={{
-                    style: {
-                        background: "#18181b",
-                        border: "1px solid #27272a",
-                        color: "#fafafa",
-                    },
+                    style: t.mode === 'light'
+                        ? { background: "#ffffff", border: "1px solid #e4e4e7", color: "#18181b" }
+                        : { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" },
                 }}
             />
 
-            {/* ─── 1. Hero Section (Premium V2) ─── */}
+            {/* ─── 1. Hero Section ─── */}
             <section className="relative w-full">
-                {/* Banner with Smooth Transition */}
-                <div className="relative h-44 w-full overflow-hidden bg-zinc-950 sm:h-72">
+                {/* Banner */}
+                <div className={`relative h-44 w-full overflow-hidden sm:h-64 ${t.bg}`}>
                     {brand?.banner_url ? (
                         <Image
                             src={brand.banner_url}
@@ -363,88 +367,62 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                             priority
                         />
                     ) : (
-                        <div
-                            className="h-full w-full opacity-30"
-                            style={{ backgroundColor: themeEngine.primaryColor }}
-                        />
+                        <div className="h-full w-full" style={{ backgroundColor: `${accentColor}15` }} />
                     )}
-
-                    {/* Shadow overlay top */}
-                    <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent" />
-
-                    {/* BOTTOM BLEND OVERLAY: The V2 Fade effect */}
-                    <div
-                        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t"
-                        style={{
-                            backgroundImage: `linear-gradient(to bottom, transparent 0%, var(--bg-color) 100%)`,
-                            backgroundSize: '100% 100%'
-                        }}
-                    />
+                    <div className={`absolute inset-x-0 top-0 h-20 bg-gradient-to-b ${t.mode === 'light' ? 'from-black/20' : 'from-black/40'} to-transparent`} />
+                    <div className={`absolute inset-x-0 bottom-0 h-32 ${t.bg} [mask-image:linear-gradient(to_top,black_60%,transparent)]`} />
                 </div>
 
-                {/* Profile Header (Logo & Title) */}
-                <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-4 pb-12">
-                    {/* Logo (Avatar) */}
-                    <div
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-[3px] z-10 mx-auto -mt-12 sm:-mt-14 bg-zinc-900 transition-all duration-300"
-                        style={{ borderColor: themeEngine.primaryColor, boxShadow: `0 0 15px ${themeEngine.primaryColor}80, 0 0 25px ${themeEngine.primaryColor}40` }}
-                    >
+                {/* Profile Header */}
+                <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-4 pb-10">
+                    {/* Logo */}
+                    <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 z-10 mx-auto -mt-12 sm:-mt-14 ${t.surface} shadow-lg transition-all duration-300`} style={{ borderColor: accentColor }}>
                         {brand?.logo_url ? (
-                            <Image
-                                src={brand.logo_url}
-                                alt="Logo"
-                                width={180}
-                                height={180}
-                                className="object-cover w-full h-full"
-                            />
+                            <Image src={brand.logo_url} alt="Logo" width={180} height={180} className="object-cover w-full h-full" />
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center text-zinc-500 font-bold text-4xl">
+                            <div className={`flex h-full w-full items-center justify-center ${t.textMuted} font-bold text-4xl`}>
                                 {brand?.name?.charAt(0) || "P"}
                             </div>
                         )}
                     </div>
 
-                    {/* Badge */}
+                    {/* Status Badge */}
                     <div className="mt-4">
                         {!isStoreOpen ? (
-                            <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.4)]">
-                                <span className="mr-2 h-2 w-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                            <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white">
+                                <span className="mr-2 h-1.5 w-1.5 rounded-full bg-white" />
                                 Cerrado momentáneamente
                             </span>
                         ) : (
-                            <span className="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-                                <span className="mr-2 h-2 w-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                            <span className="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white">
+                                <span className="mr-2 h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                                 Abierto ahora
                             </span>
                         )}
                     </div>
 
-                    {/* Title with High Contrast */}
-                    <h1 className={`mt-6 text-3xl sm:text-4xl md:text-5xl text-center max-w-2xl mx-auto leading-tight px-4 font-black uppercase tracking-tight ${themeEngine.textClass} drop-shadow-sm`}>
-                        {brand?.name ? (
-                            <>{brand.name}</>
-                        ) : (
-                            <>THE PERFECT <span className="italic" style={{ color: 'inherit' }}>SMASH</span></>
-                        )}
+                    {/* Title */}
+                    <h1 className={`mt-5 text-3xl sm:text-4xl md:text-5xl text-center max-w-2xl mx-auto leading-tight px-4 font-bold tracking-tight ${t.text}`}>
+                        {brand?.name || "PedidosPosta"}
                     </h1>
 
-                    {/* Operational Info Bar (Premium Pills) */}
-                    <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 mt-3 sm:mt-4 w-full px-4">
+                    {/* Info Pills */}
+                    <div className="flex flex-wrap justify-center items-center gap-2 mt-4 w-full px-4">
                         {brand?.address && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <MapPin size={14} className="opacity-70" />
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                                <MapPin size={13} style={{ color: accentColor }} />
                                 <span>{brand.address}</span>
                             </div>
                         )}
                         {brand?.business_hours && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Clock size={14} className="opacity-70" />
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                                <Clock size={13} style={{ color: accentColor }} />
                                 <span>{brand.business_hours}</span>
                             </div>
                         )}
                         {brand?.delivery_pricing_type === 'fixed' && brand?.fixed_delivery_price !== undefined && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Bike size={14} className="opacity-70" />
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                                <Bike size={13} style={{ color: accentColor }} />
                                 <span>Envío: {brand.fixed_delivery_price === 0 ? "Gratis" : `$${brand.fixed_delivery_price}`}</span>
                             </div>
                         )}
@@ -452,9 +430,9 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                             <TooltipProvider>
                                 <Tooltip delayDuration={300}>
                                     <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium cursor-help">
-                                            <Bike size={14} className="opacity-70" />
-                                            <span className="border-b border-dashed border-current">Envío desde ${brand.base_delivery_price}</span>
+                                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted} cursor-help`}>
+                                            <Bike size={13} style={{ color: accentColor }} />
+                                            <span>Envío desde ${brand.base_delivery_price}</span>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="text-center p-3 text-xs z-50">
@@ -464,31 +442,31 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                                 </Tooltip>
                             </TooltipProvider>
                         )}
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                            <ShoppingBag size={14} className="opacity-70" />
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                            <ShoppingBag size={13} style={{ color: accentColor }} />
                             <span>Retiro en local gratis</span>
                         </div>
                         {brand?.min_order !== null && brand?.min_order !== undefined && brand.min_order > 0 && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <ShoppingCart size={14} className="opacity-70" />
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                                <ShoppingCart size={13} style={{ color: accentColor }} />
                                 <span>Mín. $ {brand.min_order}</span>
                             </div>
                         )}
                         {brand?.public_phone && (
-                            <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <MessageCircle size={14} className="text-[#25D366]" />
+                            <a href={`https://wa.me/${brand.public_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted} hover:opacity-80 transition-opacity`}>
+                                <MessageCircle size={13} className="text-emerald-500" />
                                 <span>WhatsApp</span>
                             </a>
                         )}
                         {brand?.instagram_url && (
-                            <a href={formatUrl(brand.instagram_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Instagram size={14} className="text-[#E4405F]" />
+                            <a href={formatUrl(brand.instagram_url)} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted} hover:opacity-80 transition-opacity`}>
+                                <Instagram size={13} className="text-rose-500" />
                                 <span>Instagram</span>
                             </a>
                         )}
                         {brand?.facebook_url && (
-                            <a href={formatUrl(brand.facebook_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current opacity-70 hover:opacity-100 transition-opacity text-[10px] sm:text-xs font-medium">
-                                <Facebook size={14} className="text-[#1877F2]" />
+                            <a href={formatUrl(brand.facebook_url)} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted} hover:opacity-80 transition-opacity`}>
+                                <Facebook size={13} className="text-blue-500" />
                                 <span>Facebook</span>
                             </a>
                         )}
@@ -496,77 +474,68 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                 </div>
             </section>
 
-            {/* ─── 2. Sticky Category Nav (Centered Column) ─── */}
-            <nav className="sticky top-0 z-40 w-full border-b border-zinc-500/10 bg-[var(--bg-color)]/80 backdrop-blur-md">
-                <div className="mx-auto flex w-full max-w-3xl items-center gap-6 overflow-x-auto px-4 py-4 scrollbar-hide">
+            {/* ─── 2. Sticky Category Nav ─── */}
+            <nav className={`sticky top-0 z-40 w-full border-b ${t.navBorder} ${t.navBg} backdrop-blur-md`}>
+                <div className="mx-auto flex w-full max-w-3xl items-center gap-1 overflow-x-auto px-4 py-3 scrollbar-hide">
                     {categories.map((cat) => {
                         const isActive = activeCategory === cat.id;
                         return (
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
-                                className={`relative whitespace-nowrap text-sm font-bold transition-all duration-300 ${isActive
-                                    ? themeEngine.textClass
-                                    : "opacity-40 hover:opacity-100"
+                                className={`relative whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                    ? `${t.categoryActiveBg} font-semibold`
+                                    : `${t.textMuted} hover:${t.text}`
                                     }`}
+                                style={isActive ? { color: accentColor } : undefined}
                             >
                                 {cat.name}
-                                {isActive && (
-                                    <span
-                                        className="absolute -bottom-4 left-0 right-0 h-1 rounded-t-full shadow-[0_-2px_8px_var(--brand-color)]"
-                                        style={{ backgroundColor: themeEngine.primaryColor }}
-                                    />
-                                )}
                             </button>
                         );
                     })}
                 </div>
             </nav>
 
-            {/* ─── 3. Product Grid (Centered Column) ─── */}
-            <div className="mx-auto w-full max-w-3xl px-4 pt-8">
-                <h2 className="mb-6 text-2xl font-bold opacity-90">
+            {/* ─── 3. Product Grid ─── */}
+            <div className="mx-auto w-full max-w-3xl px-4 pt-6">
+                <h2 className={`mb-5 text-xl font-bold ${t.text}`}>
                     {categories.find((c) => c.id === activeCategory)?.name || "Menú"}
                 </h2>
 
                 {filteredProducts.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:mx-0">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
                         {filteredProducts.map((product) => (
                             <ProductCard
                                 key={product.id}
                                 product={product}
-                                template={brand?.theme?.template || 'midnight'}
-                                primaryColor={brand?.color_hex || '#10b981'}
-                                skin={themeEngine.skin}
+                                tokens={t}
+                                accentColor={accentColor}
+                                accentTextColor={accentTextColor}
                             />
                         ))}
                     </div>
                 ) : (
-                    <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-500/30 bg-zinc-500/5">
-                        <p className="opacity-60">No hay productos en esta categoría.</p>
+                    <div className={`flex h-40 flex-col items-center justify-center rounded-xl border border-dashed ${t.surfaceBorder}`}>
+                        <p className={t.textMuted}>No hay productos en esta categoría.</p>
                     </div>
                 )}
             </div>
 
-            {/* ─── 4. Floating Cart Pill (Mobile-First) ─── */}
+            {/* ─── 4. Floating Cart Pill ─── */}
             {totalItems > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)]/95 to-transparent">
+                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-8 pointer-events-none">
                     <button
                         onClick={() => setCartOpen(true)}
-                        className="flex w-full max-w-3xl mx-auto items-center justify-between rounded-2xl px-6 py-4 text-sm font-extrabold shadow-[0_-4px_30px_var(--brand-color)] transition-all active:scale-[0.98]"
-                        style={{
-                            backgroundColor: themeEngine.primaryColor,
-                            color: themeEngine.lightTextMode ? '#000' : '#fff',
-                            boxShadow: `0 -4px 30px ${themeEngine.primaryColor}40`,
-                        }}
+                        className="pointer-events-auto flex w-full max-w-3xl mx-auto items-center justify-between rounded-2xl px-6 py-4 text-sm font-bold shadow-lg transition-all active:scale-[0.98]"
+                        style={{ backgroundColor: accentColor, color: accentTextColor }}
                     >
                         <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-sm font-black text-white">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-sm font-bold text-white">
                                 {totalItems}
                             </div>
                             <span className="tracking-wide uppercase">Ver Pedido</span>
                         </div>
-                        <span className="text-base font-black">
+                        <span className="text-base font-bold">
                             ${cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString('es-AR')}
                         </span>
                     </button>

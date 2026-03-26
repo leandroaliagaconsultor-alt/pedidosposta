@@ -31,9 +31,10 @@ export default async function TenantLayout({
     const bgColor = themeObj?.bg_color || "";
     const templateClass = `theme-${themeObj?.template || 'midnight'}`;
     const fontClass = themeObj?.font_family || "font-sans";
+    const themeMode = themeObj?.mode || "";
 
     return (
-        <TenantThemeWrapper themeData={{ colorHex, bgColor, templateClass, fontClass }}>
+        <TenantThemeWrapper themeData={{ colorHex, bgColor, templateClass, fontClass, themeMode }}>
             {children}
         </TenantThemeWrapper>
     );

@@ -4,79 +4,12 @@
 
 @layer base {
   :root {
-    --background: #09090b;
-    /* zinc-950 */
-    --foreground: #fafafa;
-    /* zinc-50 */
     --brand-color: #22c55e;
-    --bg-color: #09090b;
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--bg-color);
   transition: background-color 0.5s ease;
-}
-
-/* ─── Template Utility Classes ─── */
-
-/* 1. Midnight (Default) */
-.theme-midnight {
-  --bg-color: #09090b;
-  --foreground: #fafafa;
-}
-
-/* 2. Minimal */
-.theme-minimal {
-  --bg-color: #ffffff;
-  --foreground: #09090b;
-}
-
-.theme-minimal body {
-  background: #fff;
-  color: #09090b;
-}
-
-/* 3. Brutalism */
-.theme-brutalism {
-  --bg-color: #fefce8;
-  --foreground: #000000;
-}
-
-.theme-brutalism .product-card {
-  border: 4px solid black !important;
-  border-radius: 0 !important;
-  box-shadow: 6px 6px 0px black !important;
-}
-
-/* 4. Elegant Dark */
-.theme-elegant-dark {
-  --bg-color: #0a0a0a;
-  --foreground: #ffffff;
-}
-
-/* 5. Retro Pop */
-.theme-retro-pop {
-  --bg-color: #f1f5f9;
-  --foreground: #000000;
-}
-
-.theme-retro-pop .product-card {
-  border: 2px solid black !important;
-  border-radius: 2rem !important;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* 6. Neon Cyber */
-.theme-neon-cyber {
-  --bg-color: #050505;
-  --foreground: #ffffff;
-}
-
-.theme-neon-cyber .product-card {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 0 15px rgba(var(--brand-color-rgb), 0.2) !important;
 }
 
 /* Override utility colors to use the brand color */

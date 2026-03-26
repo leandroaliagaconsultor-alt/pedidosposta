@@ -1,29 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { type Product, ProductModal } from "@/components/storefront/ProductModal";
 import { Plus } from "lucide-react";
-import { getCardClasses, getButtonClasses, getButtonStyles } from "@/lib/theme";
+import type { ThemeTokens } from "@/lib/utils/theme";
+import { badgeStyles, badgeLabels } from "@/lib/utils/theme";
 
 interface ProductCardProps {
     product: Product;
-    template?: string;
-    primaryColor?: string;
-    skin?: {
-        card: string;
-        button: string;
-    };
-    isPro?: boolean;
+    tokens: ThemeTokens;
+    accentColor: string;
+    accentTextColor: string;
 }
 
-export function ProductCard({
-    product,
-    template = "midnight",
-    primaryColor = "#10b981",
-    skin,
-    isPro
-}: ProductCardProps) {
+export function ProductCard({ product, tokens, accentColor, accentTextColor }: ProductCardProps) {
     const [modalOpen, setModalOpen] = useState(false);
 
     const initials = product.name
@@ -33,36 +24,42 @@ export function ProductCard({
         .join("")
         .toUpperCase();
 
+    const hasPromo = typeof product.promotionalPrice === "number";
 
     return (
         <>
-            <div
-                className={`${skin?.card || getCardClasses(template)} group cursor-pointer relative flex flex-row items-center gap-3 sm:gap-4 p-3 overflow-hidden transition-all duration-300 hover:border-[var(--brand-color)]/30 hover:bg-zinc-900/40`}
+            <article
+                className={`
+                    group relative flex flex-row items-stretch gap-0
+                    rounded-2xl border ${tokens.surfaceBorder}
+                    ${tokens.surface} ${tokens.cardShadow} shadow-sm
+                    overflow-hidden cursor-pointer
+                    transition-all duration-300
+                    hover:shadow-md
+                `}
                 onClick={() => setModalOpen(true)}
-                style={{ "--brand-color": primaryColor } as React.CSSProperties}
             >
-                {/* Image Appetizer Container */}
-                <div className={`relative shrink-0 overflow-hidden rounded-xl bg-zinc-900 border border-zinc-500/10 shadow-[inset_0_-10px_20px_rgba(0,0,0,0.6)] aspect-square h-24 w-24 sm:h-32 sm:w-32`}>
+                {/* ── Image ── */}
+                <div className="relative shrink-0 w-28 sm:w-36 overflow-hidden">
                     {product.imageUrl ? (
                         <>
                             <Image
                                 src={product.imageUrl}
                                 alt={product.name}
                                 fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                sizes="(max-width: 768px) 96px, 128px"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                sizes="(max-width: 768px) 112px, 144px"
                             />
-                            {/* Shadow overlay for depth */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/[0.03] pointer-events-none" />
                         </>
                     ) : (
-                        <div 
-                            className="absolute inset-0 flex items-center justify-center rounded-xl border border-black/5 dark:border-white/5" 
-                            style={{ backgroundColor: `${primaryColor}1A` }}
+                        <div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{ backgroundColor: `${accentColor}15` }}
                         >
-                            <span 
-                                className="font-display font-bold text-xl sm:text-2xl tracking-widest uppercase" 
-                                style={{ color: primaryColor }}
+                            <span
+                                className="font-semibold text-xl tracking-wide"
+                                style={{ color: accentColor }}
                             >
                                 {initials}
                             </span>
@@ -70,65 +67,77 @@ export function ProductCard({
                     )}
                 </div>
 
-                {/* Content */}
-                <div className="flex flex-1 flex-col justify-between py-1 sm:py-2">
-                    <div className="mb-2">
+                {/* ── Content ── */}
+                <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4 min-w-0">
+                    <div className="space-y-1.5">
                         {product.badges && product.badges.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-1.5">
+                            <div className="flex flex-wrap gap-1">
                                 {product.badges.map(badge => {
-                                    const labels: Record<string, string> = { nuevo: 'Nuevo', popular: ' Popular', vegano: 'Vegano 🌱', sintacc: 'Sin TACC 🌾', picante: 'Picante 🌶️' };
-                                    const colors: Record<string, string> = { nuevo: 'bg-emerald-500/20 text-emerald-400', popular: 'bg-amber-500/20 text-amber-400', vegano: 'bg-green-500/20 text-green-400', sintacc: 'bg-blue-500/20 text-blue-400', picante: 'bg-red-500/20 text-red-400' };
+                                    const s = badgeStyles[badge];
+                                    if (!s) return null;
                                     return (
-                                        <span key={badge} className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-current ${colors[badge] || 'bg-zinc-800 text-zinc-300'}`}>
-                                            {labels[badge] || badge}
+                                        <span
+                                            key={badge}
+                                            className={`inline-flex items-center text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}
+                                        >
+                                            {badgeLabels[badge] || badge}
                                         </span>
                                     );
                                 })}
                             </div>
                         )}
-                        <h3 className={`text-base sm:text-lg font-black uppercase tracking-tight leading-tight transition-colors ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-900 group-hover:text-black' : 'text-zinc-100 group-hover:text-white'}`}>
+
+                        <h3 className={`text-[15px] sm:text-base font-bold leading-snug tracking-tight ${tokens.text} line-clamp-2`}>
                             {product.name}
                         </h3>
-                        <p className={`line-clamp-2 text-xs sm:text-[13px] mt-1 leading-relaxed ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-600' : 'text-zinc-400'}`}>{product.description}</p>
+
+                        {product.description && (
+                            <p className={`text-xs sm:text-[13px] leading-relaxed ${tokens.textMuted} line-clamp-2`}>
+                                {product.description}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Footer Flex Between */}
-                    <div className="flex items-center justify-between mt-auto">
-                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
-                            {product.promotionalPrice ? (
+                    {/* Bottom: price + add button */}
+                    <div className="flex items-end justify-between mt-3 gap-2">
+                        <div className="flex flex-col">
+                            {hasPromo ? (
                                 <>
-                                    <span className="text-sm sm:text-base font-black tracking-widest" style={{ color: "var(--brand-color)", textShadow: "0 0 10px rgba(var(--brand-color), 0.2)" }}>
-                                        ${product.promotionalPrice.toLocaleString("es-AR")}
+                                    <span
+                                        className="text-base sm:text-lg font-extrabold tabular-nums"
+                                        style={{ color: accentColor }}
+                                    >
+                                        ${product.promotionalPrice!.toLocaleString("es-AR")}
                                     </span>
-                                    <span className={`text-[10px] sm:text-xs font-bold line-through ${['brutalism', 'minimal', 'retro-pop', 'organic-earth', 'fast-food', 'glass-frost', 'urban-flow', 'sweet-pastel'].includes(template) ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                                    <span className={`text-[11px] font-medium line-through ${tokens.textMuted}`}>
                                         ${product.price.toLocaleString("es-AR")}
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-sm sm:text-base font-black tracking-widest" style={{ color: "var(--brand-color)", textShadow: "0 0 10px rgba(var(--brand-color), 0.2)" }}>
+                                <span
+                                    className="text-base sm:text-lg font-extrabold tabular-nums"
+                                    style={{ color: accentColor }}
+                                >
                                     ${product.price.toLocaleString("es-AR")}
                                 </span>
                             )}
                         </div>
+
                         <button
                             onClick={(e) => {
-                                e.stopPropagation(); // avoid double-open
+                                e.stopPropagation();
                                 setModalOpen(true);
                             }}
-                            className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-current transition-all sm:hover:scale-110 sm:active:scale-95`}
-                            style={{
-                                color: "var(--brand-color)",
-                                backgroundColor: "rgba(0,0,0,0.4)"
-                            }}
+                            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-200 active:scale-90 sm:hover:scale-105"
+                            style={{ backgroundColor: accentColor, color: accentTextColor }}
                             aria-label={`Agregar ${product.name}`}
                         >
-                            <Plus size={18} strokeWidth={3} />
+                            <Plus size={18} strokeWidth={2.5} />
                         </button>
                     </div>
                 </div>
-            </div>
+            </article>
 
-            {/* Burger Architect Modal */}
             <ProductModal
                 product={product}
                 open={modalOpen}

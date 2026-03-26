@@ -1,3 +1,6 @@
+// @deprecated — Legacy theme utilities. Used only by Pro layout via useTenantThemeEngine.
+// New code should use src/lib/utils/theme.ts (curated token system) instead.
+
 export const getAppBackground = (template: string, customBg?: string) => {
     if (customBg && customBg.trim() !== "") return customBg;
     switch (template) {

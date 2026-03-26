@@ -1,64 +1,46 @@
 import { useMemo } from 'react';
 import {
-    getAppBackground,
+    resolveTheme,
+    mapLegacyToMode,
     isLightColor,
-    getCardClasses,
-    getButtonClasses,
-    getAvatarClasses,
-    getCTAClasses
-} from '@/lib/theme';
+    type ThemeMode,
+    type ThemeTokens,
+} from '@/lib/utils/theme';
 
 interface ThemeData {
     template?: string;
     bg_color?: string;
     color_hex?: string;
     font_family?: string;
-    banner_url?: string;
-    logo_url?: string;
-    name?: string;
+    theme_mode?: ThemeMode;
 }
 
 export function useTenantThemeEngine(themeData?: ThemeData) {
     return useMemo(() => {
-        const template = themeData?.template || 'midnight';
         const primaryColor = themeData?.color_hex || '#10b981';
         const fontClass = themeData?.font_family || 'font-sans';
 
-        // Calcular fondo real según la plantilla o el bg_color personalizado
-        const currentBg = getAppBackground(template, themeData?.bg_color);
+        // Resolve mode: prefer explicit theme_mode, fallback to legacy template mapper
+        const mode: ThemeMode = themeData?.theme_mode || mapLegacyToMode(themeData?.template);
+        const tokens: ThemeTokens = resolveTheme(mode);
 
-        // Detectar modo texto basado en LUMINOSIDAD del color del fondo, NO la plantilla.
-        const lightTextMode = !isLightColor(currentBg);
+        // Is the brand accent light? (used for text-on-accent decisions)
+        const accentIsLight = isLightColor(primaryColor);
 
-        // Clases utilitarias
-        const textClass = lightTextMode ? 'text-zinc-50' : 'text-zinc-900';
-
-        const wrapperClasses = `min-h-screen ${fontClass} theme-${template} ${textClass} transition-colors duration-500`;
-
-        const renderVars = {
-            "--brand-color": primaryColor,
-            "--bg-color": currentBg,
+        // CSS variables to inject on the root container
+        const cssVars = {
+            "--brand-accent": primaryColor,
         } as React.CSSProperties;
 
-        // Skin Dictionary
-        const skin = {
-            card: getCardClasses(template),
-            button: getButtonClasses(template),
-            avatar: getAvatarClasses(template),
-            cta: getCTAClasses(template),
-        };
-
         return {
-            template,
+            tokens,
+            mode,
             primaryColor,
-            currentBg,
             fontClass,
-            lightTextMode,
-            textClass,
-            wrapperClasses,
-            renderVars,
-            skin,
-            isProLayout: template === 'neon_stack_pro',
+            accentIsLight,
+            cssVars,
+            // Legacy compat for Pro layout
+            isProLayout: themeData?.template === 'neon_stack_pro',
         };
     }, [themeData]);
 }
