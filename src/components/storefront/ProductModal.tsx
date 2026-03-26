@@ -6,6 +6,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Minus, Plus, ShoppingBag, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
+import type { ThemeTokens } from "@/lib/utils/theme";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,16 +42,21 @@ interface ProductModalProps {
     product: Product;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    tokens: ThemeTokens;
+    accentColor: string;
+    accentTextColor: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function ProductModal({ product, open, onOpenChange }: ProductModalProps) {
+export function ProductModal({ product, open, onOpenChange, tokens: t, accentColor, accentTextColor }: ProductModalProps) {
     const addItem = useCartStore((state) => state.addItem);
 
     const [quantity, setQuantity] = useState(1);
     // Map: modifierId -> Set of selected optionIds
     const [selectedOptions, setSelectedOptions] = useState<Map<string, Set<string>>>(new Map());
+
+    const isLight = t.mode === "light";
 
     // ── Pre-populate defaults when modal opens ──
     const initDefaults = () => {
@@ -152,13 +158,13 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                 <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
                 {/* Panel — slide from bottom on mobile, centered on desktop */}
-                <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+                <DialogPrimitive.Content className={`fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden rounded-t-3xl border shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl ${isLight ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-950"}`}>
 
                     {/* Drag handle pill (mobile) */}
-                    <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-zinc-700 sm:hidden" />
+                    <div className={`mx-auto mt-3 h-1.5 w-12 rounded-full sm:hidden ${isLight ? "bg-zinc-300" : "bg-zinc-700"}`} />
 
                     {/* Close button */}
-                    <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-zinc-900 p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100">
+                    <DialogPrimitive.Close className={`absolute right-4 top-4 z-10 rounded-full p-1.5 transition ${isLight ? "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700" : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"}`}>
                         <X size={18} />
                     </DialogPrimitive.Close>
 
@@ -166,7 +172,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                     <div className="flex-1 overflow-y-auto pb-24">
                         {/* Hero image */}
                         {product.imageUrl && (
-                            <div className="relative h-52 w-full bg-zinc-900">
+                            <div className={`relative h-52 w-full ${isLight ? "bg-zinc-100" : "bg-zinc-900"}`}>
                                 <Image
                                     src={product.imageUrl}
                                     alt={product.name}
@@ -175,21 +181,21 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                                     priority
                                 />
                                 {/* gradient fade */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+                                <div className={`absolute inset-0 bg-gradient-to-t ${isLight ? "from-white" : "from-zinc-950"} via-transparent to-transparent`} />
                             </div>
                         )}
 
                         <div className="p-5">
                             {/* Title & Description */}
                             <div className="flex gap-2 items-center flex-wrap mb-1">
-                                <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-white leading-none">
+                                <DialogPrimitive.Title className={`text-2xl font-extrabold tracking-tight leading-none ${t.text}`}>
                                     {product.name}
                                 </DialogPrimitive.Title>
                                 {product.badges && product.badges.map(badge => {
                                     const labels: Record<string, string> = { nuevo: 'Nuevo', popular: ' Popular', vegano: 'Vegano 🌱', sintacc: 'Sin TACC 🌾', picante: 'Picante 🌶️' };
-                                    const colors: Record<string, string> = { nuevo: 'bg-emerald-500/20 text-emerald-400', popular: 'bg-amber-500/20 text-amber-400', vegano: 'bg-green-500/20 text-green-400', sintacc: 'bg-blue-500/20 text-blue-400', picante: 'bg-red-500/20 text-red-400' };
+                                    const colors: Record<string, string> = { nuevo: 'bg-emerald-500/20 text-emerald-600', popular: 'bg-amber-500/20 text-amber-600', vegano: 'bg-green-500/20 text-green-600', sintacc: 'bg-blue-500/20 text-blue-600', picante: 'bg-red-500/20 text-red-600' };
                                     return (
-                                        <span key={badge} className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-current ${colors[badge] || 'bg-zinc-800 text-zinc-300'}`}>
+                                        <span key={badge} className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-current ${colors[badge] || (isLight ? 'bg-zinc-100 text-zinc-500' : 'bg-zinc-800 text-zinc-300')}`}>
                                             {labels[badge] || badge}
                                         </span>
                                     );
@@ -199,28 +205,31 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                             <div className="flex items-center gap-2 mb-2">
                                 {product.promotionalPrice ? (
                                     <>
-                                        <span className="text-lg font-black text-primary">${product.promotionalPrice.toLocaleString("es-AR")}</span>
-                                        <span className="text-sm font-bold text-zinc-600 line-through">${product.price.toLocaleString("es-AR")}</span>
+                                        <span className="text-lg font-black" style={{ color: accentColor }}>${product.promotionalPrice.toLocaleString("es-AR")}</span>
+                                        <span className={`text-sm font-bold line-through ${t.textMuted}`}>${product.price.toLocaleString("es-AR")}</span>
                                     </>
                                 ) : (
-                                    <span className="text-lg font-black text-primary">${product.price.toLocaleString("es-AR")}</span>
+                                    <span className="text-lg font-black" style={{ color: accentColor }}>${product.price.toLocaleString("es-AR")}</span>
                                 )}
                             </div>
 
-                            <p className="mb-5 text-sm text-zinc-400">{product.description}</p>
+                            <p className={`mb-5 text-sm ${t.textMuted}`}>{product.description}</p>
 
                             {/* Modifiers */}
                             {(product.modifiers ?? []).map((modifier) => (
                                 <div key={modifier.id} className="mb-6">
                                     <div className="mb-3 flex items-center gap-2">
-                                        <span className="text-sm font-bold text-zinc-200">{modifier.name}</span>
+                                        <span className={`text-sm font-bold ${t.text}`}>{modifier.name}</span>
                                         {modifier.isRequired && (
-                                            <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
+                                            <span
+                                                className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                                style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
+                                            >
                                                 Obligatorio
                                             </span>
                                         )}
                                         {!modifier.isRequired && (
-                                            <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-500">
+                                            <span className={`rounded-full px-2 py-0.5 text-xs ${isLight ? "bg-zinc-100 text-zinc-500" : "bg-zinc-800 text-zinc-500"}`}>
                                                 Opcional
                                             </span>
                                         )}
@@ -237,21 +246,29 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                                                     disabled={isSoldOut}
                                                     onClick={() => !isSoldOut && handleOptionClick(modifier, option.id)}
                                                     className={`relative flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all overflow-hidden ${isSoldOut
-                                                        ? "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 cursor-not-allowed opacity-50"
+                                                        ? isLight
+                                                            ? "border-zinc-200 bg-zinc-50 text-zinc-400 cursor-not-allowed opacity-50"
+                                                            : "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 cursor-not-allowed opacity-50"
                                                         : isSelected
-                                                            ? "border-primary bg-primary/10 text-white"
-                                                            : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600"
+                                                            ? `${t.text}`
+                                                            : isLight
+                                                                ? "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400"
+                                                                : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600"
                                                         }`}
+                                                    style={isSelected && !isSoldOut ? { borderColor: accentColor, backgroundColor: `${accentColor}10` } : undefined}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         {/* Indicator: circle for radio, square for checkbox */}
                                                         <span
-                                                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${modifier.isMultiple ? "md" : "full"} border transition-all ${isSoldOut
-                                                                ? "border-zinc-700 bg-transparent"
+                                                            className={`flex h-5 w-5 shrink-0 items-center justify-center ${modifier.isMultiple ? "rounded-md" : "rounded-full"} border transition-all ${isSoldOut
+                                                                ? "border-zinc-500 bg-transparent"
                                                                 : isSelected
-                                                                    ? "border-primary bg-primary"
-                                                                    : "border-zinc-600 bg-transparent"
+                                                                    ? "text-white"
+                                                                    : isLight
+                                                                        ? "border-zinc-400 bg-transparent"
+                                                                        : "border-zinc-600 bg-transparent"
                                                                 }`}
+                                                            style={isSelected && !isSoldOut ? { borderColor: accentColor, backgroundColor: accentColor } : undefined}
                                                         >
                                                             {isSelected && !isSoldOut && <Check size={11} strokeWidth={3} />}
                                                         </span>
@@ -263,7 +280,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                                                         </span>
                                                     </div>
                                                     {option.additionalPrice > 0 && (
-                                                        <span className={`text-xs font-semibold ${isSoldOut ? 'text-zinc-500' : 'text-primary'}`}>
+                                                        <span className={`text-xs font-semibold ${isSoldOut ? 'text-zinc-500' : ''}`} style={!isSoldOut ? { color: accentColor } : undefined}>
                                                             +${option.additionalPrice.toLocaleString("es-AR")}
                                                         </span>
                                                     )}
@@ -277,25 +294,27 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                     </div>
 
                     {/* Sticky Footer */}
-                    <div className="sticky bottom-0 left-0 w-full bg-black/90 backdrop-blur-md p-4 border-t border-zinc-800">
+                    <div className={`sticky bottom-0 left-0 w-full backdrop-blur-md p-4 border-t ${isLight ? "bg-white/90 border-zinc-200" : "bg-black/90 border-zinc-800"}`}>
                         <div className="flex items-center gap-4">
                             {/* Quantity stepper */}
-                            <div className="flex items-center gap-3 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5">
+                            <div className={`flex items-center gap-3 rounded-full border px-3 py-1.5 ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900"}`}>
                                 <button
                                     type="button"
                                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                                    className="text-zinc-400 transition hover:text-white disabled:opacity-30"
+                                    className="transition disabled:opacity-30"
+                                    style={{ color: accentColor }}
                                     disabled={quantity <= 1}
                                 >
                                     <Minus size={16} />
                                 </button>
-                                <span className="min-w-[20px] text-center text-base font-bold text-white">
+                                <span className={`min-w-[20px] text-center text-base font-bold ${t.text}`}>
                                     {quantity}
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => setQuantity((q) => q + 1)}
-                                    className="text-zinc-400 transition hover:text-white"
+                                    className="transition"
+                                    style={{ color: accentColor }}
                                 >
                                     <Plus size={16} />
                                 </button>
@@ -305,7 +324,8 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
                             <button
                                 type="button"
                                 onClick={handleAdd}
-                                className="flex flex-1 items-center justify-between rounded-xl bg-primary px-5 py-3.5 font-bold text-primary-foreground shadow-[0_0_20px_var(--brand-color)] shadow-primary/30 transition-all hover:brightness-110 active:scale-[0.98]"
+                                className="flex flex-1 items-center justify-between rounded-xl px-5 py-3.5 font-bold transition-all hover:brightness-110 active:scale-[0.98]"
+                                style={{ backgroundColor: accentColor, color: accentTextColor }}
                             >
                                 <span className="flex items-center gap-2">
                                     <ShoppingBag size={18} />

@@ -92,7 +92,7 @@ export function ProductCard({ product, tokens, accentColor, accentTextColor }: P
                         </h3>
 
                         {product.description && (
-                            <p className={`text-xs sm:text-[13px] leading-relaxed ${tokens.textMuted} line-clamp-2`}>
+                            <p className={`text-xs sm:text-[13px] leading-relaxed ${tokens.textMuted}`}>
                                 {product.description}
                             </p>
                         )}
@@ -142,6 +142,9 @@ export function ProductCard({ product, tokens, accentColor, accentTextColor }: P
                 product={product}
                 open={modalOpen}
                 onOpenChange={setModalOpen}
+                tokens={tokens}
+                accentColor={accentColor}
+                accentTextColor={accentTextColor}
             />
         </>
     );

@@ -30,6 +30,7 @@ export function useTenantThemeEngine(themeData?: ThemeData) {
         // CSS variables to inject on the root container
         const cssVars = {
             "--brand-accent": primaryColor,
+            "--brand-color": primaryColor,
         } as React.CSSProperties;
 
         return {

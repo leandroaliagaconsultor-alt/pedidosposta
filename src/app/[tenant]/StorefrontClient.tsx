@@ -312,7 +312,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                         </button>
                     </div>
                 )}
-                <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />
+                <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} tokens={themeEngine.tokens} accentColor={themeEngine.primaryColor} accentTextColor={themeEngine.accentIsLight ? '#18181b' : '#ffffff'} />
             </main>
         );
     }
@@ -543,7 +543,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
             )}
 
             {/* ─── 5. Cart Drawer ─── */}
-            <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} />
+            <CartDrawer open={cartOpen} onOpenChange={setCartOpen} isStoreOpen={isStoreOpen} tokens={t} accentColor={accentColor} accentTextColor={accentTextColor} />
             <ActiveOrderBanner tenant={brand.slug} />
         </main>
     );

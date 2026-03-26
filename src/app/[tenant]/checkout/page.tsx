@@ -25,6 +25,7 @@ import { useAddressStore } from "@/lib/store/addressStore";
 import { createClient } from "@/lib/supabase/client";
 import { generateAvailableSlots } from "@/lib/utils/timeSlots";
 import { calculateDistance } from "@/lib/utils/geo";
+import { useTenantThemeEngine } from "@/hooks/useTenantThemeEngine";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
@@ -101,6 +102,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
     const [scheduleType, setScheduleType] = useState<"asap" | "scheduled">("asap");
+
+    // Theme state
+    const [tenantColorHex, setTenantColorHex] = useState<string>("#10b981");
+    const [tenantThemeMode, setTenantThemeMode] = useState<string>("");
+    const [tenantFontFamily, setTenantFontFamily] = useState<string>("");
+    const [tenantTemplate, setTenantTemplate] = useState<string>("");
 
     const [isLocating, setIsLocating] = useState(false);
     const [usedGPS, setUsedGPS] = useState(false);
@@ -211,7 +218,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km")
+                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme")
                 .eq("slug", tenantSlug)
                 .single();
 
@@ -220,6 +227,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 setTenantAlias(tenantData.transfer_alias || null);
                 setTenantAccountName(tenantData.transfer_account_name || null);
                 setTenantStoreAddress(tenantData.store_address || null);
+
+                // Theme data
+                if (tenantData.color_hex) setTenantColorHex(tenantData.color_hex);
+                if (tenantData.theme) {
+                    const thObj = typeof tenantData.theme === 'string' ? JSON.parse(tenantData.theme) : tenantData.theme;
+                    if (thObj?.mode) setTenantThemeMode(thObj.mode);
+                    if (thObj?.font_family) setTenantFontFamily(thObj.font_family);
+                    if (thObj?.template) setTenantTemplate(thObj.template);
+                }
 
                 // Cache store coords: use DB columns if available, fallback to single geocode
                 if (tenantData.store_lat && tenantData.store_lng) {
@@ -489,53 +505,69 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         }
     };
 
+    const themeEngine = useTenantThemeEngine({
+        template: tenantTemplate || undefined,
+        theme_mode: (tenantThemeMode === "light" || tenantThemeMode === "dark") ? tenantThemeMode : undefined,
+        color_hex: tenantColorHex,
+        font_family: tenantFontFamily || undefined,
+    });
+
+    const t = themeEngine.tokens;
+    const accentColor = themeEngine.primaryColor;
+    const accentTextColor = themeEngine.accentIsLight ? '#18181b' : '#ffffff';
+    const isLight = t.mode === "light";
+
     return (
-        <main className="min-h-screen bg-black text-zinc-100 pb-20 pt-8">
+        <main className={`min-h-screen pb-20 pt-8 ${t.bg} ${t.text} transition-colors duration-300`} style={themeEngine.cssVars}>
             <Toaster position="top-center" richColors />
             <div className="mx-auto max-w-xl px-4">
 
-                <button onClick={() => router.back()} className="mb-8 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
+                <button onClick={() => router.back()} className={`mb-8 flex items-center gap-2 ${t.textMuted} transition-colors`} style={{ ['--hover-color' as string]: accentColor }}>
                     <ArrowLeft size={18} /> <span className="text-sm font-medium">Volver al menú</span>
                 </button>
 
                 <header className="mb-10">
-                    <h1 className="text-4xl font-black tracking-tight text-white mb-2">Finalizar Pedido</h1>
-                    <p className="text-zinc-500">Completá los detalles para que empecemos a cocinar.</p>
+                    <h1 className={`text-4xl font-black tracking-tight mb-2 ${t.text}`}>Finalizar Pedido</h1>
+                    <p className={t.textMuted}>Completá los detalles para que empecemos a cocinar.</p>
                 </header>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
 
                     {/* SECCIÓN 1: IDENTIDAD */}
                     <section className="space-y-6">
-                        <SectionHeader number="1" title="Tus Datos" />
+                        <SectionHeader number="1" title="Tus Datos" accentColor={accentColor} isLight={isLight} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Field label="Nombre" error={errors.firstName?.message}>
-                                <input {...register("firstName")} placeholder="Ej: Juan" className={inputStyle(!!errors.firstName)} />
+                                <input {...register("firstName")} placeholder="Ej: Juan" className={inputStyle(!!errors.firstName, isLight)} />
                             </Field>
                             <Field label="Apellido" error={errors.lastName?.message}>
-                                <input {...register("lastName")} placeholder="Ej: Pérez" className={inputStyle(!!errors.lastName)} />
+                                <input {...register("lastName")} placeholder="Ej: Pérez" className={inputStyle(!!errors.lastName, isLight)} />
                             </Field>
                         </div>
                         <Field label="WhatsApp / Teléfono" error={errors.phone?.message}>
-                            <input {...register("phone")} type="tel" placeholder="Ej: 11 1234 5678" className={inputStyle(!!errors.phone)} />
+                            <input {...register("phone")} type="tel" placeholder="Ej: 11 1234 5678" className={inputStyle(!!errors.phone, isLight)} />
                         </Field>
                     </section>
 
                     {/* SECCIÓN 2: ENTREGA */}
                     <section className="space-y-6">
-                        <SectionHeader number="2" title="Entrega" />
+                        <SectionHeader number="2" title="Entrega" accentColor={accentColor} isLight={isLight} />
                         <div className="grid grid-cols-2 gap-4">
                             <MethodButton
                                 active={deliveryMethod === "DELIVERY"}
                                 onClick={() => setValue("deliveryMethod", "DELIVERY")}
                                 icon={<Truck size={24} />}
                                 label="Delivery"
+                                accentColor={accentColor}
+                                isLight={isLight}
                             />
                             <MethodButton
                                 active={deliveryMethod === "TAKEAWAY"}
                                 onClick={() => setValue("deliveryMethod", "TAKEAWAY")}
                                 icon={<Package size={24} />}
                                 label="Takeaway"
+                                accentColor={accentColor}
+                                isLight={isLight}
                             />
                         </div>
 
@@ -550,8 +582,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     >
                                         <MapPin size={18} className="text-primary mt-0.5 shrink-0" />
                                         <div className="min-w-0">
-                                            <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Usar mi dirección anterior</p>
-                                            <p className="text-sm text-zinc-300 font-medium truncate">
+                                            <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: accentColor }}>Usar mi dirección anterior</p>
+                                            <p className={`text-sm font-medium truncate ${t.text}`}>
                                                 {savedAddress.street} {savedAddress.streetNumber}
                                                 {savedAddress.apartment ? `, ${savedAddress.apartment}` : ""}
                                             </p>
@@ -564,7 +596,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     type="button"
                                     onClick={handleGeolocation}
                                     disabled={isLocating}
-                                    className="w-full py-5 rounded-2xl border border-zinc-800 bg-[#0a0a0a] flex items-center justify-center gap-3 text-sm font-bold text-primary hover:border-primary/50 transition-all shadow-[0_0_15px_rgba(34,197,94,0.05)]"
+                                    className={`w-full py-5 rounded-2xl border flex items-center justify-center gap-3 text-sm font-bold transition-all ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"}`}
+                                    style={{ color: accentColor }}
                                 >
                                     {isLocating ? <Loader2 className="animate-spin" /> : <MapPin size={18} />}
                                     USAR MI UBICACIÓN ACTUAL (GPS)
@@ -578,7 +611,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                             onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
                                             disabled={!ready || !isLoaded}
                                             placeholder="Ej: Rivadavia"
-                                            className={`${inputStyle(!!errors.street)} pl-12`}
+                                            className={`${inputStyle(!!errors.street, isLight)} pl-12`}
                                         />
                                     </div>
                                     
@@ -589,9 +622,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     )}
 
                                     {status === "OK" && (
-                                        <ul className="mt-2 bg-[#0a0a0a] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative z-20">
+                                        <ul className={`mt-2 border rounded-2xl overflow-hidden shadow-2xl relative z-20 ${isLight ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
                                             {suggestions.map((s) => (
-                                                <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className="w-full text-left px-5 py-4 text-sm text-zinc-300 hover:bg-zinc-900 transition-colors border-b border-zinc-800/50 last:border-0">
+                                                <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className={`w-full text-left px-5 py-4 text-sm transition-colors border-b last:border-0 ${isLight ? "text-zinc-700 hover:bg-zinc-50 border-zinc-100" : "text-zinc-300 hover:bg-zinc-800 border-zinc-800/50"}`}>
                                                     {s.description}
                                                 </button>
                                             ))}
@@ -606,7 +639,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                             ref={(e) => { register("streetNumber").ref(e); (streetNumberRef as React.MutableRefObject<HTMLInputElement | null>).current = e; }}
                                             placeholder="Ej: 1226"
                                             onChange={(e) => { register("streetNumber").onChange(e); if (e.target.value) setGpsNeedsNumber(false); }}
-                                            className={gpsNeedsNumber ? inputStyle(true).replace('border-red-900', 'border-amber-500').replace('border-red-500', 'border-amber-400') : inputStyle(!!errors.streetNumber)}
+                                            className={gpsNeedsNumber ? inputStyle(true, isLight).replace('border-red-400', 'border-amber-500').replace('border-red-500', 'border-amber-400') : inputStyle(!!errors.streetNumber, isLight)}
                                         />
                                         {gpsNeedsNumber && (
                                             <p className="mt-1 ml-1 text-xs font-bold text-amber-500 animate-pulse">
@@ -615,7 +648,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         )}
                                     </Field>
                                     <Field label="Piso / Depto" error={errors.apartment?.message}>
-                                        <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment)} />
+                                        <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment, isLight)} />
                                     </Field>
                                 </div>
 
@@ -624,23 +657,23 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                         {...register("betweenStreets")}
                                         ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
                                         placeholder="Ej: Sur y Guemes"
-                                        className={inputStyle(!!errors.betweenStreets)}
+                                        className={inputStyle(!!errors.betweenStreets, isLight)}
                                     />
                                 </Field>
                                 
                                 <Field label="Notas de envío (Opcional)" error={errors.delivery_notes?.message}>
-                                    <input {...register("delivery_notes")} placeholder="Ej: Portón negro, timbre no funciona..." className={inputStyle(!!errors.delivery_notes)} />
+                                    <input {...register("delivery_notes")} placeholder="Ej: Portón negro, timbre no funciona..." className={inputStyle(!!errors.delivery_notes, isLight)} />
                                 </Field>
 
                                 {/* Cartel de Distancia Calculada */}
                                 {calculatedDistance !== null && (
-                                    <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-2xl py-3 px-5 shadow-inner mt-2">
-                                        <span className="text-sm text-zinc-400 font-medium">Distancia a recorrer:</span>
+                                    <div className={`flex items-center justify-between border rounded-2xl py-3 px-5 shadow-inner mt-2 ${isLight ? "bg-zinc-100 border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
+                                        <span className={`text-sm font-medium ${t.textMuted}`}>Distancia a recorrer:</span>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-xs font-black tracking-widest text-zinc-200 bg-black px-2 py-1 rounded-md">
+                                            <span className={`text-xs font-black tracking-widest px-2 py-1 rounded-md ${isLight ? "text-zinc-700 bg-zinc-200" : "text-zinc-200 bg-black"}`}>
                                                 {calculatedDistance.toFixed(1)} km
                                             </span>
-                                            <span className="text-sm font-black text-primary">
+                                            <span className="text-sm font-black" style={{ color: accentColor }}>
                                                 ${calculatedDeliveryCost.toFixed(0)}
                                             </span>
                                         </div>
@@ -652,26 +685,30 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                     {/* SECCIÓN 3: PAGO */}
                     <section className="space-y-6">
-                        <SectionHeader number="3" title="Pago" />
+                        <SectionHeader number="3" title="Pago" accentColor={accentColor} isLight={isLight} />
                         <div className="grid grid-cols-2 gap-4">
                             <MethodButton
                                 active={selectedPayment === "CASH"}
                                 onClick={() => { setValue("paymentMethod", "CASH", { shouldValidate: true }); setReceiptFile(null); }}
                                 icon={<Banknote size={24} />}
                                 label="Efectivo"
+                                accentColor={accentColor}
+                                isLight={isLight}
                             />
                             <MethodButton
                                 active={selectedPayment === "TRANSFER"}
                                 onClick={() => { setValue("paymentMethod", "TRANSFER", { shouldValidate: true }); }}
                                 icon={<Smartphone size={24} />}
                                 label="Transferencia"
+                                accentColor={accentColor}
+                                isLight={isLight}
                             />
                         </div>
                         {isMPActive && (
                             <button
                                 type="button"
                                 onClick={() => { setValue("paymentMethod", "MERCADOPAGO", { shouldValidate: true }); setReceiptFile(null); }}
-                                className={`w-full flex items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${selectedPayment === "MERCADOPAGO" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.15)]" : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"}`}
+                                className={`w-full flex items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${selectedPayment === "MERCADOPAGO" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.15)]" : isLight ? "border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-zinc-300" : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"}`}
                             >
                                 <CreditCard size={24} /> <span className="font-black uppercase tracking-widest">MercadoPago</span>
                             </button>
@@ -682,13 +719,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         {selectedPayment === "TRANSFER" && tenantAlias && (
                             <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 animate-in fade-in slide-in-from-top-4">
                                 <h4 className="mb-2 text-base font-extrabold text-amber-400">Datos para la Transferencia</h4>
-                                <p className="mb-5 text-sm text-zinc-400 leading-relaxed">
-                                    Para completar tu pedido, transferí el total de <strong className="text-white">${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
-                                    {tenantAccountName ? <> a nombre de <strong className="text-white">{tenantAccountName}</strong>:</> : <>:</>}
+                                <p className={`mb-5 text-sm leading-relaxed ${t.textMuted}`}>
+                                    Para completar tu pedido, transferí el total de <strong className={t.text}>${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
+                                    {tenantAccountName ? <> a nombre de <strong className={t.text}>{tenantAccountName}</strong>:</> : <>:</>}
                                 </p>
 
-                                <div className="mb-6 flex items-center justify-between rounded-xl bg-black p-4 ring-1 ring-zinc-800">
-                                    <span className="font-mono text-base font-bold text-white tracking-wider">{tenantAlias}</span>
+                                <div className={`mb-6 flex items-center justify-between rounded-xl p-4 ring-1 ${isLight ? "bg-zinc-100 ring-zinc-200" : "bg-black ring-zinc-800"}`}>
+                                    <span className={`font-mono text-base font-bold tracking-wider ${t.text}`}>{tenantAlias}</span>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -701,10 +738,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     </button>
                                 </div>
 
-                                <div className="rounded-xl border-2 border-dashed border-amber-500/30 p-5 bg-black/50">
-                                    <p className="mb-2 text-sm font-bold text-zinc-200">Comprobante de transferencia <span className="text-red-500">*</span></p>
-                                    <p className="mb-4 text-xs text-zinc-500">Obligatorio adjuntar una foto o PDF para verificar el pago.</p>
-                                    <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 py-6 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition-all">
+                                <div className={`rounded-xl border-2 border-dashed border-amber-500/30 p-5 ${isLight ? "bg-amber-50/50" : "bg-black/50"}`}>
+                                    <p className={`mb-2 text-sm font-bold ${t.text}`}>Comprobante de transferencia <span className="text-red-500">*</span></p>
+                                    <p className={`mb-4 text-xs ${t.textMuted}`}>Obligatorio adjuntar una foto o PDF para verificar el pago.</p>
+                                    <label className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border py-6 text-sm font-semibold transition-all ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}>
                                         <Upload size={24} className={receiptFile ? "text-primary" : "text-zinc-600"} />
                                         {receiptFile ? <span className="text-primary truncate px-4">{receiptFile.name}</span> : <span>Toca para subir comprobante</span>}
                                         <input type="file" accept="image/*,.pdf" className="sr-only" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
@@ -720,26 +757,26 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     </section>
 
                     {/* RESUMEN FINAL */}
-                    <section className="pt-8 border-t-2 border-dashed border-zinc-900">
-                        <SectionHeader number="4" title="Resumen del Pedido" />
-                        
-                        <div className="mt-6 mb-8 bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800 shadow-inner">
+                    <section className={`pt-8 border-t-2 border-dashed ${isLight ? "border-zinc-200" : "border-zinc-900"}`}>
+                        <SectionHeader number="4" title="Resumen del Pedido" accentColor={accentColor} isLight={isLight} />
+
+                        <div className={`mt-6 mb-8 p-6 rounded-2xl border shadow-inner ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/40 border-zinc-800"}`}>
                             {/* Lista de Productos */}
-                            <ul className="space-y-4 mb-6 pb-6 border-b border-zinc-800/80">
+                            <ul className={`space-y-4 mb-6 pb-6 border-b ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
                                 {items.map((item, idx) => (
                                     <li key={idx} className="flex justify-between text-sm">
                                         <div className="pr-4">
-                                            <p className="font-bold text-zinc-200 tracking-wide">
-                                                <span className="text-primary mr-2">{item.quantity}x</span>
+                                            <p className={`font-bold tracking-wide ${t.text}`}>
+                                                <span className="mr-2" style={{ color: accentColor }}>{item.quantity}x</span>
                                                 {item.name}
                                             </p>
                                             {item.modifiersText && (
-                                                <p className="mt-1 text-xs text-zinc-500 font-medium leading-relaxed">
+                                                <p className={`mt-1 text-xs font-medium leading-relaxed ${t.textMuted}`}>
                                                     {item.modifiersText}
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="font-mono text-zinc-300 font-medium shrink-0">
+                                        <div className={`font-mono font-medium shrink-0 ${t.text}`}>
                                             ${(item.price * item.quantity).toLocaleString("es-AR")}
                                         </div>
                                     </li>
@@ -748,19 +785,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                             {/* Totales */}
                             <div className="space-y-3">
-                                <div className="flex justify-between text-zinc-400 font-medium text-sm">
+                                <div className={`flex justify-between font-medium text-sm ${t.textMuted}`}>
                                     <span>Subtotal</span>
-                                    <span className="text-white">${subtotal.toLocaleString("es-AR")}</span>
+                                    <span className={t.text}>${subtotal.toLocaleString("es-AR")}</span>
                                 </div>
                                 {deliveryMethod === "DELIVERY" && (
-                                    <div className="flex justify-between text-zinc-400 font-medium text-sm">
+                                    <div className={`flex justify-between font-medium text-sm ${t.textMuted}`}>
                                         <span>Envío</span>
-                                        <span className="text-white">+ ${calculatedDeliveryCost.toLocaleString("es-AR")}</span>
+                                        <span className={t.text}>+ ${calculatedDeliveryCost.toLocaleString("es-AR")}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-end text-2xl font-black text-white pt-4 border-t border-zinc-800 mt-2">
-                                    <span className="text-base uppercase tracking-widest text-zinc-500">Total</span>
-                                    <span className="text-primary tracking-tight">${total.toLocaleString("es-AR")}</span>
+                                <div className={`flex justify-between items-end text-2xl font-black pt-4 border-t mt-2 ${t.text} ${isLight ? "border-zinc-200" : "border-zinc-800"}`}>
+                                    <span className={`text-base uppercase tracking-widest ${t.textMuted}`}>Total</span>
+                                    <span className="tracking-tight" style={{ color: accentColor }}>${total.toLocaleString("es-AR")}</span>
                                 </div>
                             </div>
                         </div>
@@ -768,16 +805,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         <button
                             type="submit"
                             disabled={
-                                isSubmitting || 
+                                isSubmitting ||
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") ||
                                 isAddressIncomplete ||
                                 (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                             }
-                            className={`w-full py-5 rounded-2xl font-black text-lg shadow-[0_10px_40px_-10px_rgba(34,197,94,0.5)] transition-all uppercase tracking-tighter flex items-center justify-center gap-3 ${
+                            className={`w-full py-5 rounded-2xl font-black text-lg transition-all uppercase tracking-tighter flex items-center justify-center gap-3 ${
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete
-                                ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-none grayscale-0 opacity-100 disabled:cursor-not-allowed"
-                                : "bg-primary text-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
+                                ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-none disabled:cursor-not-allowed"
+                                : "hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
                             }`}
+                            style={
+                                !((isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete)
+                                ? { backgroundColor: accentColor, color: accentTextColor }
+                                : undefined
+                            }
                         >
                             {isSubmitting ? (
                                 <><Loader2 className="animate-spin" /> PROCESANDO PEDIDO...</>
@@ -797,38 +839,53 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
 // ─── COMPONENTES AUXILIARES ──────────────────────────────────────────────────
 
-function SectionHeader({ number, title }: { number: string; title: string }) {
+function SectionHeader({ number, title, accentColor, isLight }: { number: string; title: string; accentColor?: string; isLight?: boolean }) {
     return (
         <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-black border border-primary/20">
+            <span
+                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-black border"
+                style={accentColor ? { backgroundColor: `${accentColor}15`, color: accentColor, borderColor: `${accentColor}30` } : undefined}
+            >
                 {number}
             </span>
-            <h2 className="text-xl font-bold text-white uppercase tracking-tight">{title}</h2>
+            <h2 className={`text-xl font-bold uppercase tracking-tight ${isLight ? "text-zinc-900" : "text-white"}`}>{title}</h2>
         </div>
     );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, children, isLight }: { label: string; error?: string; children: React.ReactNode; isLight?: boolean }) {
     return (
         <div className="space-y-3">
-            <label className="text-xs font-black tracking-widest text-zinc-500 uppercase ml-2">{label}</label>
+            <label className={`text-xs font-black tracking-widest uppercase ml-2 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>{label}</label>
             {children}
             {error && <p className="text-[11px] text-red-500 font-bold ml-2">× {error}</p>}
         </div>
     );
 }
 
-function inputStyle(hasError: boolean) {
-    return `w-full bg-[#0a0a0a] border ${hasError ? 'border-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary'} rounded-2xl py-5 px-6 text-white text-base md:text-sm font-medium outline-none transition-all placeholder:text-zinc-600 shadow-inner`;
+function inputStyle(hasError: boolean, isLight: boolean = false) {
+    const bg = isLight ? "bg-white" : "bg-zinc-900/50";
+    const border = hasError
+        ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+        : isLight
+            ? "border-zinc-300 focus:border-primary focus:ring-1 focus:ring-primary"
+            : "border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary";
+    const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-600";
+    return `w-full ${bg} border ${border} rounded-2xl py-5 px-6 ${text} text-base md:text-sm font-medium outline-none transition-all shadow-inner`;
 }
 
-function MethodButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
+function MethodButton({ active, onClick, icon, label, accentColor, isLight }: { active: boolean; onClick: () => void; icon: any; label: string; accentColor?: string; isLight?: boolean }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${active ? 'border-primary bg-primary/10 text-primary shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800'
+            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${active
+                ? ""
+                : isLight
+                    ? "border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-zinc-300"
+                    : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"
                 }`}
+            style={active && accentColor ? { borderColor: accentColor, backgroundColor: `${accentColor}15`, color: accentColor } : undefined}
         >
             {icon}
             <span className="text-sm font-black uppercase tracking-widest">{label}</span>
