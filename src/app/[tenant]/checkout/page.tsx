@@ -66,6 +66,40 @@ const checkoutSchema = z
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
 
+// ─── HISTORIAL DE DIRECCIONES (localStorage) ─────────────────────────────
+
+interface SavedHistoryAddress {
+    street: string;
+    streetNumber: string;
+    apartment?: string;
+    betweenStreets: string;
+    deliveryNotes?: string;
+    coords?: { lat: number; lng: number };
+}
+
+const HISTORY_MAX = 3;
+
+function getAddressHistory(tenantSlug: string): SavedHistoryAddress[] {
+    try {
+        const raw = localStorage.getItem(`pedidosposta_addresses_${tenantSlug}`);
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+}
+
+function saveAddressToHistory(tenantSlug: string, addr: SavedHistoryAddress) {
+    try {
+        const history = getAddressHistory(tenantSlug);
+        // Dedup: si ya existe la misma calle+número, la removemos primero
+        const filtered = history.filter(
+            (h) => !(h.street === addr.street && h.streetNumber === addr.streetNumber)
+        );
+        const updated = [addr, ...filtered].slice(0, HISTORY_MAX);
+        localStorage.setItem(`pedidosposta_addresses_${tenantSlug}`, JSON.stringify(updated));
+    } catch { /* localStorage lleno o bloqueado */ }
+}
+
+// ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────
+
 export default function CheckoutPage({ params }: { params: Promise<{ tenant: string }> }) {
     const { tenant: tenantSlug } = React.use(params);
     const router = useRouter();
@@ -110,10 +144,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [tenantTemplate, setTenantTemplate] = useState<string>("");
 
     const [isLocating, setIsLocating] = useState(false);
-    const [usedGPS, setUsedGPS] = useState(false);
-    const [gpsNeedsNumber, setGpsNeedsNumber] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [isManualAddressMode, setIsManualAddressMode] = useState(false);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+    const [addressHistory, setAddressHistory] = useState<SavedHistoryAddress[]>([]);
 
     const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
     const streetNumberRef = React.useRef<HTMLInputElement>(null);
@@ -147,6 +181,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         libraries,
     });
 
+    // Location bias: priorizar resultados cerca del local (radio 20km)
+    const locationBias = React.useMemo(() => {
+        if (!storeCoords || typeof window === "undefined" || !window.google?.maps) return undefined;
+        return new window.google.maps.Circle({
+            center: { lat: storeCoords.lat, lng: storeCoords.lng },
+            radius: 20000,
+        });
+    }, [storeCoords]);
+
     const {
         ready,
         value: addressValue,
@@ -159,6 +202,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         requestOptions: {
             componentRestrictions: { country: "ar" },
             sessionToken: mapSessionToken ?? undefined,
+            ...(locationBias ? { locationBias } : {}),
         },
         debounce: 600,
     });
@@ -171,6 +215,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
         }
     }, [isLoaded, init, mapSessionToken]);
+
+    // Cargar historial de direcciones al montar
+    React.useEffect(() => {
+        setAddressHistory(getAddressHistory(tenantSlug));
+    }, [tenantSlug]);
 
     const {
         register,
@@ -192,6 +241,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const isAddressIncomplete = deliveryMethod === "DELIVERY" && (!streetVal || streetVal.trim().length === 0 || !streetNumVal || streetNumVal.trim().length === 0);
 
     const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
+
+    // Aplicar una dirección del historial
+    const applyHistoryAddress = React.useCallback((addr: SavedHistoryAddress) => {
+        // Cambiar a modo manual para que el usuario vea los campos libres con su data
+        setIsManualAddressMode(true);
+        setValue("street", addr.street, { shouldValidate: true });
+        setValue("streetNumber", addr.streetNumber, { shouldValidate: true });
+        if (addr.apartment) setValue("apartment", addr.apartment);
+        setValue("betweenStreets", addr.betweenStreets, { shouldValidate: true });
+        if (addr.deliveryNotes) setValue("delivery_notes", addr.deliveryNotes);
+
+        if (addr.coords) {
+            setSelectedCoords(addr.coords);
+            if (tenantDeliveryType === "distance") {
+                computeDeliveryCost(addr.coords.lat, addr.coords.lng);
+            }
+        }
+    }, [setValue, tenantDeliveryType, computeDeliveryCost]);
 
     // Aplicar dirección guardada (0 API calls)
     const applySavedAddress = React.useCallback(() => {
@@ -297,10 +364,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             if (streetNum) {
                 setValue("streetNumber", streetNum, { shouldValidate: true });
-                setGpsNeedsNumber(false);
                 setTimeout(() => betweenStreetsRef.current?.focus(), 200);
             } else {
-                setGpsNeedsNumber(true);
                 setTimeout(() => streetNumberRef.current?.focus(), 200);
             }
 
@@ -321,46 +386,26 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
         setIsLocating(true);
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
+            (position) => {
                 const { latitude: lat, longitude: lng } = position.coords;
-                try {
-                    // 1 API call: reverse geocode GPS coords
-                    const results = await getGeocode({ location: { lat, lng } });
+                // Guardar coords silenciosamente para cálculo de distancia/envío
+                setSelectedCoords({ lat, lng });
 
-                    const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
-                    const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
-
-                    const streetName = route || results[0].formatted_address.split(',')[0].replace(/[0-9]/g, '').trim();
-
-                    setAddressValue(streetName, false);
-                    setValue("street", streetName, { shouldValidate: true });
-                    setUsedGPS(true);
-                    setSelectedCoords({ lat, lng });
-
-                    if (streetNum) {
-                        setValue("streetNumber", streetNum, { shouldValidate: true });
-                        setGpsNeedsNumber(false);
-                        setTimeout(() => betweenStreetsRef.current?.focus(), 200);
-                    } else {
-                        setGpsNeedsNumber(true);
-                        setTimeout(() => streetNumberRef.current?.focus(), 200);
-                    }
-
-                    // Distance uses cached store coords — 0 extra API calls
-                    if (storeCoords && tenantDeliveryType === "distance") {
-                        computeDeliveryCost(lat, lng);
-                    }
-                } catch {
-                    toast.error("No pudimos obtener tu dirección exacta.");
-                } finally {
-                    setIsLocating(false);
+                // Calcular distancia y costo con las coords del GPS (0 API calls)
+                if (storeCoords && tenantDeliveryType === "distance") {
+                    computeDeliveryCost(lat, lng);
                 }
+
+                // Cambiar a modo manual: el usuario escribe su dirección libremente
+                setIsManualAddressMode(true);
+                setIsLocating(false);
+                toast.success("Ubicación detectada. Escribí tu dirección.");
             },
             () => {
                 setIsLocating(false);
                 toast.error("No pudimos obtener tu ubicación.");
             },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
     };
 
@@ -456,15 +501,16 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             // Guardar dirección para futuros pedidos (0 API calls en el próximo checkout)
             if (data.deliveryMethod === "DELIVERY" && data.street && data.streetNumber && data.betweenStreets) {
-                saveAddress(tenantSlug, {
+                const addrPayload = {
                     street: data.street,
                     streetNumber: data.streetNumber,
                     apartment: data.apartment || undefined,
                     betweenStreets: data.betweenStreets,
                     deliveryNotes: data.delivery_notes || undefined,
                     coords: selectedCoords || undefined,
-                    savedAt: Date.now(),
-                });
+                };
+                saveAddress(tenantSlug, { ...addrPayload, savedAt: Date.now() });
+                saveAddressToHistory(tenantSlug, addrPayload);
             }
 
             // Integración MP
@@ -522,41 +568,41 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             <Toaster position="top-center" richColors />
             <div className="mx-auto max-w-xl px-4">
 
-                <button onClick={() => router.back()} className={`mb-8 flex items-center gap-2 ${t.textMuted} transition-colors`} style={{ ['--hover-color' as string]: accentColor }}>
-                    <ArrowLeft size={18} /> <span className="text-sm font-medium">Volver al menú</span>
+                <button onClick={() => router.back()} className={`mb-5 flex items-center gap-2 ${t.textMuted} transition-colors`} style={{ ['--hover-color' as string]: accentColor }}>
+                    <ArrowLeft size={16} /> <span className="text-sm font-medium">Volver al menú</span>
                 </button>
 
-                <header className="mb-10">
-                    <h1 className={`text-4xl font-black tracking-tight mb-2 ${t.text}`}>Finalizar Pedido</h1>
-                    <p className={t.textMuted}>Completá los detalles para que empecemos a cocinar.</p>
+                <header className="mb-6">
+                    <h1 className={`text-2xl font-black tracking-tight mb-1 ${t.text}`}>Finalizar Pedido</h1>
+                    <p className={`text-sm ${t.textMuted}`}>Completá los detalles para que empecemos a cocinar.</p>
                 </header>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
 
                     {/* SECCIÓN 1: IDENTIDAD */}
-                    <section className="space-y-6">
+                    <section className="space-y-3">
                         <SectionHeader number="1" title="Tus Datos" accentColor={accentColor} isLight={isLight} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <Field label="Nombre" error={errors.firstName?.message}>
-                                <input {...register("firstName")} placeholder="Ej: Juan" className={inputStyle(!!errors.firstName, isLight)} />
+                                <input {...register("firstName")} placeholder="Juan" className={inputStyle(!!errors.firstName, isLight)} />
                             </Field>
                             <Field label="Apellido" error={errors.lastName?.message}>
-                                <input {...register("lastName")} placeholder="Ej: Pérez" className={inputStyle(!!errors.lastName, isLight)} />
+                                <input {...register("lastName")} placeholder="Pérez" className={inputStyle(!!errors.lastName, isLight)} />
                             </Field>
                         </div>
                         <Field label="WhatsApp / Teléfono" error={errors.phone?.message}>
-                            <input {...register("phone")} type="tel" placeholder="Ej: 11 1234 5678" className={inputStyle(!!errors.phone, isLight)} />
+                            <input {...register("phone")} type="tel" placeholder="11 1234 5678" className={inputStyle(!!errors.phone, isLight)} />
                         </Field>
                     </section>
 
                     {/* SECCIÓN 2: ENTREGA */}
-                    <section className="space-y-6">
+                    <section className="space-y-3">
                         <SectionHeader number="2" title="Entrega" accentColor={accentColor} isLight={isLight} />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <MethodButton
                                 active={deliveryMethod === "DELIVERY"}
                                 onClick={() => setValue("deliveryMethod", "DELIVERY")}
-                                icon={<Truck size={24} />}
+                                icon={<Truck size={18} />}
                                 label="Delivery"
                                 accentColor={accentColor}
                                 isLight={isLight}
@@ -564,7 +610,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             <MethodButton
                                 active={deliveryMethod === "TAKEAWAY"}
                                 onClick={() => setValue("deliveryMethod", "TAKEAWAY")}
-                                icon={<Package size={24} />}
+                                icon={<Package size={18} />}
                                 label="Takeaway"
                                 accentColor={accentColor}
                                 isLight={isLight}
@@ -572,105 +618,150 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         </div>
 
                         {deliveryMethod === "DELIVERY" && (
-                            <div className="space-y-5 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
 
-                                {showSavedAddress && savedAddress && (
-                                    <button
-                                        type="button"
-                                        onClick={applySavedAddress}
-                                        className="w-full py-4 px-5 rounded-2xl border border-primary/30 bg-primary/5 flex items-start gap-3 text-left transition-all hover:border-primary/60 hover:bg-primary/10"
-                                    >
-                                        <MapPin size={18} className="text-primary mt-0.5 shrink-0" />
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: accentColor }}>Usar mi dirección anterior</p>
-                                            <p className={`text-sm font-medium truncate ${t.text}`}>
-                                                {savedAddress.street} {savedAddress.streetNumber}
-                                                {savedAddress.apartment ? `, ${savedAddress.apartment}` : ""}
-                                            </p>
-                                            <p className="text-xs text-zinc-500 truncate">Entre: {savedAddress.betweenStreets}</p>
-                                        </div>
-                                    </button>
+                                {/* Direcciones rápidas: saved address + historial */}
+                                {(showSavedAddress && savedAddress) || addressHistory.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {showSavedAddress && savedAddress && (
+                                            <button
+                                                type="button"
+                                                onClick={applySavedAddress}
+                                                className="w-full py-2.5 px-3 rounded-xl border flex items-center gap-2.5 text-left transition-all hover:opacity-80"
+                                                style={{ borderColor: `${accentColor}30`, backgroundColor: `${accentColor}08` }}
+                                            >
+                                                <MapPin size={14} className="shrink-0" style={{ color: accentColor }} />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>Última dirección</p>
+                                                    <p className={`text-xs font-medium truncate ${t.text}`}>
+                                                        {savedAddress.street} {savedAddress.streetNumber}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        )}
+                                        {addressHistory.length > 0 && (
+                                            <div>
+                                                <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ml-1 ${t.textMuted}`}>Direcciones recientes</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {addressHistory.map((addr, i) => (
+                                                        <button
+                                                            key={`${addr.street}-${addr.streetNumber}-${i}`}
+                                                            type="button"
+                                                            onClick={() => applyHistoryAddress(addr)}
+                                                            className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-[11px] font-semibold transition-all hover:opacity-80 ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}
+                                                        >
+                                                            <MapPin size={10} className="shrink-0" />
+                                                            {addr.street} {addr.streetNumber}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                {/* Paso 1: Calle — Modo Autocompletado o Modo Manual */}
+                                {!isManualAddressMode ? (
+                                    <>
+                                        <Field label="Calle y número *" error={errors.street?.message}>
+                                            <div className="relative">
+                                                <MapPin size={14} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
+                                                <input
+                                                    value={addressValue}
+                                                    onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
+                                                    disabled={!ready || !isLoaded}
+                                                    placeholder="Ej: Calle 22 1207"
+                                                    className={`${inputStyle(!!errors.street, isLight)} pl-10`}
+                                                />
+                                            </div>
+
+                                            {status === "OK" && (
+                                                <ul className={`mt-1.5 border rounded-xl overflow-hidden shadow-2xl relative z-20 ${isLight ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
+                                                    {suggestions.map((s) => (
+                                                        <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className={`w-full text-left px-4 py-3 text-sm transition-colors border-b last:border-0 ${isLight ? "text-zinc-700 hover:bg-zinc-50 border-zinc-100" : "text-zinc-300 hover:bg-zinc-800 border-zinc-800/50"}`}>
+                                                            {s.description}
+                                                        </button>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </Field>
+
+                                        {/* Fallback: activar GPS silencioso + modo manual */}
+                                        <button
+                                            type="button"
+                                            onClick={handleGeolocation}
+                                            disabled={isLocating}
+                                            className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold transition-colors ${t.textMuted}`}
+                                            style={{ color: isLocating ? accentColor : undefined }}
+                                        >
+                                            {isLocating ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                                            {isLocating ? "Buscando ubicación..." : "¿No encontrás tu calle? Usá tu ubicación actual"}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Field label="Calle y número *" error={errors.street?.message}>
+                                            <input
+                                                {...register("street")}
+                                                placeholder="Ej: Calle 22 1207"
+                                                className={inputStyle(!!errors.street, isLight)}
+                                            />
+                                        </Field>
+
+                                        {/* Volver al modo autocompletado */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsManualAddressMode(false);
+                                                setSelectedCoords(null);
+                                                setCalculatedDistance(null);
+                                                setCalculatedDeliveryCost(tenantDeliveryType === "fixed" ? tenantFixedPrice : tenantBasePrice);
+                                                setValue("street", "", { shouldValidate: false });
+                                                setAddressValue("", false);
+                                            }}
+                                            className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold transition-colors ${t.textMuted}`}
+                                        >
+                                            <MapPin size={14} />
+                                            Volver a buscar en el mapa
+                                        </button>
+                                    </>
                                 )}
 
-                                <button
-                                    type="button"
-                                    onClick={handleGeolocation}
-                                    disabled={isLocating}
-                                    className={`w-full py-5 rounded-2xl border flex items-center justify-center gap-3 text-sm font-bold transition-all ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"}`}
-                                    style={{ color: accentColor }}
-                                >
-                                    {isLocating ? <Loader2 className="animate-spin" /> : <MapPin size={18} />}
-                                    USAR MI UBICACIÓN ACTUAL (GPS)
-                                </button>
-
-                                <Field label="Calle de entrega *" error={errors.street?.message}>
-                                    <div className="relative">
-                                        <MapPin size={16} className={`absolute left-5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
-                                        <input
-                                            value={addressValue}
-                                            onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
-                                            disabled={!ready || !isLoaded}
-                                            placeholder="Ej: Rivadavia"
-                                            className={`${inputStyle(!!errors.street, isLight)} pl-12`}
-                                        />
-                                    </div>
-                                    
-                                    {usedGPS && !gpsNeedsNumber && (
-                                        <p className="mt-2 ml-1 text-xs font-bold text-amber-500 animate-pulse">
-                                            Verificá la calle y la altura. A veces el GPS marca la esquina.
-                                        </p>
-                                    )}
-
-                                    {status === "OK" && (
-                                        <ul className={`mt-2 border rounded-2xl overflow-hidden shadow-2xl relative z-20 ${isLight ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
-                                            {suggestions.map((s) => (
-                                                <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className={`w-full text-left px-5 py-4 text-sm transition-colors border-b last:border-0 ${isLight ? "text-zinc-700 hover:bg-zinc-50 border-zinc-100" : "text-zinc-300 hover:bg-zinc-800 border-zinc-800/50"}`}>
-                                                    {s.description}
-                                                </button>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </Field>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Field label={gpsNeedsNumber ? "Altura / N° * (verificar)" : "Altura / N° *"} error={errors.streetNumber?.message}>
+                                {/* Paso 2: Altura + Piso */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Field label="Altura / N°  *" error={errors.streetNumber?.message}>
                                         <input
                                             {...register("streetNumber")}
                                             ref={(e) => { register("streetNumber").ref(e); (streetNumberRef as React.MutableRefObject<HTMLInputElement | null>).current = e; }}
-                                            placeholder="Ej: 1226"
-                                            onChange={(e) => { register("streetNumber").onChange(e); if (e.target.value) setGpsNeedsNumber(false); }}
-                                            className={gpsNeedsNumber ? inputStyle(true, isLight).replace('border-red-400', 'border-amber-500').replace('border-red-500', 'border-amber-400') : inputStyle(!!errors.streetNumber, isLight)}
+                                            placeholder="Ej: 1207"
+                                            className={inputStyle(!!errors.streetNumber, isLight)}
                                         />
-                                        {gpsNeedsNumber && (
-                                            <p className="mt-1 ml-1 text-xs font-bold text-amber-500 animate-pulse">
-                                                El GPS no detectó el número. Ingresalo manualmente.
-                                            </p>
-                                        )}
                                     </Field>
                                     <Field label="Piso / Depto" error={errors.apartment?.message}>
-                                        <input {...register("apartment")} placeholder="Ej: 3B" className={inputStyle(!!errors.apartment, isLight)} />
+                                        <input {...register("apartment")} placeholder="Ej: 3B, PB 1" className={inputStyle(!!errors.apartment, isLight)} />
                                     </Field>
                                 </div>
 
-                                <Field label="Entre Calles 🚦 (o esquina) *" error={errors.betweenStreets?.message}>
+                                {/* Paso 3: Entre calles + Observaciones */}
+                                <Field label="Entre qué calles o esquina *" error={errors.betweenStreets?.message}>
                                     <input
                                         {...register("betweenStreets")}
                                         ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
-                                        placeholder="Ej: Sur y Guemes"
+                                        placeholder="Ej: Entre 24 y 26, o esquina 11"
                                         className={inputStyle(!!errors.betweenStreets, isLight)}
                                     />
                                 </Field>
-                                
-                                <Field label="Notas de envío (Opcional)" error={errors.delivery_notes?.message}>
-                                    <input {...register("delivery_notes")} placeholder="Ej: Portón negro, timbre no funciona..." className={inputStyle(!!errors.delivery_notes, isLight)} />
+
+                                <Field label="Observaciones para el repartidor (Opcional)" error={errors.delivery_notes?.message}>
+                                    <input {...register("delivery_notes")} placeholder="Ej: portón negro, no anda el timbre, timbre 2..." className={inputStyle(!!errors.delivery_notes, isLight)} />
                                 </Field>
 
-                                {/* Cartel de Distancia Calculada */}
+                                {/* Distancia Calculada */}
                                 {calculatedDistance !== null && (
-                                    <div className={`flex items-center justify-between border rounded-2xl py-3 px-5 shadow-inner mt-2 ${isLight ? "bg-zinc-100 border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
-                                        <span className={`text-sm font-medium ${t.textMuted}`}>Distancia a recorrer:</span>
-                                        <div className="flex items-center gap-3">
-                                            <span className={`text-xs font-black tracking-widest px-2 py-1 rounded-md ${isLight ? "text-zinc-700 bg-zinc-200" : "text-zinc-200 bg-black"}`}>
+                                    <div className={`flex items-center justify-between border rounded-xl py-2.5 px-4 mt-1 ${isLight ? "bg-zinc-100 border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
+                                        <span className={`text-xs font-medium ${t.textMuted}`}>Distancia:</span>
+                                        <div className="flex items-center gap-2.5">
+                                            <span className={`text-[11px] font-black tracking-widest px-2 py-0.5 rounded-md ${isLight ? "text-zinc-700 bg-zinc-200" : "text-zinc-200 bg-black"}`}>
                                                 {calculatedDistance.toFixed(1)} km
                                             </span>
                                             <span className="text-sm font-black" style={{ color: accentColor }}>
@@ -684,13 +775,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     </section>
 
                     {/* SECCIÓN 3: PAGO */}
-                    <section className="space-y-6">
+                    <section className="space-y-3">
                         <SectionHeader number="3" title="Pago" accentColor={accentColor} isLight={isLight} />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <MethodButton
                                 active={selectedPayment === "CASH"}
                                 onClick={() => { setValue("paymentMethod", "CASH", { shouldValidate: true }); setReceiptFile(null); }}
-                                icon={<Banknote size={24} />}
+                                icon={<Banknote size={18} />}
                                 label="Efectivo"
                                 accentColor={accentColor}
                                 isLight={isLight}
@@ -698,7 +789,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             <MethodButton
                                 active={selectedPayment === "TRANSFER"}
                                 onClick={() => { setValue("paymentMethod", "TRANSFER", { shouldValidate: true }); }}
-                                icon={<Smartphone size={24} />}
+                                icon={<Smartphone size={18} />}
                                 label="Transferencia"
                                 accentColor={accentColor}
                                 isLight={isLight}
@@ -708,41 +799,41 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             <button
                                 type="button"
                                 onClick={() => { setValue("paymentMethod", "MERCADOPAGO", { shouldValidate: true }); setReceiptFile(null); }}
-                                className={`w-full flex items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${selectedPayment === "MERCADOPAGO" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.15)]" : isLight ? "border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-zinc-300" : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"}`}
+                                className={`w-full flex items-center justify-center gap-2 py-4 px-3 rounded-xl border-2 transition-all ${selectedPayment === "MERCADOPAGO" ? "border-sky-500 bg-sky-500/10 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.15)]" : isLight ? "border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-zinc-300" : "border-zinc-900 bg-zinc-900/20 text-zinc-600 hover:border-zinc-800"}`}
                             >
-                                <CreditCard size={24} /> <span className="font-black uppercase tracking-widest">MercadoPago</span>
+                                <CreditCard size={18} /> <span className="text-xs font-black uppercase tracking-widest">MercadoPago</span>
                             </button>
                         )}
                         {errors.paymentMethod && <p className="text-red-500 text-xs ml-1 font-bold">{errors.paymentMethod.message}</p>}
 
                         {/* INFO PARA TRANSFERENCIA */}
                         {selectedPayment === "TRANSFER" && tenantAlias && (
-                            <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 animate-in fade-in slide-in-from-top-4">
-                                <h4 className="mb-2 text-base font-extrabold text-amber-400">Datos para la Transferencia</h4>
-                                <p className={`mb-5 text-sm leading-relaxed ${t.textMuted}`}>
-                                    Para completar tu pedido, transferí el total de <strong className={t.text}>${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
+                            <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 animate-in fade-in slide-in-from-top-4">
+                                <h4 className="mb-1.5 text-sm font-extrabold text-amber-400">Datos para la Transferencia</h4>
+                                <p className={`mb-3 text-xs leading-relaxed ${t.textMuted}`}>
+                                    Transferí <strong className={t.text}>${total.toLocaleString("es-AR")}</strong> al siguiente alias/CBU
                                     {tenantAccountName ? <> a nombre de <strong className={t.text}>{tenantAccountName}</strong>:</> : <>:</>}
                                 </p>
 
-                                <div className={`mb-6 flex items-center justify-between rounded-xl p-4 ring-1 ${isLight ? "bg-zinc-100 ring-zinc-200" : "bg-black ring-zinc-800"}`}>
-                                    <span className={`font-mono text-base font-bold tracking-wider ${t.text}`}>{tenantAlias}</span>
+                                <div className={`mb-4 flex items-center justify-between rounded-lg p-3 ring-1 ${isLight ? "bg-zinc-100 ring-zinc-200" : "bg-black ring-zinc-800"}`}>
+                                    <span className={`font-mono text-sm font-bold tracking-wider ${t.text}`}>{tenantAlias}</span>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             navigator.clipboard.writeText(tenantAlias);
                                             toast.success("Alias copiado al portapapeles");
                                         }}
-                                        className="text-[11px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
+                                        className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
                                     >
                                         Copiar
                                     </button>
                                 </div>
 
-                                <div className={`rounded-xl border-2 border-dashed border-amber-500/30 p-5 ${isLight ? "bg-amber-50/50" : "bg-black/50"}`}>
-                                    <p className={`mb-2 text-sm font-bold ${t.text}`}>Comprobante de transferencia <span className="text-red-500">*</span></p>
-                                    <p className={`mb-4 text-xs ${t.textMuted}`}>Obligatorio adjuntar una foto o PDF para verificar el pago.</p>
-                                    <label className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border py-6 text-sm font-semibold transition-all ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}>
-                                        <Upload size={24} className={receiptFile ? "text-primary" : "text-zinc-600"} />
+                                <div className={`rounded-lg border-2 border-dashed border-amber-500/30 p-3 ${isLight ? "bg-amber-50/50" : "bg-black/50"}`}>
+                                    <p className={`mb-1 text-xs font-bold ${t.text}`}>Comprobante <span className="text-red-500">*</span></p>
+                                    <p className={`mb-2 text-[11px] ${t.textMuted}`}>Adjuntá una foto o PDF del pago.</p>
+                                    <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border py-4 text-xs font-semibold transition-all ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}>
+                                        <Upload size={18} className={receiptFile ? "text-primary" : "text-zinc-600"} />
                                         {receiptFile ? <span className="text-primary truncate px-4">{receiptFile.name}</span> : <span>Toca para subir comprobante</span>}
                                         <input type="file" accept="image/*,.pdf" className="sr-only" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
                                     </label>
@@ -750,28 +841,28 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             </div>
                         )}
                         {selectedPayment === "TRANSFER" && !tenantAlias && (
-                            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 animate-in fade-in text-center">
-                                <p className="text-sm font-bold text-red-500">Este local aún no ha configurado su Alias. Por favor elegí otro medio de pago.</p>
+                            <div className="mt-2 rounded-xl border border-red-500/30 bg-red-500/5 p-3 animate-in fade-in text-center">
+                                <p className="text-xs font-bold text-red-500">Este local aún no ha configurado su Alias. Por favor elegí otro medio de pago.</p>
                             </div>
                         )}
                     </section>
 
                     {/* RESUMEN FINAL */}
-                    <section className={`pt-8 border-t-2 border-dashed ${isLight ? "border-zinc-200" : "border-zinc-900"}`}>
+                    <section className={`pt-6 border-t-2 border-dashed ${isLight ? "border-zinc-200" : "border-zinc-900"}`}>
                         <SectionHeader number="4" title="Resumen del Pedido" accentColor={accentColor} isLight={isLight} />
 
-                        <div className={`mt-6 mb-8 p-6 rounded-2xl border shadow-inner ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/40 border-zinc-800"}`}>
+                        <div className={`mt-3 mb-5 p-4 rounded-xl border shadow-inner ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/40 border-zinc-800"}`}>
                             {/* Lista de Productos */}
-                            <ul className={`space-y-4 mb-6 pb-6 border-b ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
+                            <ul className={`space-y-3 mb-4 pb-4 border-b ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
                                 {items.map((item, idx) => (
-                                    <li key={idx} className="flex justify-between text-sm">
-                                        <div className="pr-4">
+                                    <li key={idx} className="flex justify-between text-xs">
+                                        <div className="pr-3">
                                             <p className={`font-bold tracking-wide ${t.text}`}>
-                                                <span className="mr-2" style={{ color: accentColor }}>{item.quantity}x</span>
+                                                <span className="mr-1.5" style={{ color: accentColor }}>{item.quantity}x</span>
                                                 {item.name}
                                             </p>
                                             {item.modifiersText && (
-                                                <p className={`mt-1 text-xs font-medium leading-relaxed ${t.textMuted}`}>
+                                                <p className={`mt-0.5 text-[11px] font-medium leading-relaxed ${t.textMuted}`}>
                                                     {item.modifiersText}
                                                 </p>
                                             )}
@@ -784,19 +875,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             </ul>
 
                             {/* Totales */}
-                            <div className="space-y-3">
-                                <div className={`flex justify-between font-medium text-sm ${t.textMuted}`}>
+                            <div className="space-y-2">
+                                <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
                                     <span>Subtotal</span>
                                     <span className={t.text}>${subtotal.toLocaleString("es-AR")}</span>
                                 </div>
                                 {deliveryMethod === "DELIVERY" && (
-                                    <div className={`flex justify-between font-medium text-sm ${t.textMuted}`}>
+                                    <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
                                         <span>Envío</span>
                                         <span className={t.text}>+ ${calculatedDeliveryCost.toLocaleString("es-AR")}</span>
                                     </div>
                                 )}
-                                <div className={`flex justify-between items-end text-2xl font-black pt-4 border-t mt-2 ${t.text} ${isLight ? "border-zinc-200" : "border-zinc-800"}`}>
-                                    <span className={`text-base uppercase tracking-widest ${t.textMuted}`}>Total</span>
+                                <div className={`flex justify-between items-end text-xl font-black pt-3 border-t mt-1.5 ${t.text} ${isLight ? "border-zinc-200" : "border-zinc-800"}`}>
+                                    <span className={`text-xs uppercase tracking-widest ${t.textMuted}`}>Total</span>
                                     <span className="tracking-tight" style={{ color: accentColor }}>${total.toLocaleString("es-AR")}</span>
                                 </div>
                             </div>
@@ -810,7 +901,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 isAddressIncomplete ||
                                 (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                             }
-                            className={`w-full py-5 rounded-2xl font-black text-lg transition-all uppercase tracking-tighter flex items-center justify-center gap-3 ${
+                            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all uppercase tracking-tighter flex items-center justify-center gap-2 ${
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete
                                 ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-none disabled:cursor-not-allowed"
                                 : "hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
@@ -822,7 +913,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             }
                         >
                             {isSubmitting ? (
-                                <><Loader2 className="animate-spin" /> PROCESANDO PEDIDO...</>
+                                <><Loader2 size={16} className="animate-spin" /> PROCESANDO PEDIDO...</>
                             ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
                                 "FUERA DE RADIO DE ENTREGA"
                             ) : (
@@ -841,24 +932,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
 function SectionHeader({ number, title, accentColor, isLight }: { number: string; title: string; accentColor?: string; isLight?: boolean }) {
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
             <span
-                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-black border"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-black border"
                 style={accentColor ? { backgroundColor: `${accentColor}15`, color: accentColor, borderColor: `${accentColor}30` } : undefined}
             >
                 {number}
             </span>
-            <h2 className={`text-xl font-bold uppercase tracking-tight ${isLight ? "text-zinc-900" : "text-white"}`}>{title}</h2>
+            <h2 className={`text-base font-bold uppercase tracking-tight ${isLight ? "text-zinc-900" : "text-white"}`}>{title}</h2>
         </div>
     );
 }
 
-function Field({ label, error, children, isLight }: { label: string; error?: string; children: React.ReactNode; isLight?: boolean }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode; isLight?: boolean }) {
     return (
-        <div className="space-y-3">
-            <label className={`text-xs font-black tracking-widest uppercase ml-2 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>{label}</label>
+        <div className="space-y-1.5">
+            <label className="text-[11px] font-bold tracking-widest uppercase ml-1 text-zinc-500">{label}</label>
             {children}
-            {error && <p className="text-[11px] text-red-500 font-bold ml-2">× {error}</p>}
+            {error && <p className="text-[11px] text-red-500 font-bold ml-1">× {error}</p>}
         </div>
     );
 }
@@ -870,16 +961,16 @@ function inputStyle(hasError: boolean, isLight: boolean = false) {
         : isLight
             ? "border-zinc-300 focus:border-primary focus:ring-1 focus:ring-primary"
             : "border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary";
-    const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-600";
-    return `w-full ${bg} border ${border} rounded-2xl py-5 px-6 ${text} text-base md:text-sm font-medium outline-none transition-all shadow-inner`;
+    const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-500";
+    return `w-full ${bg} border ${border} rounded-xl py-3 px-4 ${text} text-sm font-medium outline-none transition-all`;
 }
 
-function MethodButton({ active, onClick, icon, label, accentColor, isLight }: { active: boolean; onClick: () => void; icon: any; label: string; accentColor?: string; isLight?: boolean }) {
+function MethodButton({ active, onClick, icon, label, accentColor, isLight }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; accentColor?: string; isLight?: boolean }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all ${active
+            className={`flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-xl border-2 transition-all ${active
                 ? ""
                 : isLight
                     ? "border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-zinc-300"
@@ -888,7 +979,7 @@ function MethodButton({ active, onClick, icon, label, accentColor, isLight }: { 
             style={active && accentColor ? { borderColor: accentColor, backgroundColor: `${accentColor}15`, color: accentColor } : undefined}
         >
             {icon}
-            <span className="text-sm font-black uppercase tracking-widest">{label}</span>
+            <span className="text-xs font-black uppercase tracking-widest">{label}</span>
         </button>
     );
 }

@@ -158,7 +158,7 @@ export default function RegisterPage() {
                     <p className="relative z-10 mt-6 text-center text-xs text-zinc-600">
                         ¿Ya tenés cuenta?{" "}
                         <a
-                            href="/angus/manager/login"
+                            href="/login-posta"
                             className="font-semibold text-zinc-400 underline-offset-2 hover:text-primary hover:underline transition-colors"
                         >
                             Iniciá sesión
