@@ -5,6 +5,28 @@
 @layer base {
   :root {
     --brand-color: #22c55e;
+
+    /* shadcn/landing HSL variables */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 142 71% 45%;
+    --radius: 0.5rem;
   }
 }
 
@@ -23,4 +45,47 @@ body {
 
 .border-primary {
   border-color: var(--brand-color) !important;
+}
+
+/* ─── Landing page custom utilities ─── */
+
+@layer utilities {
+  .glass {
+    background: hsl(0 0% 8% / 0.6);
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-strong {
+    background: hsl(0 0% 10% / 0.8);
+    border: 1px solid hsl(0 0% 100% / 0.1);
+    backdrop-filter: blur(20px);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--brand-color) 0%, #4ade80 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .glow-subtle {
+    box-shadow: 0 0 40px -10px hsl(142 71% 45% / 0.15);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
