@@ -1,67 +1,29 @@
-import Link from "next/link"
-import { Check, Sparkles } from "lucide-react"
+"use client"
 
-const plans = [
-  {
-    name: "Starter",
-    description: "Para empezar a recibir pedidos online",
-    price: "0",
-    period: "gratis para siempre",
-    features: [
-      "Hasta 50 pedidos/mes",
-      "Tienda personalizada basica",
-      "Live Orders",
-      "Checkout con delivery/takeaway",
-      "Soporte por email"
-    ],
-    cta: "Empezar gratis",
-    href: "/register",
-    popular: false
-  },
-  {
-    name: "Pro",
-    description: "Para locales que quieren crecer",
-    price: "14.990",
-    period: "/mes",
-    features: [
-      "Pedidos ilimitados",
-      "Brand Studio completo",
-      "Analytics Dashboard",
-      "Zonas de entrega por radio",
-      "Integracion MercadoPago",
-      "Dominio personalizado",
-      "Soporte prioritario"
-    ],
-    cta: "Probar 14 dias gratis",
-    href: "/register",
-    popular: true
-  },
-  {
-    name: "Business",
-    description: "Para cadenas y franquicias",
-    price: "Contactar",
-    period: "",
-    features: [
-      "Todo lo de Pro",
-      "Multiples sucursales",
-      "API para integraciones",
-      "Reportes avanzados",
-      "Account manager dedicado",
-      "SLA garantizado",
-      "Onboarding personalizado"
-    ],
-    cta: "Hablar con ventas",
-    href: "#",
-    popular: false
-  }
+import { useState } from "react"
+import Link from "next/link"
+import { Check, Shield, ArrowRight, Zap } from "lucide-react"
+
+const features = [
+  "Pedidos ilimitados (0% comisiones)",
+  "Dominio propio (www.tumarca.com.ar)",
+  "Carga de menu automatizada con IA",
+  "Panel de Live Orders en tiempo real",
+  "Setup inicial bonificado (Te cargamos el menu nosotros)",
+  "Soporte prioritario 24/7",
 ]
 
 export function Pricing() {
+  const [isAnnual, setIsAnnual] = useState(false)
+
   return (
     <section id="pricing" className="py-20 relative">
-      <div className="max-w-5xl mx-auto px-4">
+      {/* Background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[150px] pointer-events-none" />
+
+      <div className="max-w-2xl mx-auto px-4 relative">
         {/* Section header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <p className="text-primary text-sm font-medium mb-2">Precios</p>
           <h2 className="text-2xl md:text-3xl font-bold mb-3">
             Simple y transparente.
@@ -69,72 +31,105 @@ export function Pricing() {
             <span className="text-gradient">Sin letra chica.</span>
           </h2>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Empeza gratis, escala cuando lo necesites. Todos los precios en ARS.
+            Un solo plan con todo incluido. Todos los precios en ARS.
           </p>
         </div>
 
-        {/* Pricing cards */}
-        <div className="grid md:grid-cols-3 gap-5">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl p-6 ${
-                plan.popular
-                  ? "glass-strong border-primary/30 glow-subtle"
-                  : "glass"
+        {/* Toggle mensual / anual */}
+        <div className="flex items-center justify-center gap-3 mb-10">
+          <span className={`text-sm font-medium transition-colors ${!isAnnual ? "text-foreground" : "text-muted-foreground"}`}>
+            Mensual
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsAnnual(!isAnnual)}
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              isAnnual ? "bg-primary" : "bg-zinc-700"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                isAnnual ? "translate-x-6" : "translate-x-0"
               }`}
-            >
-              {/* Popular badge */}
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                    <Sparkles className="w-3 h-3" />
-                    Mas popular
-                  </div>
-                </div>
-              )}
+            />
+          </button>
+          <span className={`text-sm font-medium transition-colors ${isAnnual ? "text-foreground" : "text-muted-foreground"}`}>
+            Anual
+          </span>
+          {isAnnual && (
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              Ahorra 2 meses
+            </span>
+          )}
+        </div>
 
-              {/* Plan header */}
-              <div className="mb-5">
-                <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
-                <p className="text-xs text-muted-foreground">{plan.description}</p>
-              </div>
-
-              {/* Price */}
-              <div className="mb-5">
-                {plan.price === "Contactar" ? (
-                  <span className="text-2xl font-bold">Contactar</span>
-                ) : (
-                  <>
-                    <span className="text-3xl font-bold">${plan.price}</span>
-                    <span className="text-muted-foreground text-sm">{plan.period}</span>
-                  </>
-                )}
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-2.5 mb-6">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-sm text-foreground/80">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <Link
-                href={plan.href}
-                className={`block w-full text-center rounded-full py-2.5 text-sm font-medium transition-colors ${
-                  plan.popular
-                    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    : "bg-secondary hover:bg-secondary/80 text-foreground"
-                }`}
-              >
-                {plan.cta}
-              </Link>
+        {/* Single premium card */}
+        <div className="relative rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-xl p-8 md:p-10 shadow-[0_0_80px_-20px_rgba(34,197,94,0.12)]">
+          {/* Trial badge */}
+          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold tracking-wide shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+              <Zap className="w-3.5 h-3.5" />
+              10 DIAS GRATIS
             </div>
-          ))}
+          </div>
+
+          {/* Plan header */}
+          <div className="text-center mb-8 pt-2">
+            <h3 className="text-2xl font-bold mb-1">Plan Full Commerce</h3>
+            <p className="text-sm text-muted-foreground">
+              Todo lo que necesitas para escalar tu local, sin comisiones.
+            </p>
+          </div>
+
+          {/* Price */}
+          <div className="text-center mb-8">
+            {isAnnual ? (
+              <div>
+                <div className="mb-1">
+                  <span className="text-base text-zinc-500 line-through">$720.000</span>
+                </div>
+                <span className="text-5xl font-extrabold tracking-tight">$600.000</span>
+                <span className="text-muted-foreground text-sm ml-1">/ año</span>
+                <p className="text-xs text-primary font-medium mt-2">
+                  Equivale a $50.000/mes — te ahorras $120.000
+                </p>
+              </div>
+            ) : (
+              <div>
+                <span className="text-5xl font-extrabold tracking-tight">$60.000</span>
+                <span className="text-muted-foreground text-sm ml-1">/ mes</span>
+              </div>
+            )}
+          </div>
+
+          {/* Features */}
+          <ul className="space-y-3 mb-8 max-w-sm mx-auto">
+            {features.map((feature, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <Check className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground/80">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center gap-2 w-full max-w-sm rounded-full py-3.5 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:shadow-[0_0_30px_rgba(34,197,94,0.25)]"
+            >
+              Empezar mis 10 dias gratis
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Guarantee */}
+          <div className="mt-6 flex items-start gap-2.5 justify-center max-w-md mx-auto">
+            <Shield className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-zinc-500 leading-relaxed text-center">
+              Garantia de ROI: Si el primer mes no ahorras mas de $60.000 en comisiones comparado con las apps tradicionales, te devolvemos el 100% de tu dinero.
+            </p>
+          </div>
         </div>
 
         {/* Trust note */}

@@ -2,6 +2,7 @@ import { Header } from "@/components/landing/header"
 import { Hero } from "@/components/landing/hero"
 import { ProblemSection } from "@/components/landing/problem-section"
 import { FeaturesShowcase } from "@/components/landing/features-showcase"
+import { CustomDomain } from "@/components/landing/custom-domain"
 import { HowItWorks } from "@/components/landing/how-it-works"
 import { Pricing } from "@/components/landing/pricing"
 import { FAQ } from "@/components/landing/faq"
@@ -15,6 +16,7 @@ export default function LandingPage() {
       <Hero />
       <ProblemSection />
       <FeaturesShowcase />
+      <CustomDomain />
       <HowItWorks />
       <Pricing />
       <FAQ />

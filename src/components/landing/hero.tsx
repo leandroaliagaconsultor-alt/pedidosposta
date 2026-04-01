@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Play, CheckCircle2 } from "lucide-react"
+import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { BlurredInfiniteSlider } from "@/components/ui/infinite-slider"
 
 const RESTAURANTS = [
@@ -54,28 +54,22 @@ export function Hero() {
               Profesional, con tu marca, y sin el caos de los mensajes.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            {/* CTA */}
+            <div className="pt-2">
               <Link
                 href="/register"
                 className="inline-flex items-center gap-2 rounded-full px-6 h-11 font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
               >
-                Empezar gratis
+                Empezar mis 10 dias gratis
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <button
-                className="inline-flex items-center gap-2 rounded-full px-6 h-11 font-medium border border-border/50 hover:bg-secondary text-foreground transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                Ver demo
-              </button>
             </div>
 
             {/* Trust signals */}
             <div className="flex flex-wrap items-center gap-4 pt-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-primary" />
-                <span>Sin tarjeta requerida</span>
+                <span>Sin tarjeta de credito</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-primary" />
@@ -96,8 +90,8 @@ export function Hero() {
                   {/* Screen content - Store page */}
                   <div className="relative aspect-[9/19.5] overflow-hidden">
                     <img
-                      src="/checkout.png"
-                      alt="Tienda de ejemplo - Checkout profesional"
+                      src="/tienda.png"
+                      alt="Tienda de ejemplo - Catalogo de productos"
                       className="rounded-2xl w-full h-full object-cover object-top"
                     />
                   </div>

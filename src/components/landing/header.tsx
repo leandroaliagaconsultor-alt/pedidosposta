@@ -61,7 +61,7 @@ export function Header() {
               href="/register"
               className="rounded-full px-5 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
             >
-              Empezar gratis
+              Empezar ahora
             </Link>
           </div>
 
@@ -99,7 +99,7 @@ export function Header() {
                   href="/register"
                   className="w-full text-center py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                  Empezar gratis
+                  Empezar ahora
                 </Link>
               </div>
             </nav>
