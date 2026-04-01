@@ -1,5 +1,21 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRight, Play, CheckCircle2 } from "lucide-react"
+import { BlurredInfiniteSlider } from "@/components/ui/infinite-slider"
+
+const RESTAURANTS = [
+  "BURGER BROS",
+  "LA FAROLA",
+  "LA COCINA EXPRESS",
+  "PIZZERIA ROMA",
+  "PANCHO PREMIUM",
+  "CERVECERIA BARRACA",
+  "SANTORINI EMPANADAS",
+  "PARRILLA DON JULIO",
+  "TACO LOCO",
+  "HELADOS CHIVILCOY",
+]
 
 const stats = [
   { value: "500+", label: "Locales Activos" },
@@ -71,18 +87,20 @@ export function Hero() {
           {/* Right - Phone mockup with store */}
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative w-[280px] md:w-[320px]">
-              {/* Phone frame */}
-              <div className="relative rounded-[2.5rem] border-[8px] border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden glow-subtle">
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-800 rounded-b-2xl z-10" />
+              {/* Phone frame with premium glow */}
+              <div className="relative rounded-3xl border border-white/10 p-2 bg-zinc-900/80 shadow-[0_0_80px_-20px_rgba(34,197,94,0.2)]">
+                <div className="relative rounded-[2rem] border-[6px] border-zinc-800 bg-zinc-900 overflow-hidden">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-800 rounded-b-2xl z-10" />
 
-                {/* Screen content - Store page */}
-                <div className="relative aspect-[9/19.5] overflow-hidden">
-                  <img
-                    src="/checkout.png"
-                    alt="Tienda de ejemplo - Checkout profesional"
-                    className="w-full h-full object-cover object-top"
-                  />
+                  {/* Screen content - Store page */}
+                  <div className="relative aspect-[9/19.5] overflow-hidden">
+                    <img
+                      src="/checkout.png"
+                      alt="Tienda de ejemplo - Checkout profesional"
+                      className="rounded-2xl w-full h-full object-cover object-top"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -112,6 +130,33 @@ export function Hero() {
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Logo cloud marquee */}
+        <div className="mt-12 pt-8 border-t border-border/30">
+          <div className="flex flex-col items-center md:flex-row">
+            <div className="flex-shrink-0 text-center md:text-right md:max-w-44 md:border-r md:border-border/30 md:pr-6 mb-4 md:mb-0">
+              <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">
+                Ya confian en nosotros
+              </p>
+            </div>
+            <div className="w-full md:w-auto md:flex-1">
+              <BlurredInfiniteSlider
+                speedOnHover={20}
+                speed={40}
+                gap={80}
+                fadeWidth={80}
+              >
+                {RESTAURANTS.map((name) => (
+                  <div key={name} className="flex items-center shrink-0">
+                    <span className="text-lg font-black text-zinc-500 whitespace-nowrap tracking-wide">
+                      {name}
+                    </span>
+                  </div>
+                ))}
+              </BlurredInfiniteSlider>
+            </div>
           </div>
         </div>
       </div>

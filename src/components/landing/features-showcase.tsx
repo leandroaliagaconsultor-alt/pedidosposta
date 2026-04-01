@@ -125,11 +125,13 @@ export function FeaturesShowcase() {
 
               {/* Image */}
               <div className={`${feature.reverse ? "lg:col-start-1" : ""}`}>
-                <div className="relative rounded-2xl overflow-hidden glass glow-subtle">
+                <div className="relative group overflow-hidden rounded-2xl border border-white/5 bg-zinc-900/30 backdrop-blur-sm p-4 transition-all hover:border-white/15 hover:shadow-[0_0_40px_-10px_rgba(34,197,94,0.1)]">
+                  {/* Hover glow accent */}
+                  <div className="absolute -top-10 -left-10 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   <img
                     src={feature.image}
                     alt={feature.title}
-                    className="w-full h-auto"
+                    className="relative rounded-xl aspect-video object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.01]"
                   />
                 </div>
               </div>
