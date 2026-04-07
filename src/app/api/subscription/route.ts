@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { tenantSlug, mode = "manual" } = body;
+        const { tenantSlug, mode = "manual", billing = "monthly" } = body;
 
         if (!tenantSlug) {
             return NextResponse.json({ error: "Falta el slug del tenant" }, { status: 400 });
@@ -40,14 +40,16 @@ export async function POST(req: NextRequest) {
         }
 
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
-        const amount = 60000;
+        const isAnnual = billing === "annual";
+        const amount = isAnnual ? 600000 : 60000; // Anual: 10 meses (2 gratis)
+        const billingLabel = isAnnual ? "Anual" : "Mensual";
 
         // ── Modo automático: preapproval_plan (crédito, débito automático mensual) ──
         if (mode === "auto") {
             const planPayload = {
-                reason: `PedidosPosta - Full Commerce (${tenant.name})`,
+                reason: `PedidosPosta - Full Commerce ${billingLabel} (${tenant.name})`,
                 auto_recurring: {
-                    frequency: 1,
+                    frequency: isAnnual ? 12 : 1,
                     frequency_type: "months",
                     transaction_amount: amount,
                     currency_id: "ARS",
@@ -87,15 +89,17 @@ export async function POST(req: NextRequest) {
         const preferencePayload = {
             items: [
                 {
-                    id: "plan-full-commerce",
-                    title: `PedidosPosta - Plan Full Commerce (${tenant.name})`,
-                    description: "Suscripción mensual — Menú digital, pedidos online, analytics y más",
+                    id: isAnnual ? "plan-full-commerce-annual" : "plan-full-commerce",
+                    title: `PedidosPosta - Full Commerce ${billingLabel} (${tenant.name})`,
+                    description: isAnnual
+                        ? "Suscripción anual — 12 meses al precio de 10 (2 meses gratis)"
+                        : "Suscripción mensual — Menú digital, pedidos online, analytics y más",
                     quantity: 1,
                     unit_price: amount,
                     currency_id: "ARS",
                 },
             ],
-            external_reference: `sub_${tenant.id}`,
+            external_reference: `sub_${isAnnual ? "annual" : "monthly"}_${tenant.id}`,
             back_urls: {
                 success: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
                 failure: `${baseUrl}/${tenantSlug}/manager/subscription`,

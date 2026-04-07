@@ -77,10 +77,16 @@ export async function POST(req: NextRequest) {
             // Solo procesar pagos de suscripción (prefijo sub_)
             if (!externalRef || !externalRef.startsWith("sub_")) return ok();
 
-            const tenantId = externalRef.replace("sub_", "");
+            // Detectar si es anual: sub_annual_UUID o sub_monthly_UUID o sub_UUID (legacy)
+            const isAnnual = externalRef.includes("_annual_");
+            const tenantId = externalRef
+                .replace("sub_annual_", "")
+                .replace("sub_monthly_", "")
+                .replace("sub_", "");
 
             if (paymentStatus === "approved") {
-                const subscriptionEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                const days = isAnnual ? 365 : 30;
+                const subscriptionEndsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
                 await supabase
                     .from("tenants")

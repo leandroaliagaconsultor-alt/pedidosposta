@@ -40,6 +40,7 @@ export default function SubscriptionPage({
     const [subscribing, setSubscribing] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [isAnnual, setIsAnnual] = useState(false);
 
     useEffect(() => {
         supabase
@@ -59,7 +60,7 @@ export default function SubscriptionPage({
             const res = await fetch("/api/subscription", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tenantSlug: tenant, mode }),
+                body: JSON.stringify({ tenantSlug: tenant, mode, billing: isAnnual ? "annual" : "monthly" }),
             });
             const result = await res.json();
             if (result.init_point) {
@@ -280,22 +281,62 @@ export default function SubscriptionPage({
             {/* ── Plan Card ───────────────────────────────────────────────── */}
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
                 {/* Plan header */}
-                <div className="border-b border-zinc-800 px-6 py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                            <Sparkles size={18} className="text-primary" />
+                <div className="border-b border-zinc-800 px-6 py-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                                <Sparkles size={18} className="text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Plan Full Commerce</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Todo incluido</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-white">Plan Full Commerce</h3>
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Todo incluido</p>
+                        <div className="text-right">
+                            {isAnnual ? (
+                                <>
+                                    <p className="text-2xl font-black text-white">
+                                        $600.000
+                                        <span className="text-xs font-medium text-zinc-500 ml-1">/año</span>
+                                    </p>
+                                    <p className="text-[10px] text-primary font-bold">$50.000/mes · Ahorrás $120.000</p>
+                                </>
+                            ) : (
+                                <p className="text-2xl font-black text-white">
+                                    $60.000
+                                    <span className="text-xs font-medium text-zinc-500 ml-1">/mes</span>
+                                </p>
+                            )}
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-2xl font-black text-white">
-                            $60.000
-                            <span className="text-xs font-medium text-zinc-500 ml-1">/mes</span>
-                        </p>
-                    </div>
+
+                    {/* Toggle mensual/anual */}
+                    {!isActive && (
+                        <div className="flex items-center justify-center gap-3">
+                            <span className={`text-xs font-medium ${!isAnnual ? "text-white" : "text-zinc-500"}`}>Mensual</span>
+                            <button
+                                onClick={() => setIsAnnual(!isAnnual)}
+                                role="switch"
+                                aria-checked={isAnnual}
+                                aria-label="Alternar entre plan mensual y anual"
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    isAnnual ? "bg-primary" : "bg-zinc-700"
+                                }`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                        isAnnual ? "translate-x-6" : "translate-x-1"
+                                    }`}
+                                />
+                            </button>
+                            <span className={`text-xs font-medium ${isAnnual ? "text-white" : "text-zinc-500"}`}>
+                                Anual
+                                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold">
+                                    2 MESES GRATIS
+                                </span>
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Features grid */}
