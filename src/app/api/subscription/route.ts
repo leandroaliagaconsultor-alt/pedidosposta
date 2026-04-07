@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// POST: Crea una preferencia de pago (Checkout Pro) para la suscripción mensual.
-// Usa el mismo flujo probado que ya funciona para los pedidos de los clientes.
-// Cuando MP confirma el pago, el webhook activa la suscripción del tenant.
+// POST: Crea un pago de suscripción en MercadoPago.
+// Soporta dos modos:
+//   mode: "auto"   → preapproval_plan (débito automático mensual, solo tarjeta de crédito)
+//   mode: "manual"  → checkout/preferences (pago único mensual, acepta todo: débito, crédito, MP, transferencia)
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { tenantSlug } = body;
+        const { tenantSlug, mode = "manual" } = body;
 
         if (!tenantSlug) {
             return NextResponse.json({ error: "Falta el slug del tenant" }, { status: 400 });
@@ -39,8 +40,50 @@ export async function POST(req: NextRequest) {
         }
 
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
+        const amount = 100; // TODO: cambiar a 60000 después de testear
 
-        // Usar Checkout Pro (preferencia de pago) — mismo flujo que ya funciona para pedidos
+        // ── Modo automático: preapproval_plan (crédito, débito automático mensual) ──
+        if (mode === "auto") {
+            const planPayload = {
+                reason: `PedidosPosta - Full Commerce (${tenant.name})`,
+                auto_recurring: {
+                    frequency: 1,
+                    frequency_type: "months",
+                    transaction_amount: amount,
+                    currency_id: "ARS",
+                },
+                back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
+            };
+
+            const mpRes = await fetch("https://api.mercadopago.com/preapproval_plan", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${platformToken}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(planPayload),
+            });
+
+            const mpData = await mpRes.json();
+
+            if (!mpRes.ok) {
+                console.error("MP Plan Error:", JSON.stringify(mpData, null, 2));
+                return NextResponse.json(
+                    { error: "Error al crear la suscripción en MercadoPago", mp_error: mpData },
+                    { status: 400 }
+                );
+            }
+
+            // Guardar plan ID para el webhook
+            await supabase
+                .from("tenants")
+                .update({ mp_subscription_id: mpData.id })
+                .eq("id", tenant.id);
+
+            return NextResponse.json({ init_point: mpData.init_point });
+        }
+
+        // ── Modo manual: Checkout Pro (débito, crédito, MP, transferencia) ──
         const preferencePayload = {
             items: [
                 {
@@ -48,7 +91,7 @@ export async function POST(req: NextRequest) {
                     title: `PedidosPosta - Plan Full Commerce (${tenant.name})`,
                     description: "Suscripción mensual — Menú digital, pedidos online, analytics y más",
                     quantity: 1,
-                    unit_price: 100, // TODO: cambiar a 60000 después de testear
+                    unit_price: amount,
                     currency_id: "ARS",
                 },
             ],
@@ -63,7 +106,7 @@ export async function POST(req: NextRequest) {
             statement_descriptor: "PEDIDOSPOSTA",
         };
 
-        const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${platformToken}`,
@@ -72,9 +115,9 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify(preferencePayload),
         });
 
-        const mpData = await mpResponse.json();
+        const mpData = await mpRes.json();
 
-        if (!mpResponse.ok) {
+        if (!mpRes.ok) {
             console.error("MP Preference Error:", JSON.stringify(mpData, null, 2));
             return NextResponse.json(
                 { error: "Error al crear el pago en MercadoPago", mp_error: mpData },

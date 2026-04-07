@@ -51,13 +51,13 @@ export default function SubscriptionPage({
             });
     }, [supabase, tenant]);
 
-    const handleSubscribe = async () => {
+    const handleSubscribe = async (mode: "manual" | "auto") => {
         setSubscribing(true);
         try {
             const res = await fetch("/api/subscription", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tenantSlug: tenant }),
+                body: JSON.stringify({ tenantSlug: tenant, mode }),
             });
             const result = await res.json();
             if (result.init_point) {
@@ -260,25 +260,35 @@ export default function SubscriptionPage({
                             <ShieldCheck size={16} />
                             Tu plan está activo
                         </div>
+                    ) : subscribing ? (
+                        <div className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-800 py-3.5 text-sm font-bold text-zinc-400">
+                            <Loader2 size={16} className="animate-spin" />
+                            Redirigiendo a MercadoPago...
+                        </div>
                     ) : (
-                        <button
-                            onClick={handleSubscribe}
-                            disabled={subscribing}
-                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-zinc-950 hover:bg-primary/90 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                                {subscribing ? (
-                                    <>
-                                        <Loader2 size={16} className="animate-spin" />
-                                        Redirigiendo a MercadoPago...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Zap size={16} />
-                                        {isExpired ? "Suscribirme y reactivar tienda" : "Suscribirme ahora"}
-                                        <ArrowRight size={14} />
-                                    </>
-                                )}
-                        </button>
+                        <>
+                            <p className="text-xs text-zinc-500 text-center">Elegí cómo preferís pagar</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => handleSubscribe("manual")}
+                                    disabled={subscribing}
+                                    className="flex flex-col items-center gap-1.5 rounded-xl bg-primary py-4 px-4 text-zinc-950 hover:bg-primary/90 transition-colors active:scale-[0.98]"
+                                >
+                                    <Zap size={18} />
+                                    <span className="text-sm font-bold">Pagar este mes</span>
+                                    <span className="text-[10px] font-medium opacity-70">Débito, crédito, MP o transferencia</span>
+                                </button>
+                                <button
+                                    onClick={() => handleSubscribe("auto")}
+                                    disabled={subscribing}
+                                    className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-primary/50 bg-primary/10 py-4 px-4 text-primary hover:bg-primary/20 transition-colors active:scale-[0.98]"
+                                >
+                                    <CreditCard size={18} />
+                                    <span className="text-sm font-bold">Suscripción automática</span>
+                                    <span className="text-[10px] font-medium text-zinc-500">Tarjeta de crédito · Se debita solo</span>
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
