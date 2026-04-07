@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ received: true }, { status: 200 });
         }
 
+        // Sanitizar paymentId — debe ser numérico para evitar SSRF
+        const sanitizedPaymentId = String(paymentId).replace(/[^0-9]/g, "");
+        if (!sanitizedPaymentId || sanitizedPaymentId.length > 20) {
+            return NextResponse.json({ received: true }, { status: 200 });
+        }
+
         // Necesitamos obtener el mp_access_token del tenant para consultar el pago.
         // El external_reference en MP contiene el order_id.
         // Primero consultamos el pago a MP para obtener el external_reference y el status.
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
         let matchedTenantId: string | null = null;
 
         for (const t of activeTenantsData) {
-            const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+            const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${sanitizedPaymentId}`, {
                 headers: { "Authorization": `Bearer ${t.mp_access_token}` },
             });
 
@@ -73,7 +79,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (!paymentData || !matchedTenantId) {
-            console.error("MP Webhook: No se pudo verificar el pago", paymentId);
+            console.error("MP Webhook: No se pudo verificar el pago", sanitizedPaymentId);
             return NextResponse.json({ received: true }, { status: 200 });
         }
 

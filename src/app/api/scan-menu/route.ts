@@ -1,16 +1,32 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    // Auth check — solo usuarios logueados con tenant
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("image") as File;
 
     if (!file) {
-      console.error("❌ ERROR EN API SCAN-MENU: No se proporcionó ninguna imagen en el FormData");
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
+    }
+
+    // Validar tipo y tamaño de archivo
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Formato de imagen no soportado. Usa JPG, PNG o WebP." }, { status: 400 });
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "La imagen es muy pesada. Maximo 10MB." }, { status: 400 });
     }
 
     // Inicializando el modelo estable 2.5 Flash

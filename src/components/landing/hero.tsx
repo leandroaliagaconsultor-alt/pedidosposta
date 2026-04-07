@@ -74,10 +74,6 @@ export function Hero() {
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                <span>Dominio propio</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                 <span>Setup en 5 minutos</span>
               </div>
               <div className="flex items-center gap-1.5">

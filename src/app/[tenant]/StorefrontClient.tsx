@@ -62,7 +62,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
     const [isStoreOpen, setIsStoreOpen] = useState(true);
 
     const cartItems = useCartStore((state) => state.items);
-    const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const totalItems = React.useMemo(() => cartItems.reduce((acc, item) => acc + item.quantity, 0), [cartItems]);
 
     const themeEngine = useTenantThemeEngine({
         template: brand?.theme?.template,
@@ -77,7 +77,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
 
         const evaluateStatus = () => {
             const currentStatus = checkIfStoreIsOpen(brand.schedule, brand.override_status as any);
-            setIsStoreOpen(currentStatus);
+            setIsStoreOpen(prev => prev === currentStatus ? prev : currentStatus);
         };
 
         evaluateStatus();
@@ -88,8 +88,9 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
 
     const formatUrl = (url: string) => (url && !url.startsWith("http")) ? `https://${url}` : url;
 
-    const filteredProducts = products.filter(
-        (p) => p.categoryId === activeCategory
+    const filteredProducts = React.useMemo(
+        () => products.filter((p) => p.categoryId === activeCategory),
+        [products, activeCategory]
     );
 
     if (themeEngine.isProLayout) {

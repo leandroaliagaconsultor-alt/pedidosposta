@@ -106,23 +106,29 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSavedAddress, setShowSavedAddress] = useState(!!savedAddress);
-    
-    // Config states
-    const [isMPActive, setIsMPActive] = useState(false);
-    const [minOrder, setMinOrder] = useState(0);
-    const [tenantAlias, setTenantAlias] = useState<string | null>(null);
-    const [tenantAccountName, setTenantAccountName] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
-    
-    // Logistics states
-    const [tenantStoreAddress, setTenantStoreAddress] = useState<string | null>(null);
-    const [storeCoords, setStoreCoords] = useState<{ lat: number; lng: number } | null>(null);
-    const [tenantDeliveryType, setTenantDeliveryType] = useState<"fixed" | "distance">("fixed");
-    const [tenantDeliveryRadius, setTenantDeliveryRadius] = useState(5);
-    const [tenantFixedPrice, setTenantFixedPrice] = useState(0);
-    const [tenantBasePrice, setTenantBasePrice] = useState(0);
-    const [tenantBaseKm, setTenantBaseKm] = useState(0);
-    const [tenantExtraKmPrice, setTenantExtraKmPrice] = useState(0);
+
+    // Grouped tenant config (1 setState instead of 4)
+    const [tenantConfig, setTenantConfig] = useState({
+        isMPActive: false,
+        minOrder: 0,
+        tenantAlias: null as string | null,
+        tenantAccountName: null as string | null,
+    });
+    const { isMPActive, minOrder, tenantAlias, tenantAccountName } = tenantConfig;
+
+    // Grouped delivery config (1 setState instead of 8)
+    const [deliveryConfig, setDeliveryConfig] = useState({
+        tenantStoreAddress: null as string | null,
+        storeCoords: null as { lat: number; lng: number } | null,
+        tenantDeliveryType: "fixed" as "fixed" | "distance",
+        tenantDeliveryRadius: 5,
+        tenantFixedPrice: 0,
+        tenantBasePrice: 0,
+        tenantBaseKm: 0,
+        tenantExtraKmPrice: 0,
+    });
+    const { storeCoords, tenantDeliveryType, tenantDeliveryRadius, tenantFixedPrice, tenantBasePrice, tenantBaseKm, tenantExtraKmPrice } = deliveryConfig;
 
     // Calculated states
     const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
@@ -132,13 +138,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const [timeSlots, setTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
-    const [scheduleType, setScheduleType] = useState<"asap" | "scheduled">("asap");
 
-    // Theme state
-    const [tenantColorHex, setTenantColorHex] = useState<string>("#10b981");
-    const [tenantThemeMode, setTenantThemeMode] = useState<string>("");
-    const [tenantFontFamily, setTenantFontFamily] = useState<string>("");
-    const [tenantTemplate, setTenantTemplate] = useState<string>("");
+    // Grouped theme config (1 setState instead of 4)
+    const [themeState, setThemeState] = useState({
+        tenantColorHex: "#10b981",
+        tenantThemeMode: "",
+        tenantFontFamily: "",
+        tenantTemplate: "",
+    });
+    const { tenantColorHex, tenantThemeMode, tenantFontFamily, tenantTemplate } = themeState;
 
     const [isLocating, setIsLocating] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -170,7 +178,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         }
     }, [storeCoords, tenantDeliveryRadius, tenantBaseKm, tenantBasePrice, tenantExtraKmPrice]);
 
-    const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    const subtotal = React.useMemo(() => items.reduce((acc, i) => acc + i.price * i.quantity, 0), [items]);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -287,39 +295,46 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 .single();
 
             if (tenantData) {
-                setIsMPActive(!!tenantData.is_mp_active);
-                setMinOrder(tenantData.min_order || 0);
-                setTenantAlias(tenantData.transfer_alias || null);
-                setTenantAccountName(tenantData.transfer_account_name || null);
-                setTenantStoreAddress(tenantData.store_address || null);
+                // Batch tenant config (1 render)
+                setTenantConfig({
+                    isMPActive: !!tenantData.is_mp_active,
+                    minOrder: tenantData.min_order || 0,
+                    tenantAlias: tenantData.transfer_alias || null,
+                    tenantAccountName: tenantData.transfer_account_name || null,
+                });
 
-                // Theme data
-                if (tenantData.color_hex) setTenantColorHex(tenantData.color_hex);
-                if (tenantData.theme) {
-                    const thObj = typeof tenantData.theme === 'string' ? JSON.parse(tenantData.theme) : tenantData.theme;
-                    if (thObj?.mode) setTenantThemeMode(thObj.mode);
-                    if (thObj?.font_family) setTenantFontFamily(thObj.font_family);
-                    if (thObj?.template) setTenantTemplate(thObj.template);
-                }
+                // Batch theme config (1 render)
+                const thObj = tenantData.theme ? (typeof tenantData.theme === 'string' ? JSON.parse(tenantData.theme) : tenantData.theme) : {};
+                setThemeState({
+                    tenantColorHex: tenantData.color_hex || "#10b981",
+                    tenantThemeMode: thObj?.mode || "",
+                    tenantFontFamily: thObj?.font_family || "",
+                    tenantTemplate: thObj?.template || "",
+                });
 
-                // Cache store coords: use DB columns if available, fallback to single geocode
+                // Resolve store coords (may need geocode)
+                let resolvedCoords: { lat: number; lng: number } | null = null;
                 if (tenantData.store_lat && tenantData.store_lng) {
-                    setStoreCoords({ lat: tenantData.store_lat, lng: tenantData.store_lng });
+                    resolvedCoords = { lat: tenantData.store_lat, lng: tenantData.store_lng };
                 } else if (tenantData.store_address) {
                     try {
                         const results = await getGeocode({ address: tenantData.store_address });
-                        const coords = getLatLng(results[0]);
-                        setStoreCoords(coords);
-                    } catch { /* store coords unavailable — distance pricing won't work */ }
+                        resolvedCoords = getLatLng(results[0]);
+                    } catch { /* store coords unavailable */ }
                 }
 
+                // Batch delivery config (1 render)
                 const pricingType = tenantData.delivery_pricing_type || "fixed";
-                setTenantDeliveryType(pricingType);
-                setTenantDeliveryRadius(tenantData.delivery_radius_km || 5);
-                setTenantFixedPrice(tenantData.fixed_delivery_price || 0);
-                setTenantBasePrice(tenantData.base_delivery_price || 0);
-                setTenantBaseKm(tenantData.base_delivery_km || 0);
-                setTenantExtraKmPrice(tenantData.extra_price_per_km || 0);
+                setDeliveryConfig({
+                    tenantStoreAddress: tenantData.store_address || null,
+                    storeCoords: resolvedCoords,
+                    tenantDeliveryType: pricingType,
+                    tenantDeliveryRadius: tenantData.delivery_radius_km || 5,
+                    tenantFixedPrice: tenantData.fixed_delivery_price || 0,
+                    tenantBasePrice: tenantData.base_delivery_price || 0,
+                    tenantBaseKm: tenantData.base_delivery_km || 0,
+                    tenantExtraKmPrice: tenantData.extra_price_per_km || 0,
+                });
 
                 setCalculatedDeliveryCost(pricingType === 'fixed' ? (tenantData.fixed_delivery_price || 0) : (tenantData.base_delivery_price || 0));
 
@@ -462,6 +477,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 scheduled_time: scheduledTime,
                 scheduled_slot: !data.is_asap && data.deliveryTime ? data.deliveryTime : null,
                 total_amount: total,
+                delivery_fee: data.deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0,
                 status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
                 receipt_url: receiptUrl,
                 items: items.map((item) => ({

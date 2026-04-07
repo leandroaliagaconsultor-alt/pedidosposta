@@ -17,10 +17,6 @@ const faqs = [
     answer: "Tus clientes te pagan directamente a vos. Podes configurar pagos en Efectivo, Transferencia Bancaria o conectar tu propio MercadoPago. Nosotros nunca tocamos tu dinero ni lo retenemos 15 dias."
   },
   {
-    question: "¿Puedo usar mi propio dominio (www.mimarca.com.ar)?",
-    answer: "Si! Tu suscripcion incluye la conexion de tu propio dominio personalizado. Vos compras el dominio (ej. en Nic.ar) y nosotros te damos un instructivo super simple para conectarlo a tu tienda en 5 minutos, con certificado de seguridad (HTTPS) incluido."
-  },
-  {
     question: "No tengo tiempo de cargar todos mis productos, ¿me ayudan?",
     answer: "Totalmente! Sabemos que estas a mil en el local. Tu plan incluye Setup Bonificado. Nos pasas tu menu por WhatsApp o PDF y nuestro equipo te lo deja cargado y listo para empezar a vender."
   }

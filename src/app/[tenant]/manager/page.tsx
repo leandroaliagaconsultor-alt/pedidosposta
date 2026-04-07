@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, X, MessageCircle, Edit3, AlertCircle
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PrintableReceipt } from "@/components/PrintableReceipt";
+import { ReceiptModal } from "@/components/manager/ReceiptModal";
+import { AdjustmentModal } from "@/components/manager/AdjustmentModal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Order {
@@ -68,9 +70,6 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
     // ── Adjustment State ──
     const [adjustingOrder, setAdjustingOrder] = useState<Order | null>(null);
-    const [extraChargeAmount, setExtraChargeAmount] = useState<string>("");
-    const [adjustmentNotes, setAdjustmentNotes] = useState<string>("");
-    const [isSavingAdjustment, setIsSavingAdjustment] = useState(false);
 
     // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
@@ -178,9 +177,15 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     });
 
                     // Si no existía (ej: transición desde awaiting_payment), fetch completo UNA sola vez
-                    // Usamos un check síncrono para evitar race conditions con el setOrders anterior
-                    const existsInState = orders.some((o) => o.id === updated.id);
-                    if (!existsInState && updated.status === "pending") {
+                    // Usamos setOrders callback para obtener el estado actual y evitar stale closure
+                    let needsFetch = false;
+                    setOrders((prev) => {
+                        if (!prev.some((o) => o.id === updated.id) && updated.status === "pending") {
+                            needsFetch = true;
+                        }
+                        return prev;
+                    });
+                    if (needsFetch) {
                         const { data: fullOrder } = await supabase
                             .from("orders")
                             .select("*, order_items(*, product:products(name))")
@@ -296,34 +301,22 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     };
 
     // ── Handle Adjustment ────────────────────────────────────────────────
-    const handleAdjustOrder = async () => {
-        if (!adjustingOrder) return;
-        setIsSavingAdjustment(true);
-
-        const charge = parseFloat(extraChargeAmount) || 0;
-        const newTotal = (adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)) + charge;
-
+    const handleAdjustOrder = async (orderId: string, extraCharge: number, notes: string, newTotal: number): Promise<boolean> => {
         const { error } = await supabase
             .from("orders")
-            .update({
-                extra_charge: charge,
-                internal_notes: adjustmentNotes,
-                total_amount: newTotal
-            })
-            .eq("id", adjustingOrder.id)
+            .update({ extra_charge: extraCharge, internal_notes: notes, total_amount: newTotal })
+            .eq("id", orderId)
             .eq("tenant_id", tenantId);
 
         if (error) {
             toast.error("Error al ajustar el pedido");
             console.error(error);
-        } else {
-            toast.success("Pedido ajustado correctamente");
-            setOrders(prev => prev.map(o => o.id === adjustingOrder.id ? { ...o, extra_charge: charge, internal_notes: adjustmentNotes, total_amount: newTotal } : o));
-            setAdjustingOrder(null);
-            setExtraChargeAmount("");
-            setAdjustmentNotes("");
+            return false;
         }
-        setIsSavingAdjustment(false);
+        toast.success("Pedido ajustado correctamente");
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, extra_charge: extraCharge, internal_notes: notes, total_amount: newTotal } : o));
+        setAdjustingOrder(null);
+        return true;
     };
 
     // ── Handle WhatsApp ──────────────────────────────────────────────────
@@ -358,17 +351,21 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         }, 100);
     };
 
-    // ── Filtered orders for Active Tab ───────────────────────────────────
+    // ── Filtered orders for Active Tab (memoized) ──────────────────────
     const currentTabConfig = TABS.find((t) => t.key === activeTab)!;
-    const rawFiltered = orders.filter((o) =>
-        currentTabConfig.statuses.includes(o.status)
-    );
-    // Limit "Finalizados" to last 15 for performance
-    const filteredOrders = activeTab === "delivered" ? rawFiltered.slice(0, 15) : rawFiltered;
+    const filteredOrders = React.useMemo(() => {
+        const filtered = orders.filter((o) => currentTabConfig.statuses.includes(o.status));
+        return activeTab === "delivered" ? filtered.slice(0, 15) : filtered;
+    }, [orders, activeTab, currentTabConfig.statuses]);
 
-    // Count badges
-    const countByTab = (statuses: string[]) =>
-        orders.filter((o) => statuses.includes(o.status)).length;
+    // Count badges (memoized)
+    const tabCounts = React.useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const tab of TABS) {
+            counts[tab.key] = orders.filter((o) => tab.statuses.includes(o.status)).length;
+        }
+        return counts;
+    }, [orders]);
 
     // ── Loading State ────────────────────────────────────────────────────
     if (loading) {
@@ -397,7 +394,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             <div className="flex gap-2 overflow-x-auto pb-1">
                 {TABS.map((tab) => {
                     const isActive = activeTab === tab.key;
-                    const count = countByTab(tab.statuses);
+                    const count = tabCounts[tab.key] || 0;
                     const Icon = tab.icon;
                     return (
                         <button
@@ -502,8 +499,6 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setAdjustingOrder(order);
-                                                    setExtraChargeAmount(order.extra_charge?.toString() || "");
-                                                    setAdjustmentNotes(order.internal_notes || "");
                                                 }}
                                                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
                                                 title="Ajustar Pedido"
@@ -727,122 +722,18 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             </div>
 
             {/* ── Receipt viewer modal ── */}
-            {
-                receiptModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setReceiptModal(null)}>
-                        <div className="relative max-h-[90vh] max-w-lg w-full mx-4 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-3">
-                                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                    <Receipt size={16} className="text-amber-400" />
-                                    Comprobante de Transferencia
-                                </h3>
-                                <button onClick={() => setReceiptModal(null)} className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-white">
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
-                                {receiptModal.endsWith(".pdf") ? (
-                                    <iframe src={receiptModal} className="w-full h-[70vh] rounded-lg" />
-                                ) : (
-                                    <img src={receiptModal} alt="Comprobante" className="w-full rounded-lg object-contain" />
-                                )}
-                            </div>
-                            <div className="border-t border-zinc-800 px-5 py-3">
-                                <a
-                                    href={receiptModal}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500/10 py-2.5 text-xs font-bold text-amber-400 ring-1 ring-inset ring-amber-500/20 transition hover:bg-amber-500/20"
-                                >
-                                    Abrir en nueva pestaña
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+            {receiptModal && (
+                <ReceiptModal receiptUrl={receiptModal} onClose={() => setReceiptModal(null)} />
+            )}
 
             {/* ── Adjustment Modal ── */}
-            {
-                adjustingOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setAdjustingOrder(null)}>
-                        <div className="relative w-full max-w-md mx-4 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Edit3 size={18} className="text-primary" />
-                                    Ajustar Pedido #{adjustingOrder.order_number}
-                                </h3>
-                                <button onClick={() => setAdjustingOrder(null)} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-800 hover:text-white">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                <div className="rounded-xl bg-zinc-900/50 p-4 border border-zinc-800 space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">Pedido original</span>
-                                        <span className="text-sm font-bold text-zinc-300 font-mono">
-                                            ${(adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)).toLocaleString("es-AR")}
-                                        </span>
-                                    </div>
-                                    {parseFloat(extraChargeAmount) > 0 && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-medium text-amber-500 uppercase tracking-widest">+ Recargo</span>
-                                            <span className="text-sm font-bold text-amber-400 font-mono">
-                                                + ${parseFloat(extraChargeAmount).toLocaleString("es-AR")}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Monto extra a sumar ($)</label>
-                                        <input
-                                            type="number"
-                                            placeholder="0"
-                                            value={extraChargeAmount}
-                                            onChange={(e) => setExtraChargeAmount(e.target.value)}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Detalle o Motivos (Interno)</label>
-                                        <textarea
-                                            placeholder="Ej: +1 Papas grandes pedidas por WhatsApp"
-                                            value={adjustmentNotes}
-                                            onChange={(e) => setAdjustmentNotes(e.target.value)}
-                                            rows={3}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none text-sm"
-                                        />
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <span className="text-sm font-bold text-zinc-300">NUEVO TOTAL:</span>
-                                            <span className="text-2xl font-black text-primary font-mono scale-110">
-                                                ${((adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)) + (parseFloat(extraChargeAmount) || 0)).toLocaleString("es-AR")}
-                                            </span>
-                                        </div>
-
-                                        <button
-                                            onClick={handleAdjustOrder}
-                                            disabled={isSavingAdjustment}
-                                            className="w-full py-4 rounded-xl bg-primary text-[#09090b] font-black uppercase tracking-widest shadow-[0_4px_14px_0_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
-                                        >
-                                            {isSavingAdjustment ? (
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <Loader2 size={18} className="animate-spin" /> Guardando...
-                                                </span>
-                                            ) : "Confirmar Ajuste"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+            {adjustingOrder && (
+                <AdjustmentModal
+                    order={adjustingOrder}
+                    onClose={() => setAdjustingOrder(null)}
+                    onSave={handleAdjustOrder}
+                />
+            )}
 
             {/* ── Hidden Printable Area ── */}
             {

@@ -39,3 +39,9 @@ export const useCartStore = create<CartState>()(
         { name: "cart-storage" }
     )
 );
+
+// Derived selectors (no re-render unless items change)
+export const useCartSubtotal = () =>
+    useCartStore((state) => state.items.reduce((acc, i) => acc + i.price * i.quantity, 0));
+export const useCartTotalItems = () =>
+    useCartStore((state) => state.items.reduce((acc, i) => acc + i.quantity, 0));

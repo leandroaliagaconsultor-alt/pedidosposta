@@ -6,7 +6,7 @@ import { Check, Shield, ArrowRight, Zap } from "lucide-react"
 
 const features = [
   "Pedidos ilimitados (0% comisiones)",
-  "Dominio propio (www.tumarca.com.ar)",
+  "Cobras directo en tu MercadoPago",
   "Carga de menu automatizada con IA",
   "Panel de Live Orders en tiempo real",
   "Setup inicial bonificado (Te cargamos el menu nosotros)",

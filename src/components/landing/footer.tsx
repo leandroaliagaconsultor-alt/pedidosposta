@@ -110,10 +110,10 @@ export function Footer() {
         {/* Bottom */}
         <div className="border-t border-border/30 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            2024 PedidosPosta. Todos los derechos reservados.
+            2026 PedidosPosta. Todos los derechos reservados.
           </p>
           <p className="text-xs text-muted-foreground">
-            Hecho con cafe en Argentina
+            Hecho en Argentina
           </p>
         </div>
       </div>

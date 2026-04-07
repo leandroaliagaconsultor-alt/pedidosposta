@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
+import { createClient } from "@/lib/supabase/server";
 
 // Configurar VAPID details
 webpush.setVapidDetails(
@@ -10,6 +11,13 @@ webpush.setVapidDetails(
 
 export async function POST(req: Request) {
     try {
+        // Auth check — solo owners/managers del tenant pueden enviar push
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        }
+
         const { subscription, title, body, url } = await req.json();
 
         if (!subscription) {
@@ -17,16 +25,16 @@ export async function POST(req: Request) {
         }
 
         const payload = JSON.stringify({
-            title,
-            body,
+            title: title || "PedidosPosta",
+            body: body || "",
             url: url || '#'
         });
 
         await webpush.sendNotification(subscription, payload);
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Push Error: ", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Error al enviar notificacion" }, { status: 500 });
     }
 }
