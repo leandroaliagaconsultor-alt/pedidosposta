@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { BlurredInfiniteSlider } from "@/components/ui/infinite-slider"
 
@@ -66,14 +67,22 @@ export function Hero() {
             </div>
 
             {/* Trust signals */}
-            <div className="flex flex-wrap items-center gap-4 pt-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-4 text-sm text-zinc-400">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-primary" />
-                <span>Sin tarjeta de credito</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <span>0% Comisiones</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-primary" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <span>Dominio propio</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                 <span>Setup en 5 minutos</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <span>Sin tarjeta de credito</span>
               </div>
             </div>
           </div>
@@ -89,10 +98,13 @@ export function Hero() {
 
                   {/* Screen content - Store page */}
                   <div className="relative aspect-[9/19.5] overflow-hidden">
-                    <img
+                    <Image
                       src="/tienda.png"
                       alt="Tienda de ejemplo - Catalogo de productos"
-                      className="rounded-2xl w-full h-full object-cover object-top"
+                      fill
+                      priority
+                      sizes="(max-width: 768px) 280px, 320px"
+                      className="rounded-2xl object-cover object-top"
                     />
                   </div>
                 </div>

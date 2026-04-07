@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 import { ShoppingBag, MapPin, Clock, Bike, ShoppingCart, Instagram, Facebook, MessageCircle } from "lucide-react";
 
 import { ProductCard } from "@/components/storefront/ProductCard";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import ActiveOrderBanner from "@/components/storefront/ActiveOrderBanner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -121,7 +121,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                     {/* Background */}
                     {brand?.banner_url && (
                         <div className="absolute inset-0 z-0">
-                            <Image src={brand.banner_url} fill objectFit="cover" className="opacity-40 mix-blend-luminosity" alt="Banner" />
+                            <Image src={brand.banner_url} fill sizes="100vw" objectFit="cover" className="opacity-40 mix-blend-luminosity" alt="Banner de portada" />
                             <div className="absolute inset-x-0 bottom-0 h-4/5 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent" />
                         </div>
                     )}
@@ -167,28 +167,10 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                                     <span>{brand.business_hours}</span>
                                 </div>
                             )}
-                            {brand?.delivery_pricing_type === 'fixed' && brand?.fixed_delivery_price !== undefined && (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
-                                    <Bike size={12} style={{ color: "var(--brand-color)" }} />
-                                    <span>Envío: {brand.fixed_delivery_price === 0 ? "Gratis" : `$${brand.fixed_delivery_price}`}</span>
-                                </div>
-                            )}
-                            {brand?.delivery_pricing_type === 'distance' && brand?.base_delivery_price !== undefined && (
-                                <TooltipProvider>
-                                    <Tooltip delayDuration={300}>
-                                        <TooltipTrigger asChild>
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md cursor-help">
-                                                <Bike size={12} style={{ color: "var(--brand-color)" }} />
-                                                <span className="border-b border-dashed border-zinc-500">Envío desde ${brand.base_delivery_price}</span>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom" className="text-center p-3 text-xs z-50">
-                                            <p>Tarifa base de ${brand.base_delivery_price} cubriendo hasta {brand.base_delivery_km} km.</p>
-                                            <p>Luego, ${brand.extra_price_per_km} por cada kilómetro adicional.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
+                                <Bike size={12} style={{ color: "var(--brand-color)" }} />
+                                <span>Delivery y Takeaway</span>
+                            </div>
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/50 text-[10px] sm:text-xs font-bold backdrop-blur-md">
                                 <ShoppingBag size={12} style={{ color: "var(--brand-color)" }} />
                                 <span>Retiro en local gratis</span>
@@ -249,7 +231,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                     {filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-1 gap-4">
                             {filteredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} tokens={themeEngine.tokens} accentColor={themeEngine.primaryColor} accentTextColor={themeEngine.accentIsLight ? '#18181b' : '#ffffff'} />
+                                <ProductCard key={product.id} product={product} tokens={themeEngine.tokens} accentColor={themeEngine.primaryColor} accentTextColor={themeEngine.accentIsLight ? '#18181b' : '#ffffff'} isStoreOpen={isStoreOpen} />
                             ))}
                         </div>
                     ) : (
@@ -420,28 +402,10 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                                 <span>{brand.business_hours}</span>
                             </div>
                         )}
-                        {brand?.delivery_pricing_type === 'fixed' && brand?.fixed_delivery_price !== undefined && (
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
-                                <Bike size={13} style={{ color: accentColor }} />
-                                <span>Envío: {brand.fixed_delivery_price === 0 ? "Gratis" : `$${brand.fixed_delivery_price}`}</span>
-                            </div>
-                        )}
-                        {brand?.delivery_pricing_type === 'distance' && brand?.base_delivery_price !== undefined && (
-                            <TooltipProvider>
-                                <Tooltip delayDuration={300}>
-                                    <TooltipTrigger asChild>
-                                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted} cursor-help`}>
-                                            <Bike size={13} style={{ color: accentColor }} />
-                                            <span>Envío desde ${brand.base_delivery_price}</span>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-center p-3 text-xs z-50">
-                                        <p>Tarifa base de ${brand.base_delivery_price} cubriendo hasta {brand.base_delivery_km} km.</p>
-                                        <p>Luego, ${brand.extra_price_per_km} por cada kilómetro adicional.</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
+                            <Bike size={13} style={{ color: accentColor }} />
+                            <span>Delivery y Takeaway</span>
+                        </div>
                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${t.surfaceBorder} ${t.surface} text-[10px] sm:text-xs font-medium ${t.textMuted}`}>
                             <ShoppingBag size={13} style={{ color: accentColor }} />
                             <span>Retiro en local gratis</span>
@@ -511,6 +475,7 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
                                 tokens={t}
                                 accentColor={accentColor}
                                 accentTextColor={accentTextColor}
+                                isStoreOpen={isStoreOpen}
                             />
                         ))}
                     </div>

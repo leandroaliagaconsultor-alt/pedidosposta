@@ -11,7 +11,7 @@ import {
     Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart,
     Calendar, Plus, Trash2, CreditCard, Key, Lock,
     ArrowRightLeft, User, Instagram, Facebook, Phone, Megaphone,
-    Globe, Copy, CheckCircle2, ExternalLink
+    Globe, Copy, CheckCircle2, ExternalLink, Eye, EyeOff
 } from "lucide-react";
 import usePlacesAutocomplete, {
     getGeocode,
@@ -65,6 +65,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     const [saving, setSaving] = useState(false);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+    const [showMPPublicKey, setShowMPPublicKey] = useState(false);
+    const [showMPAccessToken, setShowMPAccessToken] = useState(false);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -246,7 +248,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 throw new Error(updateError.message || "Error al actualizar la base de datos");
             }
 
-            toast.success("¡Configuración Guardada Exitosamente!");
+            toast.success("¡Configuración Guardada Exitosamente!", { duration: 8000 });
             router.refresh();
         } catch (err: any) {
             console.error('Error fatal catch:', err);
@@ -310,8 +312,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         {/* ── Motor de Horarios y Override ── */}
                         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-6 space-y-6">
                             <div className="border-b border-zinc-800 pb-4">
-                                <h3 className="font-bold text-lg text-white mb-1">Estado de la Tienda (Override)</h3>
-                                <p className="text-sm text-zinc-500 mb-4">Fuerza el local a estar abierto o cerrado, ignorando los horarios.</p>
+                                <h3 className="font-bold text-lg text-white mb-1">Estado de la Tienda</h3>
+                                <p className="text-sm text-zinc-500 mb-4">Cierre de emergencia: Si lo desactivas, los clientes podran ver tu menu pero no podran realizar pedidos hasta que vuelvas a abrir.</p>
 
                                 <div className="grid grid-cols-3 gap-3">
                                     {(['none', 'force_open', 'force_close'] as const).map(status => (
@@ -332,13 +334,19 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         </button>
                                     ))}
                                 </div>
+                                <p className="text-[11px] text-zinc-600 mt-2">
+                                    {watchValues.override_status === 'none' && 'Usa los horarios semanales de abajo para abrir y cerrar automaticamente.'}
+                                    {watchValues.override_status === 'force_open' && 'Tu tienda esta abierta ahora, sin importar los horarios de abajo.'}
+                                    {watchValues.override_status === 'force_close' && 'Tu tienda esta cerrada. Los clientes ven el menu pero no pueden pedir.'}
+                                </p>
                             </div>
 
                             <div className={watchValues.override_status !== 'none' ? 'opacity-40 pointer-events-none transition-opacity' : 'transition-opacity'}>
-                                <div className="flex items-center gap-2 mb-4">
+                                <div className="flex items-center gap-2 mb-1">
                                     <Calendar className="text-primary" size={20} />
                                     <h3 className="font-bold text-white">Horarios Semanales</h3>
                                 </div>
+                                <p className="text-sm text-zinc-500 mb-4">Define tus franjas horarias. Fuera de estos horarios, el sistema se cerrara automaticamente.</p>
                                 <div className="space-y-3">
                                     {DAYS.map(day => {
                                         const ranges = watchValues.schedule?.[day.id] || [];
@@ -348,7 +356,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                 <div className="w-28 flex items-center justify-between">
                                                     <span className={`font-semibold ${isEnabled ? 'text-white' : 'text-zinc-500'}`}>{day.label}</span>
                                                     <label className="relative inline-flex cursor-pointer items-center sm:hidden">
-                                                        <input type="checkbox" checked={isEnabled} onChange={(e) => {
+                                                        <input type="checkbox" role="switch" aria-label={`Toggle horario ${day.label}`} checked={isEnabled} onChange={(e) => {
                                                             if (e.target.checked) addTimeRange(day.id);
                                                             else form.setValue(`schedule.${day.id}` as any, []);
                                                         }} className="sr-only peer" />
@@ -404,7 +412,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
 
                         <div className="grid gap-6 md:grid-cols-2">
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Múltiple/Física</label>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Direccion del Local</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                     <input
@@ -413,10 +421,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
                                     />
                                 </div>
-                                <p className="mt-1 text-xs text-zinc-500">Aparecerá como etiqueta en el menú.</p>
+                                <p className="mt-1 text-xs text-zinc-500">Aparecera como etiqueta en el menu para que tus clientes sepan donde estas.</p>
                             </div>
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Horarios de Atención</label>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Texto de Horarios (Informativo)</label>
                                 <div className="relative">
                                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                     <input
@@ -425,22 +433,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
                                     />
                                 </div>
+                                <p className="mt-1 text-xs text-amber-500/80">Solo decorativo: se muestra como etiqueta en tu tienda. La apertura/cierre real se controla en "Horarios Semanales" de arriba.</p>
                             </div>
+                            {/* delivery_fee removed — use Zonas de Entrega section instead */}
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Costo de Envío</label>
-                                <div className="relative">
-                                    <Bike className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        {...form.register("delivery_fee")}
-                                        placeholder="Ej: 500"
-                                        className={`w-full rounded-xl border bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${form.formState.errors.delivery_fee ? "border-red-500/50" : "border-zinc-800"}`}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Compra Mínima</label>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Compra Minima</label>
                                 <div className="relative">
                                     <ShoppingCart className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                     <input
@@ -451,6 +448,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         className={`w-full rounded-xl border bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${form.formState.errors.min_order ? "border-red-500/50" : "border-zinc-800"}`}
                                     />
                                 </div>
+                                <p className="mt-1 text-xs text-zinc-500">Monto minimo para aceptar un pedido. Si el cliente no llega, le avisamos antes de pagar.</p>
                             </div>
                             <div>
                                 <label className="mb-2 block text-sm font-semibold text-zinc-300">Capacidad (Pedidos cada 30 min)</label>
@@ -464,6 +462,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         className={`w-full rounded-xl border bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${form.formState.errors.max_orders_per_slot ? "border-red-500/50" : "border-zinc-800"}`}
                                     />
                                 </div>
+                                <p className="mt-1 text-xs text-zinc-500">Evita la saturacion de tu cocina. Si se llena un horario, el cliente elige otro automaticamente.</p>
                             </div>
                         </div>
                     </div>
@@ -477,7 +476,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Ofrecé canales de atención e impactá con un anuncio activo en la tienda.</p>
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Agrega tus redes sociales para que los clientes te encuentren y usa el banner para promociones activas.</p>
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <div>
@@ -505,7 +504,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </div>
                         </div>
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Número de WhatsApp (Soporte)</label>
+                            <label className="mb-2 block text-sm font-semibold text-zinc-300">WhatsApp de Pedidos</label>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                 <input
@@ -515,6 +514,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
                                 />
                             </div>
+                            <p className="mt-1 text-xs text-zinc-500">El numero donde recibiras las notificaciones y donde tus clientes pueden escribirte ante dudas.</p>
                         </div>
                         <div className="md:col-span-2">
                             <label className="mb-2 block text-sm font-semibold text-zinc-300">Banner Promocional Superior</label>
@@ -533,12 +533,15 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
+                                    role="switch"
+                                    aria-label="Mostrar boton de WhatsApp en el Checkout"
                                     className="sr-only peer"
                                     {...form.register('show_whatsapp_checkout')}
                                 />
                                 <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                <span className="ml-3 text-sm font-semibold text-zinc-300">Mostrar botón de WhatsApp en el Checkout (Para dudas antes de comprar)</span>
+                                <span className="ml-3 text-sm font-semibold text-zinc-300">Mostrar boton de WhatsApp en el Checkout</span>
                             </label>
+                            <p className="text-xs text-zinc-500 mt-1 ml-14">Si lo activas, el cliente podra escribirte por WhatsApp mientras esta completando su pedido, ideal para resolver dudas antes de pagar.</p>
                         </div>
                     </div>
                 </div>
@@ -547,11 +550,14 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
-                            <CreditCard className="text-sky-500" size={24} /> Pasarela de Pagos (MercadoPago)
+                            <CreditCard className="text-sky-500" size={24} />
+                            <span>Pasarela de Pagos <span className="text-sky-400">(Mercado Pago)</span></span>
                         </h2>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input
                                 type="checkbox"
+                                role="switch"
+                                aria-label="Activar MercadoPago"
                                 className="sr-only peer"
                                 {...form.register('is_mp_active')}
                             />
@@ -561,32 +567,64 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     </div>
 
                     <div className={`space-y-6 transition-opacity duration-300 ${watchValues.is_mp_active ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                        <p className="text-sm text-zinc-500 -mt-2">Completa tus credenciales BYOK (Bring Your Own Key) para recibir el dinero directo en tu cuenta.</p>
+                        <p className="text-sm text-zinc-500 -mt-2">Conecta tu cuenta de Mercado Pago y recibiras el dinero de cada venta directo en tu cuenta, al instante. Nosotros nunca tocamos tu plata.</p>
 
-                        <div className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Public Key (Client ID)</label>
-                                <div className="relative">
-                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                                    <input
-                                        type="password"
-                                        {...form.register("mp_public_key")}
-                                        placeholder="APP_USR-..."
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
-                                    />
+                        <div className="grid gap-8 lg:grid-cols-2">
+                            {/* Left — Credentials form */}
+                            <div className="space-y-5">
+                                <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider">Tus credenciales</h3>
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Public Key (Clave Publica)</label>
+                                    <div className="relative">
+                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <input
+                                            type={showMPPublicKey ? "text" : "password"}
+                                            {...form.register("mp_public_key")}
+                                            placeholder="APP_USR-..."
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-12 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
+                                        />
+                                        <button type="button" onClick={() => setShowMPPublicKey(!showMPPublicKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                            {showMPPublicKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Access Token (Token de Acceso)</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <input
+                                            type={showMPAccessToken ? "text" : "password"}
+                                            {...form.register("mp_access_token")}
+                                            placeholder="APP_USR-..."
+                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-12 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
+                                        />
+                                        <button type="button" onClick={() => setShowMPAccessToken(!showMPAccessToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                            {showMPAccessToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Access Token (Secret)</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                                    <input
-                                        type="password"
-                                        {...form.register("mp_access_token")}
-                                        placeholder="APP_USR-..."
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
-                                    />
-                                </div>
+
+                            {/* Right — Step by step guide */}
+                            <div className="rounded-2xl border border-sky-500/10 bg-sky-950/10 p-5">
+                                <h3 className="text-sm font-bold text-sky-400 mb-4">¿Como obtener mis credenciales?</h3>
+                                <ol className="space-y-3.5">
+                                    {[
+                                        <>Ingresa a <span className="font-semibold text-zinc-200">Mercado Pago Developers</span> (Tus integraciones) con tu cuenta de siempre.</>,
+                                        <>Hace clic en el boton azul <span className="font-semibold text-zinc-200">&quot;Crear aplicacion&quot;</span>.</>,
+                                        <>Pone el nombre de tu local y selecciona que vas a usar el <span className="font-semibold text-zinc-200">&quot;Checkout Pro&quot;</span>.</>,
+                                        <>Una vez creada, en el menu izquierdo anda a <span className="font-semibold text-zinc-200">&quot;Credenciales de Produccion&quot;</span>. <span className="text-amber-400 font-medium">¡Asegurate de que sean las de produccion y no las de prueba!</span></>,
+                                        <>Copia la <span className="font-semibold text-zinc-200">Public Key</span> y el <span className="font-semibold text-zinc-200">Access Token</span> y pegalos en los campos de la izquierda.</>,
+                                        <>¡Listo! La plata de tus ventas va directo a tu cuenta al instante.</>,
+                                    ].map((step, i) => (
+                                        <li key={i} className="flex items-start gap-3">
+                                            <span className="shrink-0 w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 text-xs font-bold flex items-center justify-center mt-0.5">
+                                                {i + 1}
+                                            </span>
+                                            <span className="text-sm text-zinc-400 leading-relaxed">{step}</span>
+                                        </li>
+                                    ))}
+                                </ol>
                             </div>
                         </div>
                     </div>
@@ -600,7 +638,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá la impresión de tickets para cocina y repartidores.</p>
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Activa la impresion de tickets para que tu cocina y repartidores tengan toda la info del pedido en papel.</p>
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30">
@@ -611,6 +649,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
+                                    role="switch"
+                                    aria-label="Activar comandas de cocina"
                                     className="sr-only peer"
                                     {...form.register('enable_kitchen_tickets')}
                                 />
@@ -626,6 +666,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
+                                    role="switch"
+                                    aria-label="Activar tickets de repartidor"
                                     className="sr-only peer"
                                     {...form.register('enable_delivery_tickets')}
                                 />
@@ -707,7 +749,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </div>
 
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Dirección Múltiple/Física del Local (Google Maps)</label>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Direccion del Local (Google Maps)</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                     <input
@@ -719,7 +761,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         }}
                                         disabled={!ready || !isLoaded}
                                         placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección del local..."}
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-70 disabled:text-zinc-500"
                                     />
                                     {status === "OK" && (
                                         <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
@@ -753,17 +795,18 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         {...form.register("delivery_radius_km")}
                                         className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                     />
-                                    <p className="text-xs text-zinc-500 mt-1">Ej: 5 (Hasta cuántos kilómetros viaja tu cadete como máximo. Dibuja el círculo en el mapa).</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Define el area de cobertura desde tu local. Los clientes fuera de este radio no podran pedir delivery.</p>
                                 </div>
 
                                 {watchValues.delivery_pricing_type === "fixed" ? (
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Fijo Envío ($)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Fijo Envio ($)</label>
                                         <input
                                             type="number"
                                             {...form.register("fixed_delivery_price")}
                                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
+                                        <p className="text-xs text-zinc-500 mt-1">Este monto se suma automaticamente al total del pedido. Pone $0 para envios gratis.</p>
                                     </div>
                                 ) : (
                                     <div>
@@ -773,7 +816,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                             {...form.register("base_delivery_price")}
                                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">Ej: 1500 (El costo mínimo o inicial del envío).</p>
+                                        <p className="text-xs text-zinc-500 mt-1">El costo minimo del envio. Se cobra hasta los KMs base incluidos.</p>
                                     </div>
                                 )}
                             </div>
@@ -833,7 +876,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                 </div>
                             )}
                             <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-widest pointer-events-none">
-                                Vista de Cobertura
+                                Area de Delivery
+                            </div>
+                            <div className="absolute bottom-4 left-4 bg-zinc-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-zinc-800 text-[10px] text-zinc-500 pointer-events-none">
+                                El circulo rojo marca hasta donde llegan tus envios
                             </div>
                         </div>
                     </div>

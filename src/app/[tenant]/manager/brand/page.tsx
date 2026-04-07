@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, Palette, Save, Store, Image as ImageIcon, Smartphone, Sun, Moon, Type, Upload, X, Plus } from "lucide-react";
+import { Loader2, Palette, Save, Store, Image as ImageIcon, Smartphone, Sun, Moon, Type, Upload, X, Plus, ExternalLink } from "lucide-react";
 import { isLightColor } from "@/lib/utils/theme";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                                         ) : (
                                             <div className="flex flex-col items-center text-zinc-500">
                                                 <Upload size={28} className="mb-2 opacity-50" />
-                                                <span className="text-xs font-medium">Fondo Hero</span>
+                                                <span className="text-xs font-medium">Subir Banner de Portada</span>
                                             </div>
                                         )}
                                     </div>
@@ -377,7 +377,7 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                                                 <span className={`text-sm font-bold ${watchValues.font_family === font.id ? 'text-primary' : 'text-zinc-300'} ${font.id} ${font.id === 'font-urbana' ? 'uppercase' : ''}`}>
                                                     {font.name}
                                                 </span>
-                                                <span className="text-xs text-zinc-500">{font.desc}</span>
+                                                <span className={`text-[10px] text-zinc-600 ${font.id}`}>Hamburguesa Clasica $5.900</span>
                                             </div>
                                             <div className={`h-4 w-4 rounded-full border-2 ${watchValues.font_family === font.id ? 'border-primary bg-primary' : 'border-zinc-600'}`} />
                                         </label>
@@ -404,6 +404,16 @@ export default function BrandStudioProPage({ params }: { params: Promise<{ tenan
                         </button>
                     </div>
 
+                    {/* Mobile preview link */}
+                    <a
+                        href={`/${tenant}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex lg:hidden items-center justify-center gap-2 w-full py-3 rounded-xl border border-zinc-800 text-sm font-semibold text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-colors"
+                    >
+                        <Smartphone size={16} /> Ver como se ve tu tienda
+                        <ExternalLink size={14} />
+                    </a>
                 </form>
 
                 {/* ── Right Panel: Live Mobile Preview ── */}

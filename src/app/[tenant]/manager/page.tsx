@@ -406,7 +406,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             className={`group relative flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95
                                 ${isActive
                                     ? `bg-zinc-800/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
-                                    : "bg-zinc-900/40 text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                    : "bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                                 }`}
                         >
                             <Icon size={15} className={isActive ? tab.color : "text-zinc-600"} />
@@ -543,7 +543,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                 <li key={index} className="text-sm font-medium">
                                                     <div className="flex items-start text-zinc-200">
                                                         <span className="mr-2 font-bold text-primary">{item.quantity}x</span>
-                                                        <span>{item.product?.name || "Producto sin nombre"}</span>
+                                                        <span>{item.product?.name || "Producto"}</span>
                                                     </div>
                                                     {item.notes && (
                                                         <p className="ml-6 mt-0.5 text-xs font-normal text-zinc-500">
@@ -613,13 +613,16 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                 </div>
                                                 <div className="flex gap-2 mt-1">
                                                     <input
-                                                        placeholder="Personalizado (ej: 90 min)"
+                                                        type="number"
+                                                        min="1"
+                                                        max="240"
+                                                        placeholder="Minutos (ej: 45)"
                                                         value={customTime}
                                                         onChange={(e) => setCustomTime(e.target.value)}
                                                         className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs text-white outline-none focus:border-primary"
                                                     />
                                                     <button
-                                                        onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", customTime)}
+                                                        onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", `${customTime} min`)}
                                                         disabled={!customTime}
                                                         className="rounded-lg bg-primary px-3 text-xs font-bold text-[#09090b] disabled:opacity-50"
                                                     >
@@ -668,7 +671,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             RECIBIDO
                                         </button>
                                         {order.customer_phone && (
-                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                            <button title="Notificar por WhatsApp" onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
                                                 <MessageCircle size={18} />
                                             </button>
                                         )}
@@ -693,7 +696,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             CONFIRMAR
                                         </button>
                                         {order.customer_phone && (
-                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                            <button title="Notificar por WhatsApp" onClick={() => handleWhatsAppNotify(order)} className="flex-none w-[52px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
                                                 <MessageCircle size={18} />
                                             </button>
                                         )}
@@ -711,7 +714,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                             VOLVER A DESPACHADO
                                         </button>
                                         {order.customer_phone && (
-                                            <button onClick={() => handleWhatsAppNotify(order)} className="flex-1 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
+                                            <button title="Notificar por WhatsApp" onClick={() => handleWhatsAppNotify(order)} className="flex-1 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20 hover:bg-emerald-500/20 transition active:scale-95">
                                                 <MessageCircle size={18} />
                                             </button>
                                         )}
@@ -775,11 +778,21 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             </div>
 
                             <div className="p-6 space-y-6">
-                                <div className="flex justify-between items-center rounded-xl bg-zinc-900/50 p-4 border border-zinc-800">
-                                    <span className="text-sm font-medium text-zinc-400 uppercase tracking-widest">Total de la Orden</span>
-                                    <span className="text-xl font-black text-white font-mono">
-                                        ${(adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)).toLocaleString("es-AR")}
-                                    </span>
+                                <div className="rounded-xl bg-zinc-900/50 p-4 border border-zinc-800 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">Pedido original</span>
+                                        <span className="text-sm font-bold text-zinc-300 font-mono">
+                                            ${(adjustingOrder.total_amount - (adjustingOrder.extra_charge || 0)).toLocaleString("es-AR")}
+                                        </span>
+                                    </div>
+                                    {parseFloat(extraChargeAmount) > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-medium text-amber-500 uppercase tracking-widest">+ Recargo</span>
+                                            <span className="text-sm font-bold text-amber-400 font-mono">
+                                                + ${parseFloat(extraChargeAmount).toLocaleString("es-AR")}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">

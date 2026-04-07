@@ -5,36 +5,49 @@ import { ChevronDown } from "lucide-react"
 
 const faqs = [
   {
-    question: "Cuanto tarda configurar mi tienda?",
-    answer: "En promedio, 5 a 10 minutos. Subis tu menu (o lo cargas manual), personalizas colores y logo, y ya estas listo para recibir pedidos."
+    question: "¿Cobran comision por los pedidos o envios?",
+    answer: "No. A diferencia de las apps tradicionales, en PedidosPosta cobramos 0% de comision por venta. Solo pagas tu suscripcion mensual fija. Todo lo que vendas, es 100% tuyo."
   },
   {
-    question: "Puedo usar mi propio dominio?",
-    answer: "Si, en el plan Pro podes conectar tu propio dominio (ej: pedidos.tumarca.com) sin costo adicional."
+    question: "¿Como funcionan los 10 dias gratis?",
+    answer: "Te registras y empezas a usar el sistema completo al instante, sin poner tarjeta de credito. Tenes 10 dias para recibir pedidos, probar el panel y ver como te facilita la vida. Recien cuando se cumple el plazo, decidis si queres pagar la suscripcion."
   },
   {
-    question: "Como reciben los pagos mis clientes?",
-    answer: "Podes aceptar efectivo, transferencia bancaria, o integrar MercadoPago para pagos con tarjeta. Todo configurable desde el panel."
+    question: "¿Como me pagan mis clientes?",
+    answer: "Tus clientes te pagan directamente a vos. Podes configurar pagos en Efectivo, Transferencia Bancaria o conectar tu propio MercadoPago. Nosotros nunca tocamos tu dinero ni lo retenemos 15 dias."
   },
   {
-    question: "Que pasa si supero los 50 pedidos del plan gratis?",
-    answer: "Te avisamos cuando estes cerca del limite. Podes upgradear al plan Pro en cualquier momento sin perder datos ni configuracion."
+    question: "¿Puedo usar mi propio dominio (www.mimarca.com.ar)?",
+    answer: "Si! Tu suscripcion incluye la conexion de tu propio dominio personalizado. Vos compras el dominio (ej. en Nic.ar) y nosotros te damos un instructivo super simple para conectarlo a tu tienda en 5 minutos, con certificado de seguridad (HTTPS) incluido."
   },
   {
-    question: "Tienen soporte tecnico?",
-    answer: "Si, todos los planes incluyen soporte. El plan Starter por email, Pro con respuesta prioritaria, y Business con account manager dedicado."
-  },
-  {
-    question: "Puedo probarlo antes de pagar?",
-    answer: "El plan Starter es gratis para siempre con hasta 50 pedidos/mes. Ademas, el plan Pro tiene 14 dias de prueba sin tarjeta."
+    question: "No tengo tiempo de cargar todos mis productos, ¿me ayudan?",
+    answer: "Totalmente! Sabemos que estas a mil en el local. Tu plan incluye Setup Bonificado. Nos pasas tu menu por WhatsApp o PDF y nuestro equipo te lo deja cargado y listo para empezar a vender."
   }
 ]
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+}
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
     <section id="faq" className="py-20 relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="max-w-2xl mx-auto px-4">
         {/* Section header */}
         <div className="text-center mb-12">
@@ -57,6 +70,8 @@ export function FAQ() {
               }`}
             >
               <button
+                aria-expanded={openIndex === i}
+                aria-controls={`faq-answer-${i}`}
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className="w-full flex items-center justify-between p-4 text-left"
               >
@@ -68,10 +83,14 @@ export function FAQ() {
                 />
               </button>
 
-              <div className={`overflow-hidden transition-all duration-300 ${
-                openIndex === i ? "max-h-40" : "max-h-0"
-              }`}>
-                <p className="px-4 pb-4 text-sm text-muted-foreground leading-relaxed">
+              <div
+                id={`faq-answer-${i}`}
+                role="region"
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === i ? "max-h-60" : "max-h-0"
+                }`}
+              >
+                <p className="px-4 pb-4 text-sm text-zinc-400 leading-relaxed">
                   {faq.answer}
                 </p>
               </div>

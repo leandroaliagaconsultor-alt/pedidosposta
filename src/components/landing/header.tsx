@@ -22,6 +22,10 @@ export function Header() {
   }, [])
 
   return (
+    <>
+    <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-bold">
+      Saltar al contenido
+    </a>
     <header className="fixed top-0 left-0 right-0 z-50 px-4 py-3">
       <div
         className={`max-w-6xl mx-auto rounded-2xl px-4 py-2.5 transition-all duration-300 ${
@@ -37,7 +41,7 @@ export function Header() {
           </a>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav aria-label="Navegacion principal" className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -69,6 +73,9 @@ export function Header() {
           <button
             className="md:hidden p-2 text-muted-foreground"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-nav"
+            aria-label="Menu de navegacion"
           >
             {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -76,8 +83,8 @@ export function Header() {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden pt-4 pb-3 border-t border-border/30 mt-3">
-            <nav className="flex flex-col gap-1">
+          <div id="mobile-nav" className="md:hidden pt-4 pb-3 border-t border-border/30 mt-3">
+            <nav aria-label="Navegacion mobile" className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <a
                   key={link.label}
@@ -107,5 +114,6 @@ export function Header() {
         )}
       </div>
     </header>
+    </>
   )
 }

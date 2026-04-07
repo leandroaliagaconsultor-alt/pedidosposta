@@ -42,6 +42,9 @@ export function Pricing() {
           </span>
           <button
             type="button"
+            role="switch"
+            aria-checked={isAnnual}
+            aria-label="Cambiar entre suscripcion mensual y anual"
             onClick={() => setIsAnnual(!isAnnual)}
             className={`relative w-12 h-6 rounded-full transition-colors ${
               isAnnual ? "bg-primary" : "bg-zinc-700"
@@ -86,7 +89,7 @@ export function Pricing() {
             {isAnnual ? (
               <div>
                 <div className="mb-1">
-                  <span className="text-base text-zinc-500 line-through">$720.000</span>
+                  <span className="text-base text-zinc-400 line-through">$720.000</span>
                 </div>
                 <span className="text-5xl font-extrabold tracking-tight">$600.000</span>
                 <span className="text-muted-foreground text-sm ml-1">/ año</span>
@@ -125,8 +128,8 @@ export function Pricing() {
 
           {/* Guarantee */}
           <div className="mt-6 flex items-start gap-2.5 justify-center max-w-md mx-auto">
-            <Shield className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-zinc-500 leading-relaxed text-center">
+            <Shield className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-zinc-400 leading-relaxed text-center">
               Garantia de ROI: Si el primer mes no ahorras mas de $60.000 en comisiones comparado con las apps tradicionales, te devolvemos el 100% de tu dinero.
             </p>
           </div>

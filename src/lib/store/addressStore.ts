@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 export interface SavedAddress {
     street: string;
-    streetNumber: string;
+    streetNumber?: string; // legacy — merged into street for new saves
     apartment?: string;
     betweenStreets: string;
     deliveryNotes?: string;

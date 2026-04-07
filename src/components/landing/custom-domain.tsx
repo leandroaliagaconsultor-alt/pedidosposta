@@ -69,7 +69,7 @@ export function CustomDomain() {
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                     d.active
                       ? "glass-strong border-primary/30 text-primary shadow-[0_0_20px_-5px_rgba(34,197,94,0.2)]"
-                      : "glass text-zinc-500"
+                      : "glass text-zinc-400"
                   }`}
                 >
                   <Globe className={`w-3.5 h-3.5 ${d.active ? "text-primary" : "text-zinc-600"}`} />

@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Upload, Palette, Share2, TrendingUp } from "lucide-react"
 
 const steps = [
@@ -87,10 +88,13 @@ export function HowItWorks() {
                 <p className="text-xs text-muted-foreground">tulocal.pedidosposta.com</p>
               </div>
               <div className="relative aspect-[3/4] overflow-hidden">
-                <img
+                <Image
                   src="/tienda.png"
                   alt="Vista de tienda"
-                  className="w-full h-full object-cover object-top"
+                  fill
+                  loading="lazy"
+                  sizes="(max-width: 768px) 100vw, 384px"
+                  className="object-cover object-top"
                 />
               </div>
             </div>
@@ -101,10 +105,13 @@ export function HowItWorks() {
                 <p className="text-xs text-muted-foreground">Checkout profesional</p>
               </div>
               <div className="relative aspect-[3/4] overflow-hidden">
-                <img
+                <Image
                   src="/checkout.png"
                   alt="Vista de checkout"
-                  className="w-full h-full object-cover object-top"
+                  fill
+                  loading="lazy"
+                  sizes="(max-width: 768px) 100vw, 384px"
+                  className="object-cover object-top"
                 />
               </div>
             </div>

@@ -45,11 +45,12 @@ interface ProductModalProps {
     tokens: ThemeTokens;
     accentColor: string;
     accentTextColor: string;
+    isStoreOpen?: boolean;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function ProductModal({ product, open, onOpenChange, tokens: t, accentColor, accentTextColor }: ProductModalProps) {
+export function ProductModal({ product, open, onOpenChange, tokens: t, accentColor, accentTextColor, isStoreOpen = true }: ProductModalProps) {
     const addItem = useCartStore((state) => state.addItem);
 
     const [quantity, setQuantity] = useState(1);
@@ -321,18 +322,29 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
                             </div>
 
                             {/* Add to cart button */}
-                            <button
-                                type="button"
-                                onClick={handleAdd}
-                                className="flex flex-1 items-center justify-between rounded-xl px-5 py-3.5 font-bold transition-all hover:brightness-110 active:scale-[0.98]"
-                                style={{ backgroundColor: accentColor, color: accentTextColor }}
-                            >
-                                <span className="flex items-center gap-2">
+                            {isStoreOpen ? (
+                                <button
+                                    type="button"
+                                    onClick={handleAdd}
+                                    className="flex flex-1 items-center justify-between rounded-xl px-5 py-3.5 font-bold transition-all hover:brightness-110 active:scale-[0.98]"
+                                    style={{ backgroundColor: accentColor, color: accentTextColor }}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <ShoppingBag size={18} />
+                                        <span>AGREGAR <span className="hidden sm:inline">AL PEDIDO</span></span>
+                                    </span>
+                                    <span>${totalPrice.toLocaleString("es-AR")}</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3.5 font-bold bg-red-950/40 border border-red-900/50 text-red-500 opacity-80 cursor-not-allowed"
+                                >
                                     <ShoppingBag size={18} />
-                                    <span>AGREGAR <span className="hidden sm:inline">AL PEDIDO</span></span>
-                                </span>
-                                <span>${totalPrice.toLocaleString("es-AR")}</span>
-                            </button>
+                                    <span>LOCAL CERRADO</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </DialogPrimitive.Content>

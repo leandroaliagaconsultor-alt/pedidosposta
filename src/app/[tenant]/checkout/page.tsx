@@ -18,6 +18,7 @@ import {
     Loader2,
     CreditCard,
     ChevronDown,
+    Navigation,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -43,7 +44,6 @@ const checkoutSchema = z
         phone: z.string().min(8, "Teléfono inválido"),
         deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
         street: z.string().optional(),
-        streetNumber: z.string().optional(),
         apartment: z.string().optional(),
         betweenStreets: z.string().optional(),
         delivery_notes: z.string().optional(),
@@ -58,10 +58,6 @@ const checkoutSchema = z
     .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.trim().length >= 3), {
         message: "Obligatorio (Ej: Entre Calle 1 y 2)",
         path: ["betweenStreets"],
-    })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.streetNumber && data.streetNumber.trim().length >= 1), {
-        message: "Ingresá el número/altura",
-        path: ["streetNumber"],
     });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -70,7 +66,7 @@ type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 interface SavedHistoryAddress {
     street: string;
-    streetNumber: string;
+    streetNumber?: string; // legacy — merged into street for new saves
     apartment?: string;
     betweenStreets: string;
     deliveryNotes?: string;
@@ -91,7 +87,7 @@ function saveAddressToHistory(tenantSlug: string, addr: SavedHistoryAddress) {
         const history = getAddressHistory(tenantSlug);
         // Dedup: si ya existe la misma calle+número, la removemos primero
         const filtered = history.filter(
-            (h) => !(h.street === addr.street && h.streetNumber === addr.streetNumber)
+            (h) => !(h.street === addr.street)
         );
         const updated = [addr, ...filtered].slice(0, HISTORY_MAX);
         localStorage.setItem(`pedidosposta_addresses_${tenantSlug}`, JSON.stringify(updated));
@@ -113,6 +109,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     
     // Config states
     const [isMPActive, setIsMPActive] = useState(false);
+    const [minOrder, setMinOrder] = useState(0);
     const [tenantAlias, setTenantAlias] = useState<string | null>(null);
     const [tenantAccountName, setTenantAccountName] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -150,7 +147,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [addressHistory, setAddressHistory] = useState<SavedHistoryAddress[]>([]);
 
     const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
-    const streetNumberRef = React.useRef<HTMLInputElement>(null);
+    // streetNumberRef removed — merged into single street field
 
     // Helper: calcula costo de envío y actualiza estado (DRY)
     const computeDeliveryCost = React.useCallback((customerLat: number, customerLng: number) => {
@@ -235,19 +232,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const deliveryMethod = watch("deliveryMethod");
     const selectedPayment = watch("paymentMethod");
     const streetVal = watch("street");
-    const streetNumVal = watch("streetNumber");
-    
+
     // Validamos estricto que no esté vacío para desactivar botón
-    const isAddressIncomplete = deliveryMethod === "DELIVERY" && (!streetVal || streetVal.trim().length === 0 || !streetNumVal || streetNumVal.trim().length === 0);
+    const isAddressIncomplete = deliveryMethod === "DELIVERY" && (!streetVal || streetVal.trim().length === 0);
 
     const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
+    const isBelowMinOrder = minOrder > 0 && subtotal < minOrder;
 
     // Aplicar una dirección del historial
     const applyHistoryAddress = React.useCallback((addr: SavedHistoryAddress) => {
-        // Cambiar a modo manual para que el usuario vea los campos libres con su data
         setIsManualAddressMode(true);
-        setValue("street", addr.street, { shouldValidate: true });
-        setValue("streetNumber", addr.streetNumber, { shouldValidate: true });
+        // Legacy compat: merge street+streetNumber if saved separately
+        const fullStreet = addr.streetNumber ? `${addr.street} ${addr.streetNumber}` : addr.street;
+        setValue("street", fullStreet, { shouldValidate: true });
         if (addr.apartment) setValue("apartment", addr.apartment);
         setValue("betweenStreets", addr.betweenStreets, { shouldValidate: true });
         if (addr.deliveryNotes) setValue("delivery_notes", addr.deliveryNotes);
@@ -263,9 +260,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     // Aplicar dirección guardada (0 API calls)
     const applySavedAddress = React.useCallback(() => {
         if (!savedAddress) return;
-        setAddressValue(savedAddress.street, false);
-        setValue("street", savedAddress.street, { shouldValidate: true });
-        setValue("streetNumber", savedAddress.streetNumber, { shouldValidate: true });
+        const fullStreet = savedAddress.streetNumber ? `${savedAddress.street} ${savedAddress.streetNumber}` : savedAddress.street;
+        setAddressValue(fullStreet, false);
+        setValue("street", fullStreet, { shouldValidate: true });
         if (savedAddress.apartment) setValue("apartment", savedAddress.apartment);
         setValue("betweenStreets", savedAddress.betweenStreets, { shouldValidate: true });
         if (savedAddress.deliveryNotes) setValue("delivery_notes", savedAddress.deliveryNotes);
@@ -285,12 +282,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme")
+                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order")
                 .eq("slug", tenantSlug)
                 .single();
 
             if (tenantData) {
                 setIsMPActive(!!tenantData.is_mp_active);
+                setMinOrder(tenantData.min_order || 0);
                 setTenantAlias(tenantData.transfer_alias || null);
                 setTenantAccountName(tenantData.transfer_account_name || null);
                 setTenantStoreAddress(tenantData.store_address || null);
@@ -358,16 +356,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             const route = results[0].address_components.find(c => c.types.includes("route"))?.long_name || "";
             const streetNum = results[0].address_components.find(c => c.types.includes("street_number"))?.long_name || "";
 
-            const finalStreet = route || addressStr.split(',')[0].replace(/[0-9]/g, '').trim();
+            const finalStreet = route && streetNum ? `${route} ${streetNum}` : addressStr.split(',')[0].trim();
             setAddressValue(finalStreet, false);
             setValue("street", finalStreet, { shouldValidate: true });
-
-            if (streetNum) {
-                setValue("streetNumber", streetNum, { shouldValidate: true });
-                setTimeout(() => betweenStreetsRef.current?.focus(), 200);
-            } else {
-                setTimeout(() => streetNumberRef.current?.focus(), 200);
-            }
+            setTimeout(() => betweenStreetsRef.current?.focus(), 200);
 
             computeDeliveryCost(lat, lng);
         } catch (error) {
@@ -452,7 +444,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             const finalAddress = data.deliveryMethod === "DELIVERY"
-                ? `${data.street} ${data.streetNumber} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
+                ? `${data.street} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
                 : null;
 
             // Construir el payload para la transacción atómica
@@ -500,10 +492,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             const order = { id: rpcResult.order_id };
 
             // Guardar dirección para futuros pedidos (0 API calls en el próximo checkout)
-            if (data.deliveryMethod === "DELIVERY" && data.street && data.streetNumber && data.betweenStreets) {
+            if (data.deliveryMethod === "DELIVERY" && data.street && data.betweenStreets) {
                 const addrPayload = {
                     street: data.street,
-                    streetNumber: data.streetNumber,
                     apartment: data.apartment || undefined,
                     betweenStreets: data.betweenStreets,
                     deliveryNotes: data.delivery_notes || undefined,
@@ -562,6 +553,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const accentColor = themeEngine.primaryColor;
     const accentTextColor = themeEngine.accentIsLight ? '#18181b' : '#ffffff';
     const isLight = t.mode === "light";
+
+    if (items.length === 0) {
+        return (
+            <main className={`min-h-screen flex items-center justify-center ${t.bg} ${t.text}`} style={themeEngine.cssVars}>
+                <div className="text-center px-6">
+                    <Package size={48} className={`mx-auto mb-4 ${t.textMuted}`} />
+                    <h2 className={`text-xl font-black mb-2 ${t.text}`}>Tu carrito esta vacio</h2>
+                    <p className={`text-sm mb-6 ${t.textMuted}`}>Agrega productos desde el menu para hacer tu pedido.</p>
+                    <button onClick={() => router.back()} className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm transition-all hover:brightness-110" style={{ backgroundColor: accentColor, color: accentTextColor }}>
+                        <ArrowLeft size={16} /> Volver al menu
+                    </button>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className={`min-h-screen pb-20 pt-8 ${t.bg} ${t.text} transition-colors duration-300`} style={themeEngine.cssVars}>
@@ -634,7 +640,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>Última dirección</p>
                                                     <p className={`text-xs font-medium truncate ${t.text}`}>
-                                                        {savedAddress.street} {savedAddress.streetNumber}
+                                                        {savedAddress.streetNumber ? `${savedAddress.street} ${savedAddress.streetNumber}` : savedAddress.street}
                                                     </p>
                                                 </div>
                                             </button>
@@ -645,13 +651,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {addressHistory.map((addr, i) => (
                                                         <button
-                                                            key={`${addr.street}-${addr.streetNumber}-${i}`}
+                                                            key={`${addr.street}-${i}`}
                                                             type="button"
                                                             onClick={() => applyHistoryAddress(addr)}
-                                                            className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-[11px] font-semibold transition-all hover:opacity-80 ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}
+                                                            className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border text-[11px] font-semibold transition-all hover:opacity-80 max-w-[200px] ${isLight ? "border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100" : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"}`}
                                                         >
                                                             <MapPin size={10} className="shrink-0" />
-                                                            {addr.street} {addr.streetNumber}
+                                                            <span className="truncate">{addr.streetNumber ? `${addr.street} ${addr.streetNumber}` : addr.street}</span>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -660,19 +666,32 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                     </div>
                                 ) : null}
 
-                                {/* Paso 1: Calle — Modo Autocompletado o Modo Manual */}
+                                {/* Calle y Altura — Autocompletado o Manual */}
                                 {!isManualAddressMode ? (
                                     <>
-                                        <Field label="Calle y número *" error={errors.street?.message}>
+                                        <Field label="Calle y Altura exactas *" error={errors.street?.message}>
                                             <div className="relative">
                                                 <MapPin size={14} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
                                                 <input
                                                     value={addressValue}
                                                     onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
                                                     disabled={!ready || !isLoaded}
-                                                    placeholder="Ej: Calle 22 1207"
-                                                    className={`${inputStyle(!!errors.street, isLight)} pl-10`}
+                                                    placeholder="Ej: Calle 22 N° 1207"
+                                                    className={`${inputStyle(!!errors.street, isLight)} pl-10 pr-12`}
                                                 />
+                                                {/* GPS inline button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleGeolocation}
+                                                    disabled={isLocating}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-zinc-800/50"
+                                                    aria-label="Usar mi ubicacion"
+                                                >
+                                                    {isLocating
+                                                        ? <Loader2 size={16} className="animate-spin" style={{ color: accentColor }} />
+                                                        : <Navigation size={16} className="text-zinc-500 hover:text-zinc-300" />
+                                                    }
+                                                </button>
                                             </div>
 
                                             {status === "OK" && (
@@ -685,75 +704,60 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                 </ul>
                                             )}
                                         </Field>
-
-                                        {/* Fallback: activar GPS silencioso + modo manual */}
-                                        <button
-                                            type="button"
-                                            onClick={handleGeolocation}
-                                            disabled={isLocating}
-                                            className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold transition-colors ${t.textMuted}`}
-                                            style={{ color: isLocating ? accentColor : undefined }}
-                                        >
-                                            {isLocating ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                                            {isLocating ? "Buscando ubicación..." : "¿No encontrás tu calle? Usá tu ubicación actual"}
-                                        </button>
                                     </>
                                 ) : (
                                     <>
-                                        <Field label="Calle y número *" error={errors.street?.message}>
-                                            <input
-                                                {...register("street")}
-                                                placeholder="Ej: Calle 22 1207"
-                                                className={inputStyle(!!errors.street, isLight)}
-                                            />
+                                        <Field label="Calle y Altura exactas *" error={errors.street?.message}>
+                                            <div className="relative">
+                                                <input
+                                                    {...register("street")}
+                                                    placeholder="Ej: Calle 22 N° 1207"
+                                                    className={`${inputStyle(!!errors.street, isLight)} pr-12`}
+                                                />
+                                                {/* Back to autocomplete */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsManualAddressMode(false);
+                                                        setSelectedCoords(null);
+                                                        setCalculatedDistance(null);
+                                                        setCalculatedDeliveryCost(tenantDeliveryType === "fixed" ? tenantFixedPrice : tenantBasePrice);
+                                                        setValue("street", "", { shouldValidate: false });
+                                                        setAddressValue("", false);
+                                                    }}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-zinc-800/50"
+                                                    aria-label="Buscar en el mapa"
+                                                >
+                                                    <MapPin size={16} className="text-zinc-500 hover:text-zinc-300" />
+                                                </button>
+                                            </div>
                                         </Field>
-
-                                        {/* Volver al modo autocompletado */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsManualAddressMode(false);
-                                                setSelectedCoords(null);
-                                                setCalculatedDistance(null);
-                                                setCalculatedDeliveryCost(tenantDeliveryType === "fixed" ? tenantFixedPrice : tenantBasePrice);
-                                                setValue("street", "", { shouldValidate: false });
-                                                setAddressValue("", false);
-                                            }}
-                                            className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold transition-colors ${t.textMuted}`}
-                                        >
-                                            <MapPin size={14} />
-                                            Volver a buscar en el mapa
-                                        </button>
                                     </>
                                 )}
 
-                                {/* Paso 2: Altura + Piso */}
+                                {/* Piso/Depto + Entre calles (2 cols) */}
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Field label="Altura / N°  *" error={errors.streetNumber?.message}>
-                                        <input
-                                            {...register("streetNumber")}
-                                            ref={(e) => { register("streetNumber").ref(e); (streetNumberRef as React.MutableRefObject<HTMLInputElement | null>).current = e; }}
-                                            placeholder="Ej: 1207"
-                                            className={inputStyle(!!errors.streetNumber, isLight)}
-                                        />
-                                    </Field>
-                                    <Field label="Piso / Depto" error={errors.apartment?.message}>
+                                    <Field label="Piso / Depto (Opcional)" error={errors.apartment?.message}>
                                         <input {...register("apartment")} placeholder="Ej: 3B, PB 1" className={inputStyle(!!errors.apartment, isLight)} />
+                                    </Field>
+                                    <Field label="Entre calles *" error={errors.betweenStreets?.message}>
+                                        <input
+                                            {...register("betweenStreets")}
+                                            ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
+                                            placeholder="Ej: Entre 24 y 26"
+                                            className={inputStyle(!!errors.betweenStreets, isLight)}
+                                        />
                                     </Field>
                                 </div>
 
-                                {/* Paso 3: Entre calles + Observaciones */}
-                                <Field label="Entre qué calles o esquina *" error={errors.betweenStreets?.message}>
-                                    <input
-                                        {...register("betweenStreets")}
-                                        ref={(e) => { register("betweenStreets").ref(e); (betweenStreetsRef.current as any) = e; }}
-                                        placeholder="Ej: Entre 24 y 26, o esquina 11"
-                                        className={inputStyle(!!errors.betweenStreets, isLight)}
+                                {/* Indicaciones para el repartidor */}
+                                <Field label="Indicaciones para el repartidor (Opcional)" error={errors.delivery_notes?.message}>
+                                    <textarea
+                                        {...register("delivery_notes")}
+                                        placeholder="Ej: Timbre roto, golpear la puerta de rejas negras"
+                                        rows={2}
+                                        className={`${inputStyle(!!errors.delivery_notes, isLight)} resize-none`}
                                     />
-                                </Field>
-
-                                <Field label="Observaciones para el repartidor (Opcional)" error={errors.delivery_notes?.message}>
-                                    <input {...register("delivery_notes")} placeholder="Ej: portón negro, no anda el timbre, timbre 2..." className={inputStyle(!!errors.delivery_notes, isLight)} />
                                 </Field>
 
                                 {/* Distancia Calculada */}
@@ -777,7 +781,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     {/* SECCIÓN 3: PAGO */}
                     <section className="space-y-3">
                         <SectionHeader number="3" title="Pago" accentColor={accentColor} isLight={isLight} />
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className={`grid gap-3 ${tenantAlias ? "grid-cols-2" : "grid-cols-1"}`}>
                             <MethodButton
                                 active={selectedPayment === "CASH"}
                                 onClick={() => { setValue("paymentMethod", "CASH", { shouldValidate: true }); setReceiptFile(null); }}
@@ -786,14 +790,16 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 accentColor={accentColor}
                                 isLight={isLight}
                             />
-                            <MethodButton
-                                active={selectedPayment === "TRANSFER"}
-                                onClick={() => { setValue("paymentMethod", "TRANSFER", { shouldValidate: true }); }}
-                                icon={<Smartphone size={18} />}
-                                label="Transferencia"
-                                accentColor={accentColor}
-                                isLight={isLight}
-                            />
+                            {tenantAlias && (
+                                <MethodButton
+                                    active={selectedPayment === "TRANSFER"}
+                                    onClick={() => { setValue("paymentMethod", "TRANSFER", { shouldValidate: true }); }}
+                                    icon={<Smartphone size={18} />}
+                                    label="Transferencia"
+                                    accentColor={accentColor}
+                                    isLight={isLight}
+                                />
+                            )}
                         </div>
                         {isMPActive && (
                             <button
@@ -840,11 +846,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 </div>
                             </div>
                         )}
-                        {selectedPayment === "TRANSFER" && !tenantAlias && (
-                            <div className="mt-2 rounded-xl border border-red-500/30 bg-red-500/5 p-3 animate-in fade-in text-center">
-                                <p className="text-xs font-bold text-red-500">Este local aún no ha configurado su Alias. Por favor elegí otro medio de pago.</p>
-                            </div>
-                        )}
+                        {/* TRANSFER only shown if tenantAlias exists — no dead-end state */}
                     </section>
 
                     {/* RESUMEN FINAL */}
@@ -882,7 +884,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 </div>
                                 {deliveryMethod === "DELIVERY" && (
                                     <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
-                                        <span>Envío</span>
+                                        <span>Envío {tenantDeliveryType === "distance" && !selectedCoords && <span className="text-[10px] opacity-60">(se calcula con tu direccion)</span>}</span>
                                         <span className={t.text}>+ ${calculatedDeliveryCost.toLocaleString("es-AR")}</span>
                                     </div>
                                 )}
@@ -893,27 +895,39 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             </div>
                         </div>
 
+                        {/* Min order warning */}
+                        {isBelowMinOrder && (
+                            <div className={`rounded-xl border px-4 py-3 text-center ${isLight ? "border-amber-300 bg-amber-50" : "border-amber-500/30 bg-amber-500/5"}`}>
+                                <p className="text-xs font-bold text-amber-500">
+                                    Pedido minimo: ${minOrder.toLocaleString("es-AR")} — te faltan ${(minOrder - subtotal).toLocaleString("es-AR")}
+                                </p>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
                             disabled={
                                 isSubmitting ||
+                                isBelowMinOrder ||
                                 (isOutOfBounds && deliveryMethod === "DELIVERY") ||
                                 isAddressIncomplete ||
                                 (selectedPayment === "TRANSFER" && (!tenantAlias || !receiptFile))
                             }
                             className={`w-full py-3.5 rounded-xl font-black text-sm transition-all uppercase tracking-tighter flex items-center justify-center gap-2 ${
-                                (isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete
+                                (isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete || isBelowMinOrder
                                 ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-none disabled:cursor-not-allowed"
                                 : "hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
                             }`}
                             style={
-                                !((isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete)
+                                !((isOutOfBounds && deliveryMethod === "DELIVERY") || isAddressIncomplete || isBelowMinOrder)
                                 ? { backgroundColor: accentColor, color: accentTextColor }
                                 : undefined
                             }
                         >
                             {isSubmitting ? (
                                 <><Loader2 size={16} className="animate-spin" /> PROCESANDO PEDIDO...</>
+                            ) : isBelowMinOrder ? (
+                                "PEDIDO MINIMO NO ALCANZADO"
                             ) : (isOutOfBounds && deliveryMethod === "DELIVERY") ? (
                                 "FUERA DE RADIO DE ENTREGA"
                             ) : (
@@ -944,12 +958,18 @@ function SectionHeader({ number, title, accentColor, isLight }: { number: string
     );
 }
 
+let fieldIdCounter = 0;
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode; isLight?: boolean }) {
+    const id = React.useMemo(() => `field-${++fieldIdCounter}`, []);
+    const errorId = error ? `${id}-error` : undefined;
     return (
         <div className="space-y-1.5">
-            <label className="text-[11px] font-bold tracking-widest uppercase ml-1 text-zinc-500">{label}</label>
-            {children}
-            {error && <p className="text-[11px] text-red-500 font-bold ml-1">× {error}</p>}
+            <label htmlFor={id} className="text-[11px] font-bold tracking-widest uppercase ml-1 text-zinc-400">{label}</label>
+            {React.isValidElement(children)
+                ? React.cloneElement(children as React.ReactElement<any>, { id, "aria-invalid": !!error || undefined, "aria-describedby": errorId })
+                : children
+            }
+            {error && <p id={errorId} role="alert" className="text-[11px] text-red-500 font-bold ml-1">× {error}</p>}
         </div>
     );
 }
@@ -961,7 +981,7 @@ function inputStyle(hasError: boolean, isLight: boolean = false) {
         : isLight
             ? "border-zinc-300 focus:border-primary focus:ring-1 focus:ring-primary"
             : "border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary";
-    const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-500";
+    const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-400";
     return `w-full ${bg} border ${border} rounded-xl py-3 px-4 ${text} text-sm font-medium outline-none transition-all`;
 }
 

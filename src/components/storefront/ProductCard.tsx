@@ -12,9 +12,10 @@ interface ProductCardProps {
     tokens: ThemeTokens;
     accentColor: string;
     accentTextColor: string;
+    isStoreOpen?: boolean;
 }
 
-export function ProductCard({ product, tokens, accentColor, accentTextColor }: ProductCardProps) {
+export function ProductCard({ product, tokens, accentColor, accentTextColor, isStoreOpen = true }: ProductCardProps) {
     const [modalOpen, setModalOpen] = useState(false);
 
     const initials = product.name
@@ -145,6 +146,7 @@ export function ProductCard({ product, tokens, accentColor, accentTextColor }: P
                 tokens={tokens}
                 accentColor={accentColor}
                 accentTextColor={accentTextColor}
+                isStoreOpen={isStoreOpen}
             />
         </>
     );
