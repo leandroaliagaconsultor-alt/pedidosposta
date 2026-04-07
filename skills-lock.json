@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
+    "mercadopago-subscriptions": {
+      "source": "duvesalo/app",
+      "sourceType": "github",
+      "computedHash": "5b09c9c120f143ed54ba6117e8b8ad366c6bbfb3d624cd62ab65a3a0dda23f78"
+    },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",

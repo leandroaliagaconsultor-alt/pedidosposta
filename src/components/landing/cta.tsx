@@ -27,11 +27,6 @@ export function CTA() {
             Crear mi tienda gratis
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <button
-            className="inline-flex items-center justify-center rounded-full px-8 py-3 font-medium border border-border/50 text-foreground hover:bg-secondary transition-colors"
-          >
-            Agendar demo
-          </button>
         </div>
 
         <p className="text-xs text-muted-foreground mt-6">
