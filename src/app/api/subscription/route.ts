@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
                 currency_id: "ARS",
             },
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
+            notification_url: `${baseUrl}/api/subscription/webhook`,
         };
 
         // payer_email es requerido por MP — debe coincidir con la cuenta MP del pagador
