@@ -70,7 +70,7 @@ const features = [
 
 export function FeaturesShowcase() {
   return (
-    <section id="features" className="py-20 relative">
+    <section id="features" className="py-20 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
         {/* Section header */}
         <div className="text-center mb-16">

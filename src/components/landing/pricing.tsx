@@ -17,7 +17,7 @@ export function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false)
 
   return (
-    <section id="pricing" className="py-20 relative">
+    <section id="pricing" className="py-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[150px] pointer-events-none" />
 
