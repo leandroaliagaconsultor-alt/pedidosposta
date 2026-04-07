@@ -81,38 +81,41 @@ export function Header() {
           </button>
         </div>
 
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div id="mobile-nav" className="md:hidden pt-4 pb-3 border-t border-border/30 mt-3">
-            <nav aria-label="Navegacion mobile" className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors py-2.5 text-sm font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-border/30">
-                <Link
-                  href="/login"
-                  className="w-full text-center py-2 text-sm border border-border/50 rounded-md text-foreground hover:bg-secondary transition-colors"
-                >
-                  Iniciar sesion
-                </Link>
-                <Link
-                  href="/register"
-                  className="w-full text-center py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Empezar ahora
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
       </div>
+
+      {/* Mobile menu — outside glass container, solid bg */}
+      {isMenuOpen && (
+        <div id="mobile-nav" className="md:hidden absolute top-full left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 shadow-2xl">
+          <nav aria-label="Navegacion mobile" className="flex flex-col gap-1 px-6 py-5">
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-zinc-300 hover:text-white transition-colors py-3 text-sm font-medium border-b border-zinc-800/50 last:border-0"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.label}
+              </a>
+            ))}
+            <div className="flex flex-col gap-3 pt-5 mt-3 border-t border-zinc-800">
+              <Link
+                href="/login"
+                className="w-full text-center py-3 text-sm font-medium border border-zinc-700 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Iniciar sesion
+              </Link>
+              <Link
+                href="/register"
+                className="w-full text-center py-3 text-sm font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Empezar ahora
+              </Link>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
     </>
   )

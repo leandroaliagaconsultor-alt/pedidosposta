@@ -3,6 +3,8 @@ import { Hero } from "@/components/landing/hero"
 import { CommissionComparison } from "@/components/landing/commission-comparison"
 import { ProblemSection } from "@/components/landing/problem-section"
 import { FeaturesShowcase } from "@/components/landing/features-showcase"
+import { DemoLiveOrders } from "@/components/landing/demo-live-orders"
+import { DemoBranding } from "@/components/landing/demo-branding"
 import { HowItWorks } from "@/components/landing/how-it-works"
 import { Pricing } from "@/components/landing/pricing"
 import { FAQ } from "@/components/landing/faq"
@@ -42,6 +44,8 @@ export default function LandingPage() {
       <CommissionComparison />
       <ProblemSection />
       <FeaturesShowcase />
+      <DemoLiveOrders />
+      <DemoBranding />
       <HowItWorks />
       <Pricing />
       <FAQ />
