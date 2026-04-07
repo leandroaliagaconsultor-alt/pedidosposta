@@ -50,11 +50,24 @@ export async function POST(req: NextRequest) {
             }
 
             const preapproval = await mpRes.json();
-            const tenantId = preapproval.external_reference;
             const mpStatus = preapproval.status; // authorized, paused, cancelled, pending
 
+            // El tenant se identifica por external_reference (si se usó preapproval directo)
+            // o por preapproval_plan_id (si se usó preapproval_plan)
+            let tenantId = preapproval.external_reference;
+
+            if (!tenantId && preapproval.preapproval_plan_id) {
+                // Buscar tenant por el plan ID guardado en mp_subscription_id
+                const { data: t } = await supabase
+                    .from("tenants")
+                    .select("id")
+                    .eq("mp_subscription_id", preapproval.preapproval_plan_id)
+                    .single();
+                tenantId = t?.id;
+            }
+
             if (!tenantId) {
-                console.error("MP Sub Webhook: Preapproval sin external_reference", sanitizedId);
+                console.error("MP Sub Webhook: No se pudo identificar tenant para preapproval", sanitizedId);
                 return NextResponse.json({ received: true }, { status: 200 });
             }
 

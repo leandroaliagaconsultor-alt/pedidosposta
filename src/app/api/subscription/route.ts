@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// POST: Crea una suscripción (preapproval) en MercadoPago
-// Usa el token de la PLATAFORMA, no del tenant
+// POST: Crea un plan de suscripción (preapproval_plan) en MercadoPago
+// y devuelve el init_point para que el usuario se suscriba.
+// Usa el token de la PLATAFORMA, no del tenant.
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { tenantSlug, payerEmail } = body;
+        const { tenantSlug } = body;
 
-        if (!tenantSlug || !payerEmail) {
-            return NextResponse.json({ error: "Faltan datos requeridos" }, { status: 400 });
+        if (!tenantSlug) {
+            return NextResponse.json({ error: "Falta el slug del tenant" }, { status: 400 });
         }
 
         const platformToken = process.env.MP_PLATFORM_ACCESS_TOKEN;
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-        // Usar service role si disponible (para poder escribir), sino anon key para leer
         const supabase = createClient(supabaseUrl, serviceRoleKey || anonKey);
 
         const { data: tenant, error: tenantError } = await supabase
@@ -42,56 +42,48 @@ export async function POST(req: NextRequest) {
 
         // Construir URL base para callbacks
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
-
-        // Crear Preapproval (suscripción automática) en MercadoPago
-        // Docs: https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval/post
-        // En modo sandbox (token TEST-*), MP requiere test users
         const isSandbox = platformToken.startsWith("TEST-");
-        const mpPayerEmail = isSandbox
-            ? (process.env.MP_TEST_BUYER_EMAIL || payerEmail)
-            : payerEmail;
 
-        const preapprovalPayload = {
-            reason: "PedidosPosta - Plan Full Commerce",
-            payer_email: mpPayerEmail,
+        // Crear un Preapproval Plan en MercadoPago
+        // El plan genera un init_point donde el usuario ingresa su tarjeta
+        // Docs: https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval_plan/post
+        const planPayload = {
+            reason: `PedidosPosta - Full Commerce (${tenant.name})`,
             auto_recurring: {
                 frequency: 1,
                 frequency_type: "months",
                 transaction_amount: isSandbox ? 100 : 60000,
                 currency_id: "ARS",
             },
-            external_reference: tenant.id,
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
         };
 
-        console.log("MP Preapproval payload:", JSON.stringify(preapprovalPayload, null, 2));
-
-        const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
+        const mpResponse = await fetch("https://api.mercadopago.com/preapproval_plan", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${platformToken}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(preapprovalPayload),
+            body: JSON.stringify(planPayload),
         });
 
         const mpData = await mpResponse.json();
 
         if (!mpResponse.ok) {
-            console.error("MP Subscription Error:", JSON.stringify(mpData, null, 2));
+            console.error("MP Plan Error:", JSON.stringify(mpData, null, 2));
             return NextResponse.json(
-                { error: "Error al crear la suscripción en MercadoPago", mp_error: mpData, debug_email: mpPayerEmail, debug_sandbox: isSandbox },
+                { error: "Error al crear el plan en MercadoPago", mp_error: mpData },
                 { status: 400 }
             );
         }
 
-        // Guardar el preapproval ID en el tenant para referencia
+        // Guardar el plan ID en el tenant para referencia
         await supabase
             .from("tenants")
             .update({ mp_subscription_id: mpData.id })
             .eq("id", tenant.id);
 
-        // Devolver la URL de pago de MP
+        // Devolver la URL de suscripción de MP
         return NextResponse.json({ init_point: mpData.init_point });
     } catch (e: unknown) {
         console.error("MP Subscription error:", e);

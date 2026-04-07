@@ -36,16 +36,10 @@ export default function SubscriptionPage({
     const { tenant } = use(params);
     const supabase = createClient();
     const [data, setData] = useState<SubData | null>(null);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState(false);
 
     useEffect(() => {
-        // Obtener email del usuario autenticado
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user?.email) setUserEmail(user.email);
-        });
-
         supabase
             .from("tenants")
             .select("subscription_status, trial_ends_at, subscription_ends_at, mp_subscription_id, name")
@@ -58,17 +52,12 @@ export default function SubscriptionPage({
     }, [supabase, tenant]);
 
     const handleSubscribe = async () => {
-        const emailToUse = userEmail;
-        if (!emailToUse) {
-            alert("No se pudo obtener tu email. Recargá la página e intentá de nuevo.");
-            return;
-        }
         setSubscribing(true);
         try {
             const res = await fetch("/api/subscription", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tenantSlug: tenant, payerEmail: emailToUse }),
+                body: JSON.stringify({ tenantSlug: tenant }),
             });
             const result = await res.json();
             if (result.init_point) {
