@@ -294,16 +294,16 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     };
 
     return (
-        <div className="h-full w-full max-w-7xl mx-auto">
-            <header className="mb-10 flex items-center justify-between">
+        <div className="h-full w-full max-w-7xl mx-auto overflow-x-hidden">
+            <header className="mb-6 sm:mb-10">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Configuración del <span className="text-primary italic">Local</span></h1>
-                    <p className="text-zinc-400">Gestiona horarios, zonas y detalles de operativa general.</p>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">Configuración del <span className="text-primary italic">Local</span></h1>
+                    <p className="text-sm sm:text-base text-zinc-400">Gestiona horarios, zonas y detalles de operativa general.</p>
                 </div>
             </header>
 
-            <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8 pb-24 max-w-4xl mx-auto">
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8">
+            <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8 pb-28 max-w-4xl mx-auto">
+                <div className="rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-4 sm:p-6 backdrop-blur-xl xl:p-8">
                     <h2 className="mb-6 flex items-center gap-3 text-xl font-bold text-white">
                         <MapPin className="text-primary" size={24} /> Información Operativa
                     </h2>
@@ -315,13 +315,13 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                 <h3 className="font-bold text-lg text-white mb-1">Estado de la Tienda</h3>
                                 <p className="text-sm text-zinc-500 mb-4">Cierre de emergencia: Si lo desactivas, los clientes podran ver tu menu pero no podran realizar pedidos hasta que vuelvas a abrir.</p>
 
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     {(['none', 'force_open', 'force_close'] as const).map(status => (
                                         <button
                                             key={status}
                                             type="button"
                                             onClick={() => form.setValue('override_status', status, { shouldDirty: true })}
-                                            className={`py-3 px-4 rounded-xl text-sm font-bold tracking-widest uppercase transition-all flex flex-col items-center justify-center gap-1 ${watchValues.override_status === status
+                                            className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-widest uppercase transition-all flex flex-col items-center justify-center gap-1 ${watchValues.override_status === status
                                                 ? (status === 'force_open' ? 'bg-primary text-primary-foreground shadow-[0_0_15px_var(--brand-color)] shadow-primary/30'
                                                     : status === 'force_close' ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]'
                                                         : 'bg-zinc-700 text-white ring-2 ring-zinc-500')
@@ -987,11 +987,11 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     </div>
                 </div>
 
-                <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-end border-t border-zinc-800/80 bg-zinc-950/80 px-6 py-4 backdrop-blur-xl md:left-64">
+                <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center sm:justify-end border-t border-zinc-800/80 bg-zinc-950/80 px-4 sm:px-6 py-4 backdrop-blur-xl md:left-64">
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-extrabold text-[#09090b] transition-all hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-50 shadow-[0_0_20px_var(--brand-color)]"
+                        className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-6 sm:px-8 py-3 font-extrabold text-[#09090b] transition-all hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-50 shadow-[0_0_20px_var(--brand-color)]"
                     >
                         {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Guardar Configuración

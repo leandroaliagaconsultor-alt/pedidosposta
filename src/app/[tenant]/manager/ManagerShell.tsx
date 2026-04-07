@@ -238,7 +238,7 @@ export default function ManagerShell({
             {/* ═══════════════════════════════════════════════════════════
                 MAIN CONTENT — responsive padding
                ═══════════════════════════════════════════════════════════ */}
-            <main className="flex-1 overflow-y-auto bg-zinc-950/50 p-4 pt-20 md:p-8 md:pt-8 shadow-inner relative">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950/50 p-4 pt-20 md:p-8 md:pt-8 shadow-inner relative">
                 {/* Glow accent */}
                 <div className="pointer-events-none absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
 

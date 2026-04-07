@@ -46,16 +46,16 @@ function LiveOrdersDemo() {
   }, [advance])
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full max-w-full overflow-hidden">
       {/* Status tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
         {ORDER_STATUSES.map((s) => {
           const cfg = STATUS_CFG[s]
           const Icon = cfg.icon
           const count = Object.values(statuses).filter((st) => st === s).length
           return (
-            <div key={s} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
-              <Icon size={12} />
+            <div key={s} className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl text-[9px] sm:text-[10px] font-bold whitespace-nowrap shrink-0 ${cfg.bg} ${cfg.color}`}>
+              <Icon size={11} />
               {cfg.label}
               {count > 0 && <span className="ml-0.5 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-white/10 text-[9px]">{count}</span>}
             </div>
@@ -116,21 +116,21 @@ function BrandStudioDemo() {
   const border = isDark ? "border-zinc-800" : "border-zinc-200"
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-2">
           {COLORS.map((c) => (
             <button
               key={c.hex}
               onClick={() => setAccent(c.hex)}
-              className={`w-8 h-8 rounded-lg transition-all ${accent === c.hex ? "ring-2 ring-offset-2 ring-offset-zinc-950 scale-110" : "hover:scale-105"}`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-all ${accent === c.hex ? "ring-2 ring-offset-2 ring-offset-zinc-950 scale-110" : "hover:scale-105"}`}
               style={{ backgroundColor: c.hex }}
               title={c.name}
             />
           ))}
         </div>
-        <div className="h-6 w-px bg-zinc-800" />
+        <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
         <button onClick={() => setIsDark(!isDark)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 text-[10px] font-bold hover:bg-zinc-700 transition">
           {isDark ? <Moon size={12} /> : <Sun size={12} />}
           {isDark ? "Oscuro" : "Claro"}
@@ -186,17 +186,17 @@ function CheckoutDemo() {
   const [payMethod, setPayMethod] = useState<"mp" | "transfer">("mp")
 
   return (
-    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-800">
+    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden w-full max-w-full">
+      <div className="px-3 sm:px-4 py-3 border-b border-zinc-800">
         <p className="text-[11px] font-bold text-white">Finalizar Pedido</p>
       </div>
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-3 sm:px-4 py-3 space-y-3">
         {/* Address */}
         <div>
           <label className="text-[9px] font-medium text-zinc-500 uppercase tracking-wider">Dirección</label>
-          <div className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800">
-            <MapPin size={11} className="text-emerald-400" />
-            <span className="text-[10px] text-white">Av. Rivadavia 1450, CABA</span>
+          <div className="flex items-center gap-2 mt-1 px-2 sm:px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 min-w-0">
+            <MapPin size={11} className="text-emerald-400 shrink-0" />
+            <span className="text-[10px] text-white truncate">Av. Rivadavia 1450, CABA</span>
           </div>
         </div>
         {/* Payment method */}
@@ -360,8 +360,8 @@ function AnalyticsDemo() {
     : { total: "$9.800.000", ticket: "$11.200", orders: 875 }
 
   return (
-    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden w-full max-w-full">
+      <div className="px-3 sm:px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
         <p className="text-[11px] font-bold text-white">Analytics</p>
         <div className="flex rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden">
           <button
@@ -515,11 +515,11 @@ export function FeaturesInteractive() {
               </div>
 
               {/* Demo */}
-              <div className={`${feature.reverse ? "lg:col-start-1" : ""}`}>
+              <div className={`w-full max-w-full overflow-hidden ${feature.reverse ? "lg:col-start-1" : ""}`}>
                 <div className="relative group">
                   {/* Glow */}
                   <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
+                  <div className="relative w-full max-w-full overflow-hidden">
                     <feature.Demo />
                   </div>
                 </div>
