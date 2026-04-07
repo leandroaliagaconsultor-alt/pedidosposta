@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// POST: Crea una suscripción (preapproval) en MercadoPago con status "pending"
-// Esto genera un init_point con contexto del pagador (reduce rechazos por fraude)
+// POST: Crea un plan de suscripción (preapproval_plan) en MercadoPago.
+// El usuario paga como invitado — sin necesidad de email previo.
+// El webhook se configura desde el dashboard de MP (no en el payload).
 // Usa el token de la PLATAFORMA, no del tenant.
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { tenantSlug, payerEmail } = body;
+        const { tenantSlug } = body;
 
         if (!tenantSlug) {
             return NextResponse.json({ error: "Falta el slug del tenant" }, { status: 400 });
@@ -40,12 +41,10 @@ export async function POST(req: NextRequest) {
 
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
 
-        // Crear suscripción con status "pending" → MP devuelve init_point para checkout
-        // Docs: https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval/post
-        const preapprovalPayload: Record<string, unknown> = {
+        // Crear Preapproval Plan → genera init_point donde el usuario paga como invitado
+        // Docs: https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval_plan/post
+        const planPayload = {
             reason: `PedidosPosta - Full Commerce (${tenant.name})`,
-            external_reference: tenant.id,
-            status: "pending",
             auto_recurring: {
                 frequency: 1,
                 frequency_type: "months",
@@ -53,36 +52,28 @@ export async function POST(req: NextRequest) {
                 currency_id: "ARS",
             },
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
-            notification_url: `${baseUrl}/api/subscription/webhook`,
         };
 
-        // payer_email es requerido por MP — debe coincidir con la cuenta MP del pagador
-        if (payerEmail) {
-            preapprovalPayload.payer_email = payerEmail;
-        }
-
-        console.log("MP Preapproval payload:", JSON.stringify(preapprovalPayload, null, 2));
-
-        const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
+        const mpResponse = await fetch("https://api.mercadopago.com/preapproval_plan", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${platformToken}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(preapprovalPayload),
+            body: JSON.stringify(planPayload),
         });
 
         const mpData = await mpResponse.json();
 
         if (!mpResponse.ok) {
-            console.error("MP Subscription Error:", JSON.stringify(mpData, null, 2));
+            console.error("MP Plan Error:", JSON.stringify(mpData, null, 2));
             return NextResponse.json(
-                { error: "Error al crear la suscripción en MercadoPago", mp_error: mpData },
+                { error: "Error al crear el plan en MercadoPago", mp_error: mpData },
                 { status: 400 }
             );
         }
 
-        // Guardar el preapproval ID en el tenant
+        // Guardar el plan ID en el tenant para identificarlo en el webhook
         await supabase
             .from("tenants")
             .update({ mp_subscription_id: mpData.id })
