@@ -36,15 +36,11 @@ export default function SubscriptionPage({
     const { tenant } = use(params);
     const supabase = createClient();
     const [data, setData] = useState<SubData | null>(null);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [mpEmail, setMpEmail] = useState("");
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState(false);
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user?.email) setUserEmail(user.email);
-        });
-
         supabase
             .from("tenants")
             .select("subscription_status, trial_ends_at, subscription_ends_at, mp_subscription_id, name")
@@ -57,12 +53,16 @@ export default function SubscriptionPage({
     }, [supabase, tenant]);
 
     const handleSubscribe = async () => {
+        if (!mpEmail || !mpEmail.includes("@")) {
+            alert("Ingresá tu email de MercadoPago para continuar.");
+            return;
+        }
         setSubscribing(true);
         try {
             const res = await fetch("/api/subscription", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tenantSlug: tenant, payerEmail: userEmail }),
+                body: JSON.stringify({ tenantSlug: tenant, payerEmail: mpEmail.trim() }),
             });
             const result = await res.json();
             if (result.init_point) {
@@ -259,31 +259,49 @@ export default function SubscriptionPage({
                 </div>
 
                 {/* CTA */}
-                <div className="border-t border-zinc-800 px-6 py-5">
+                <div className="border-t border-zinc-800 px-6 py-5 space-y-4">
                     {isActive ? (
                         <div className="flex items-center gap-2 text-sm text-primary font-medium">
                             <ShieldCheck size={16} />
                             Tu plan está activo
                         </div>
                     ) : (
-                        <button
-                            onClick={handleSubscribe}
-                            disabled={subscribing}
-                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-zinc-950 hover:bg-primary/90 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {subscribing ? (
-                                <>
-                                    <Loader2 size={16} className="animate-spin" />
-                                    Redirigiendo a MercadoPago...
-                                </>
-                            ) : (
-                                <>
-                                    <Zap size={16} />
-                                    {isExpired ? "Suscribirme y reactivar tienda" : "Suscribirme ahora"}
-                                    <ArrowRight size={14} />
-                                </>
-                            )}
-                        </button>
+                        <>
+                            <div>
+                                <label htmlFor="mp-email" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                                    Email de tu cuenta de MercadoPago
+                                </label>
+                                <input
+                                    id="mp-email"
+                                    type="email"
+                                    placeholder="tu@email.com"
+                                    value={mpEmail}
+                                    onChange={(e) => setMpEmail(e.target.value)}
+                                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors"
+                                />
+                                <p className="text-[10px] text-zinc-600 mt-1">
+                                    Usá el mismo email con el que iniciás sesión en MercadoPago.
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleSubscribe}
+                                disabled={subscribing || !mpEmail.includes("@")}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-zinc-950 hover:bg-primary/90 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {subscribing ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Redirigiendo a MercadoPago...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Zap size={16} />
+                                        {isExpired ? "Suscribirme y reactivar tienda" : "Suscribirme ahora"}
+                                        <ArrowRight size={14} />
+                                    </>
+                                )}
+                            </button>
+                        </>
                     )}
                 </div>
             </div>

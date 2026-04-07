@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
         };
 
-        // No enviamos payer_email — MP lo solicita en el checkout.
-        // Enviarlo causa "tu email no coincide" si el usuario tiene
-        // un email distinto en su cuenta de MercadoPago.
+        // payer_email es requerido por MP — debe coincidir con la cuenta MP del pagador
+        if (payerEmail) {
+            preapprovalPayload.payer_email = payerEmail;
+        }
 
         console.log("MP Preapproval payload:", JSON.stringify(preapprovalPayload, null, 2));
 
