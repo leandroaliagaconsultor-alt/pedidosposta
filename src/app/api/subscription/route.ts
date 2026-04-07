@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         }
 
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
-        const amount = 100; // TODO: cambiar a 60000 después de testear
+        const amount = 60000;
 
         // ── Modo automático: preapproval_plan (crédito, débito automático mensual) ──
         if (mode === "auto") {

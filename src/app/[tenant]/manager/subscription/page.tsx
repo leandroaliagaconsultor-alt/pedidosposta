@@ -38,6 +38,8 @@ export default function SubscriptionPage({
     const [data, setData] = useState<SubData | null>(null);
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     useEffect(() => {
         supabase
@@ -70,6 +72,27 @@ export default function SubscriptionPage({
             alert("Error de conexión. Intentá nuevamente.");
             setSubscribing(false);
         }
+    };
+
+    const handleCancel = async () => {
+        setCancelling(true);
+        try {
+            const res = await fetch("/api/subscription/manage", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tenantSlug: tenant, action: "cancel" }),
+            });
+            const result = await res.json();
+            if (result.success) {
+                setData((prev) => prev ? { ...prev, subscription_status: "cancelled" } : prev);
+                setShowCancelConfirm(false);
+            } else {
+                alert(result.error || "Error al cancelar");
+            }
+        } catch {
+            alert("Error de conexión.");
+        }
+        setCancelling(false);
     };
 
     if (loading) {
@@ -215,6 +238,40 @@ export default function SubscriptionPage({
                                     })}
                                 </span>
                             </p>
+                        </div>
+                    )}
+                    {/* Cancelar suscripción */}
+                    {!showCancelConfirm ? (
+                        <button
+                            onClick={() => setShowCancelConfirm(true)}
+                            className="text-xs text-zinc-600 hover:text-red-400 transition-colors"
+                        >
+                            Cancelar suscripción
+                        </button>
+                    ) : (
+                        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 space-y-3">
+                            <p className="text-xs text-red-300">
+                                ¿Seguro que querés cancelar? Tu tienda seguirá activa hasta el{" "}
+                                {data.subscription_ends_at
+                                    ? new Date(data.subscription_ends_at).toLocaleDateString("es-AR", { day: "numeric", month: "long" })
+                                    : "fin del periodo"}.
+                                Después dejará de recibir pedidos.
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleCancel}
+                                    disabled={cancelling}
+                                    className="px-4 py-2 text-xs font-bold rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                                >
+                                    {cancelling ? "Cancelando..." : "Sí, cancelar"}
+                                </button>
+                                <button
+                                    onClick={() => setShowCancelConfirm(false)}
+                                    className="px-4 py-2 text-xs font-bold rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition-colors"
+                                >
+                                    No, mantener
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
