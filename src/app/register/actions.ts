@@ -75,10 +75,17 @@ export async function registerTenant(
         return { error: "Cuenta creada pero no pudimos iniciar sesión automáticamente. Ingresá manualmente." };
     }
 
-    // ── Paso D: Insertar tenant ──────────────────────────────────────────
+    // ── Paso D: Insertar tenant con trial de 10 días ──────────────────────
+    const trialEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: newTenant, error: tenantError } = await supabase
         .from("tenants")
-        .insert({ name, slug })
+        .insert({
+            name,
+            slug,
+            subscription_status: "trialing",
+            trial_ends_at: trialEndsAt,
+        })
         .select("id")
         .single();
 

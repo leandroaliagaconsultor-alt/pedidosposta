@@ -60,9 +60,19 @@ export default async function ManagerLayout({
         }
     }
 
-    // ── 3. Autorizado → renderizar el panel con sidebar ─────────────────
+    // ── 3. Obtener datos de suscripción del tenant ──────────────────────
+    const { data: tenantSub } = await supabase
+        .from("tenants")
+        .select("subscription_status, trial_ends_at")
+        .eq("slug", tenant)
+        .single();
+
+    const subscriptionStatus = tenantSub?.subscription_status ?? "active";
+    const trialEndsAt = tenantSub?.trial_ends_at ?? null;
+
+    // ── 4. Autorizado → renderizar el panel con sidebar ─────────────────
     return (
-        <ManagerShell tenant={tenant}>
+        <ManagerShell tenant={tenant} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt}>
             {children}
         </ManagerShell>
     );

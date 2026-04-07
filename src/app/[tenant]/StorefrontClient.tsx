@@ -45,12 +45,25 @@ export interface StorefrontData {
         extra_price_per_km: number | null;
         theme: any;
         show_whatsapp_checkout: boolean;
+        subscription_status: string | null;
+        trial_ends_at: string | null;
     };
     categories: Category[];
     products: Product[];
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
+
+function isSubscriptionExpired(brand: StorefrontData["brand"]): boolean {
+    if (!brand.subscription_status) return false;
+    if (brand.subscription_status === "active") return false;
+    if (brand.subscription_status === "trialing") {
+        if (!brand.trial_ends_at) return false;
+        return new Date(brand.trial_ends_at) < new Date();
+    }
+    // past_due or cancelled
+    return true;
+}
 
 export default function StorefrontClient({ data }: { data: StorefrontData }) {
     const { brand, categories, products } = data;
@@ -94,15 +107,19 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
     );
 
     if (themeEngine.isProLayout) {
-        if (brand?.is_suspended) {
+        if (brand?.is_suspended || isSubscriptionExpired(brand)) {
             return (
                 <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-center px-4">
                     <div className="h-20 w-20 mb-6 flex items-center justify-center rounded-full bg-red-500/10 text-red-500">
                         <ShoppingCart size={32} />
                     </div>
-                    <h1 className="text-2xl font-black text-white mb-2">Tienda no disponible</h1>
+                    <h1 className="text-2xl font-black text-white mb-2">
+                        {brand?.is_suspended ? "Tienda no disponible" : "Esta tienda no está aceptando pedidos"}
+                    </h1>
                     <p className="text-zinc-500 max-w-sm">
-                        La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde.
+                        {brand?.is_suspended
+                            ? "La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde."
+                            : "La tienda se encuentra temporalmente pausada. Por favor, volvé a intentar más tarde."}
                     </p>
                 </div>
             );
@@ -304,15 +321,19 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
     const accentColor = themeEngine.primaryColor;
     const accentTextColor = themeEngine.accentIsLight ? '#18181b' : '#ffffff';
 
-    if (brand?.is_suspended) {
+    if (brand?.is_suspended || isSubscriptionExpired(brand)) {
         return (
             <div className={`flex min-h-screen flex-col items-center justify-center ${t.bg} text-center px-4`}>
                 <div className="h-20 w-20 mb-6 flex items-center justify-center rounded-full bg-red-500/10 text-red-500">
                     <ShoppingCart size={32} />
                 </div>
-                <h1 className={`text-2xl font-bold ${t.text} mb-2`}>Tienda no disponible</h1>
+                <h1 className={`text-2xl font-bold ${t.text} mb-2`}>
+                    {brand?.is_suspended ? "Tienda no disponible" : "Esta tienda no está aceptando pedidos"}
+                </h1>
                 <p className={`${t.textMuted} max-w-sm`}>
-                    La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde.
+                    {brand?.is_suspended
+                        ? "La tienda no está disponible temporalmente. Por favor, intentá nuevamente más tarde."
+                        : "La tienda se encuentra temporalmente pausada. Por favor, volvé a intentar más tarde."}
                 </p>
             </div>
         );

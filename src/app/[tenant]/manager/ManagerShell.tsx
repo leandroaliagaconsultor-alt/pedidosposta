@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     ListOrdered, Palette, LayoutDashboard, LogOut,
     Loader2, Settings, BarChart, Menu, X, ExternalLink,
+    CreditCard, AlertTriangle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
@@ -13,9 +14,13 @@ import { toast, Toaster } from "sonner";
 export default function ManagerShell({
     children,
     tenant,
+    subscriptionStatus,
+    trialEndsAt,
 }: {
     children: React.ReactNode;
     tenant: string;
+    subscriptionStatus: string;
+    trialEndsAt: string | null;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -37,12 +42,28 @@ export default function ManagerShell({
         router.refresh();
     };
 
+    // ── Subscription status logic ────────────────────────────────────────
+    const isTrialing = subscriptionStatus === "trialing";
+    const isExpired = (() => {
+        if (subscriptionStatus === "active") return false;
+        if (isTrialing && trialEndsAt) return new Date(trialEndsAt) < new Date();
+        if (subscriptionStatus === "past_due" || subscriptionStatus === "cancelled") return true;
+        return false;
+    })();
+
+    const trialDaysLeft = (() => {
+        if (!isTrialing || !trialEndsAt) return 0;
+        const diff = new Date(trialEndsAt).getTime() - Date.now();
+        return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    })();
+
     const navLinks = [
         { name: "Live Orders", href: `/${tenant}/manager`, icon: ListOrdered },
         { name: "Menu Builder", href: `/${tenant}/manager/menu`, icon: LayoutDashboard },
         { name: "Brand Studio", href: `/${tenant}/manager/brand`, icon: Palette },
         { name: "Configuración", href: `/${tenant}/manager/settings`, icon: Settings },
         { name: "Analytics", href: `/${tenant}/manager/analytics`, icon: BarChart },
+        { name: "Suscripción", href: `/${tenant}/manager/subscription`, icon: CreditCard },
     ];
 
     // Shared nav items renderer
@@ -220,6 +241,52 @@ export default function ManagerShell({
             <main className="flex-1 overflow-y-auto bg-zinc-950/50 p-4 pt-20 md:p-8 md:pt-8 shadow-inner relative">
                 {/* Glow accent */}
                 <div className="pointer-events-none absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
+
+                {/* ── Subscription Banner ─── */}
+                {isExpired && (
+                    <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
+                            <AlertTriangle size={20} className="text-red-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-red-300">Tu tienda está pausada</p>
+                            <p className="text-xs text-red-400/80 mt-0.5">
+                                {isTrialing
+                                    ? "Tu periodo de prueba gratuita ha finalizado. Suscribite para reactivar tu tienda."
+                                    : "Tu suscripción está vencida. Renová tu plan para que tus clientes puedan seguir comprando."}
+                            </p>
+                        </div>
+                        <Link
+                            href={`/${tenant}/manager/subscription`}
+                            className="shrink-0 rounded-xl bg-red-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
+                        >
+                            Ver planes
+                        </Link>
+                    </div>
+                )}
+
+                {isTrialing && !isExpired && trialDaysLeft <= 3 && (
+                    <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+                            <AlertTriangle size={20} className="text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-amber-300">
+                                Te {trialDaysLeft === 1 ? "queda 1 día" : `quedan ${trialDaysLeft} días`} de prueba gratuita
+                            </p>
+                            <p className="text-xs text-amber-400/80 mt-0.5">
+                                Suscribite antes de que termine para que tu tienda siga activa.
+                            </p>
+                        </div>
+                        <Link
+                            href={`/${tenant}/manager/subscription`}
+                            className="shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-zinc-950 hover:bg-amber-400 transition-colors"
+                        >
+                            Suscribirme
+                        </Link>
+                    </div>
+                )}
+
                 {children}
             </main>
         </div>

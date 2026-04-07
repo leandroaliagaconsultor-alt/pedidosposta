@@ -21,7 +21,8 @@ const TENANT_COLUMNS = [
     "announcement_text", "is_suspended", "min_order", "public_phone",
     "instagram_url", "facebook_url", "delivery_pricing_type",
     "fixed_delivery_price", "base_delivery_price", "base_delivery_km",
-    "extra_price_per_km", "theme", "show_whatsapp_checkout"
+    "extra_price_per_km", "theme", "show_whatsapp_checkout",
+    "subscription_status", "trial_ends_at"
 ].join(", ");
 
 const PRODUCT_COLUMNS = [
