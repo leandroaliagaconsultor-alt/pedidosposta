@@ -51,22 +51,14 @@ export async function POST(req: NextRequest) {
             ? (process.env.MP_TEST_BUYER_EMAIL || payerEmail)
             : payerEmail;
 
-        // Formatear fecha sin milisegundos (formato que MP acepta)
-        const formatMPDate = (date: Date) => date.toISOString().replace(/\.\d{3}Z$/, ".000-00:00");
-        const startDate = formatMPDate(new Date(Date.now() + 5 * 60 * 1000)); // 5 min futuro
-        const endDate = formatMPDate(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)); // 1 año
-
         const preapprovalPayload = {
-            reason: `PedidosPosta - Plan Full Commerce`,
+            reason: "PedidosPosta - Plan Full Commerce",
             payer_email: mpPayerEmail,
-            status: "pending",
             auto_recurring: {
                 frequency: 1,
                 frequency_type: "months",
                 transaction_amount: isSandbox ? 100 : 60000,
                 currency_id: "ARS",
-                start_date: startDate,
-                end_date: endDate,
             },
             external_reference: tenant.id,
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
