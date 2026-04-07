@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// POST: Crea un plan de suscripción (preapproval_plan) en MercadoPago.
-// El usuario paga como invitado — sin necesidad de email previo.
-// El webhook se configura desde el dashboard de MP (no en el payload).
-// Usa el token de la PLATAFORMA, no del tenant.
+// POST: Crea una preferencia de pago (Checkout Pro) para la suscripción mensual.
+// Usa el mismo flujo probado que ya funciona para los pedidos de los clientes.
+// Cuando MP confirma el pago, el webhook activa la suscripción del tenant.
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -41,43 +40,47 @@ export async function POST(req: NextRequest) {
 
         const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://pedidosposta.com";
 
-        // Crear Preapproval Plan → genera init_point donde el usuario paga como invitado
-        // Docs: https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval_plan/post
-        const planPayload = {
-            reason: `PedidosPosta - Full Commerce (${tenant.name})`,
-            auto_recurring: {
-                frequency: 1,
-                frequency_type: "months",
-                transaction_amount: 100, // TODO: cambiar a 60000 después de testear
-                currency_id: "ARS",
+        // Usar Checkout Pro (preferencia de pago) — mismo flujo que ya funciona para pedidos
+        const preferencePayload = {
+            items: [
+                {
+                    id: "plan-full-commerce",
+                    title: `PedidosPosta - Plan Full Commerce (${tenant.name})`,
+                    description: "Suscripción mensual — Menú digital, pedidos online, analytics y más",
+                    quantity: 1,
+                    unit_price: 100, // TODO: cambiar a 60000 después de testear
+                    currency_id: "ARS",
+                },
+            ],
+            external_reference: `sub_${tenant.id}`,
+            back_urls: {
+                success: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
+                failure: `${baseUrl}/${tenantSlug}/manager/subscription`,
+                pending: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
             },
-            back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
+            auto_return: "approved",
+            notification_url: `${baseUrl}/api/subscription/webhook`,
+            statement_descriptor: "PEDIDOSPOSTA",
         };
 
-        const mpResponse = await fetch("https://api.mercadopago.com/preapproval_plan", {
+        const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${platformToken}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(planPayload),
+            body: JSON.stringify(preferencePayload),
         });
 
         const mpData = await mpResponse.json();
 
         if (!mpResponse.ok) {
-            console.error("MP Plan Error:", JSON.stringify(mpData, null, 2));
+            console.error("MP Preference Error:", JSON.stringify(mpData, null, 2));
             return NextResponse.json(
-                { error: "Error al crear el plan en MercadoPago", mp_error: mpData },
+                { error: "Error al crear el pago en MercadoPago", mp_error: mpData },
                 { status: 400 }
             );
         }
-
-        // Guardar el plan ID en el tenant para identificarlo en el webhook
-        await supabase
-            .from("tenants")
-            .update({ mp_subscription_id: mpData.id })
-            .eq("id", tenant.id);
 
         return NextResponse.json({ init_point: mpData.init_point });
     } catch (e: unknown) {
