@@ -1,4 +1,3 @@
-import Image from "next/image"
 import { Upload, Palette, Share2, TrendingUp } from "lucide-react"
 
 const steps = [
@@ -75,48 +74,7 @@ export function HowItWorks() {
           ))}
         </div>
 
-        {/* Customer view preview */}
-        <div className="mt-16">
-          <div className="text-center mb-8">
-            <p className="text-muted-foreground text-sm">Asi se ve tu tienda para tus clientes</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Store view */}
-            <div className="glass rounded-2xl overflow-hidden">
-              <div className="bg-secondary/50 px-4 py-2 border-b border-border/30">
-                <p className="text-xs text-muted-foreground">tulocal.pedidosposta.com</p>
-              </div>
-              <div className="relative aspect-[3/4] overflow-hidden">
-                <Image
-                  src="/tienda.png"
-                  alt="Vista de tienda"
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 768px) 100vw, 384px"
-                  className="object-cover object-top"
-                />
-              </div>
-            </div>
-
-            {/* Checkout view */}
-            <div className="glass rounded-2xl overflow-hidden">
-              <div className="bg-secondary/50 px-4 py-2 border-b border-border/30">
-                <p className="text-xs text-muted-foreground">Checkout profesional</p>
-              </div>
-              <div className="relative aspect-[3/4] overflow-hidden">
-                <Image
-                  src="/checkout.png"
-                  alt="Vista de checkout"
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 768px) 100vw, 384px"
-                  className="object-cover object-top"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Customer view preview — ahora como sección independiente (DemoStorefront) */}
       </div>
     </section>
   )

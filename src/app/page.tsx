@@ -5,6 +5,7 @@ import { ProblemSection } from "@/components/landing/problem-section"
 import { FeaturesShowcase } from "@/components/landing/features-showcase"
 import { DemoLiveOrders } from "@/components/landing/demo-live-orders"
 import { DemoBranding } from "@/components/landing/demo-branding"
+import { DemoStorefront } from "@/components/landing/demo-storefront"
 import { HowItWorks } from "@/components/landing/how-it-works"
 import { Pricing } from "@/components/landing/pricing"
 import { FAQ } from "@/components/landing/faq"
@@ -46,6 +47,7 @@ export default function LandingPage() {
       <FeaturesShowcase />
       <DemoLiveOrders />
       <DemoBranding />
+      <DemoStorefront />
       <HowItWorks />
       <Pricing />
       <FAQ />
