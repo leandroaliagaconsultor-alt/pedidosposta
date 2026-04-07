@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
             auto_recurring: {
                 frequency: 1,
                 frequency_type: "months",
-                transaction_amount: isSandbox ? 100 : 60000,
+                transaction_amount: 100, // TODO: cambiar a 60000 después de testear
                 currency_id: "ARS",
             },
             back_url: `${baseUrl}/${tenantSlug}/manager/subscription/success`,
