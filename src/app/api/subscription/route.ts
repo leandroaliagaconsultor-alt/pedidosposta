@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         if (!mpResponse.ok) {
             console.error("MP Subscription Error:", JSON.stringify(mpData, null, 2));
             return NextResponse.json(
-                { error: "Error al crear la suscripción en MercadoPago", mp_error: mpData },
+                { error: "Error al crear la suscripción en MercadoPago", mp_error: mpData, debug_email: mpPayerEmail, debug_sandbox: isSandbox },
                 { status: 400 }
             );
         }
