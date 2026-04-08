@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import { Lock, Mail, Loader2 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
@@ -88,10 +89,15 @@ export default function LoginPage() {
                 <div className="pointer-events-none absolute -top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/20 blur-[80px]" />
 
                 <div className="relative z-10 mb-8 text-center">
-                    <Link href="/" className="inline-flex items-center gap-1.5 mb-6">
-                        <span className="text-lg font-semibold text-white">Pedidos</span>
-                        <span className="text-lg font-semibold text-primary">Posta</span>
-                        <span className="text-primary text-xl">.</span>
+                    <Link href="/" className="inline-block mb-6">
+                        <Image
+                            src="/logo-pedidoposta.png"
+                            alt="PedidosPosta"
+                            width={180}
+                            height={40}
+                            className="h-10 w-auto object-contain mx-auto"
+                            priority
+                        />
                     </Link>
                     <h1 className="text-2xl font-extrabold tracking-tight text-white">Iniciar sesión</h1>
                     <p className="mt-2 text-sm text-zinc-400">Ingresá a tu panel de administración</p>

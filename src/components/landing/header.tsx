@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Menu, X } from "lucide-react"
 
 const navLinks = [
@@ -33,10 +34,15 @@ export function Header() {
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-1.5">
-            <span className="text-lg font-semibold text-foreground">Pedidos</span>
-            <span className="text-lg font-semibold text-primary">Posta</span>
-            <span className="text-primary text-xl">.</span>
+          <a href="/" className="flex items-center">
+            <Image
+              src="/logo-pedidoposta.png"
+              alt="PedidosPosta"
+              width={160}
+              height={36}
+              className="h-8 w-auto object-contain"
+              priority
+            />
           </a>
 
           {/* Desktop Nav */}

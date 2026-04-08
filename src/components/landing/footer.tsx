@@ -1,29 +1,25 @@
-import { Instagram, Twitter, Linkedin, Mail } from "lucide-react"
+import Image from "next/image"
+import { Globe, MessageCircle, Mail } from "lucide-react"
 
 const links = {
   producto: [
     { label: "Funcionalidades", href: "#features" },
     { label: "Precios", href: "#pricing" },
     { label: "FAQ", href: "#faq" },
-    { label: "Roadmap", href: "#" },
   ],
-  recursos: [
-    { label: "Blog", href: "#" },
-    { label: "Guias", href: "#" },
-    { label: "Casos de exito", href: "#" },
-    { label: "Soporte", href: "#" },
+  soporte: [
+    { label: "Soporte", href: "mailto:hola@pedidosposta.com" },
+    { label: "WhatsApp", href: "https://wa.me/5491100000000", external: true },
   ],
   legal: [
-    { label: "Privacidad", href: "#" },
-    { label: "Terminos", href: "#" },
-    { label: "Cookies", href: "#" },
+    { label: "Privacidad", href: "/legal/privacidad" },
+    { label: "Términos", href: "/legal/terminos" },
   ],
 }
 
 const social = [
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Globe, href: "#", label: "Instagram" },
+  { icon: MessageCircle, href: "#", label: "Twitter" },
   { icon: Mail, href: "mailto:hola@pedidosposta.com", label: "Email" },
 ]
 
@@ -34,13 +30,17 @@ export function Footer() {
         <div className="grid md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <a href="/" className="flex items-center gap-1.5 mb-4">
-              <span className="text-lg font-semibold text-foreground">Pedidos</span>
-              <span className="text-lg font-semibold text-primary">Posta</span>
-              <span className="text-primary text-xl">.</span>
+            <a href="/" className="inline-block mb-4">
+              <Image
+                src="/logo-pedidoposta.png"
+                alt="PedidosPosta"
+                width={160}
+                height={36}
+                className="h-8 w-auto object-contain"
+              />
             </a>
             <p className="text-sm text-muted-foreground mb-4 max-w-xs">
-              El sistema de pedidos online para gastronomicos que quieren dejar de perder ventas por WhatsApp.
+              El sistema de pedidos online para gastronómicos que quieren dejar de perder ventas por WhatsApp.
             </p>
             {/* Social */}
             <div className="flex items-center gap-3">
@@ -48,6 +48,8 @@ export function Footer() {
                 <a
                   key={item.label}
                   href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   aria-label={item.label}
                 >
@@ -57,16 +59,13 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Producto */}
           <div>
             <h4 className="font-medium text-sm mb-3">Producto</h4>
             <ul className="space-y-2">
               {links.producto.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -74,13 +73,15 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Soporte */}
           <div>
-            <h4 className="font-medium text-sm mb-3">Recursos</h4>
+            <h4 className="font-medium text-sm mb-3">Soporte</h4>
             <ul className="space-y-2">
-              {links.recursos.map((link) => (
+              {links.soporte.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
+                    {...("external" in link && link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
@@ -90,15 +91,13 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Legal */}
           <div>
             <h4 className="font-medium text-sm mb-3">Legal</h4>
             <ul className="space-y-2">
               {links.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
