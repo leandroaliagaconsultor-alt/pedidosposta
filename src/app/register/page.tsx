@@ -4,6 +4,7 @@ import React, { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { registerTenant, type RegisterState } from "./actions";
 import { slugify } from "@/utils/slugify";
+import Image from "next/image";
 import { Store, Mail, Lock, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 
 // ── Submit Button con estado de pending ──────────────────────────────────────
@@ -45,9 +46,16 @@ export default function RegisterPage() {
             <div className="w-full max-w-md">
                 {/* Header */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/80 text-primary shadow-inner ring-1 ring-zinc-700/50">
-                        <Store className="h-8 w-8" />
-                    </div>
+                    <a href="/" className="inline-block mb-6">
+                        <Image
+                            src="/logo.png"
+                            alt="PedidosPosta"
+                            width={320}
+                            height={72}
+                            className="h-16 sm:h-20 w-auto object-contain mx-auto"
+                            priority
+                        />
+                    </a>
                     <h1 className="text-3xl font-extrabold tracking-tight text-white">
                         Abrí tu local en <span className="text-primary">minutos</span>
                     </h1>

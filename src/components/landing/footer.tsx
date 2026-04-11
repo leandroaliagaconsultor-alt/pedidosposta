@@ -34,9 +34,9 @@ export function Footer() {
               <Image
                 src="/logo.png"
                 alt="PedidosPosta"
-                width={160}
-                height={36}
-                className="h-8 w-auto object-contain"
+                width={200}
+                height={44}
+                className="h-11 w-auto object-contain"
               />
             </a>
             <p className="text-sm text-muted-foreground mb-4 max-w-xs">
