@@ -91,7 +91,7 @@ export default function LoginPage() {
                 <div className="relative z-10 mb-8 text-center">
                     <Link href="/" className="inline-block mb-6">
                         <Image
-                            src="/logo-pedidoposta.png"
+                            src="/logo.png"
                             alt="PedidosPosta"
                             width={180}
                             height={40}

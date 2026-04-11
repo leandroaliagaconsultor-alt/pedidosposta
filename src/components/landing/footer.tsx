@@ -32,7 +32,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <a href="/" className="inline-block mb-4">
               <Image
-                src="/logo-pedidoposta.png"
+                src="/logo.png"
                 alt="PedidosPosta"
                 width={160}
                 height={36}

@@ -10,7 +10,7 @@ export default function LandingNavbar() {
                 <Link href="/" className="flex items-center gap-2 group transition-transform hover:scale-[1.02]">
                     <div className="relative h-9 w-40 sm:h-10 sm:w-48">
                         <Image
-                            src="/logo-pedidoposta.png"
+                            src="/logo.png"
                             alt="PedidosPosta Logo"
                             fill
                             className="object-contain object-left"
