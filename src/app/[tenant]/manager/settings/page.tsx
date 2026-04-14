@@ -317,7 +317,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             </header>
 
             <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8 pb-28 max-w-4xl mx-auto">
-                <div className="rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-4 sm:p-6 backdrop-blur-xl xl:p-8">
+                <div className="rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-4 sm:p-6 xl:p-8">
                     <h2 className="mb-6 flex items-center gap-3 text-xl font-bold text-white">
                         <MapPin className="text-primary" size={24} /> Información Operativa
                     </h2>
@@ -483,7 +483,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Marketing & Contacto ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <Megaphone className="text-pink-500" size={24} /> Contacto y Marketing
@@ -561,7 +561,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── MP Integration ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <CreditCard className="text-sky-500" size={24} />
@@ -645,7 +645,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Comandas y Operación ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <ShoppingCart className="text-amber-500" size={24} /> Operación y Comandas
@@ -692,7 +692,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Visibilidad en el Directorio ── */}
-                <div className="rounded-3xl border border-primary/20 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                <div className="rounded-3xl border border-primary/20 bg-zinc-900/40 p-6 xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <Map className="text-primary" size={24} /> Visibilidad en el Directorio Público
@@ -775,7 +775,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Transfer Integration ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <ArrowRightLeft className="text-amber-500" size={24} /> Transferencia Bancaria
@@ -813,7 +813,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Logistics & Zones ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6 overflow-hidden">
+                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6 overflow-hidden">
                     <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
                         <h2 className="flex items-center gap-3 text-xl font-bold text-white">
                             <Bike className="text-emerald-500" size={24} /> Logística y Zonas de Entrega
@@ -982,107 +982,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     </div>
                 </div>
 
-                {/* ── Dominio Propio ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6 overflow-hidden">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
-                            <Globe className="text-violet-500" size={24} /> Dominio Propio
-                        </h2>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 bg-violet-500/10 px-2.5 py-1 rounded-full border border-violet-500/20">
-                            Pro
-                        </span>
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* Domain input */}
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Tu Dominio</label>
-                            <p className="text-xs text-zinc-500 mb-3">
-                                Ingresa el dominio que quieras conectar. Ej: www.milocal.com.ar
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <div className="relative flex-1">
-                                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-                                    <input
-                                        {...form.register("custom_domain")}
-                                        type="text"
-                                        placeholder="www.tulocal.com.ar"
-                                        className="w-full rounded-xl border-2 border-zinc-800 bg-zinc-950/50 py-3 pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 outline-none transition-all focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
-                                    />
-                                </div>
-                            </div>
-                            {watchValues.custom_domain && (
-                                <div className="mt-3 flex items-center gap-2 text-xs">
-                                    <span className="text-zinc-500">Tu tienda se vera en:</span>
-                                    <span className="font-medium text-violet-400">{watchValues.custom_domain}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* DNS Instructions */}
-                        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/50 p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <ExternalLink className="text-violet-400" size={16} />
-                                <h3 className="text-sm font-bold text-white">Instrucciones DNS</h3>
-                            </div>
-                            <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                                Para conectar tu dominio, necesitas crear un registro DNS en tu proveedor (Nic.ar, GoDaddy, Hostinger, Cloudflare, etc). Segui estos pasos:
-                            </p>
-
-                            {/* Steps */}
-                            <div className="space-y-3 mb-5">
-                                <div className="flex items-start gap-3">
-                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold shrink-0 mt-0.5">1</span>
-                                    <p className="text-xs text-zinc-300">Ingresa al panel de administracion de tu dominio (donde lo compraste).</p>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold shrink-0 mt-0.5">2</span>
-                                    <p className="text-xs text-zinc-300">Busca la seccion de <strong className="text-white">DNS</strong> o <strong className="text-white">Registros DNS</strong>.</p>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold shrink-0 mt-0.5">3</span>
-                                    <p className="text-xs text-zinc-300">Crea un nuevo registro con los siguientes datos:</p>
-                                </div>
-                            </div>
-
-                            {/* DNS Record table */}
-                            <div className="rounded-xl border border-zinc-800 overflow-hidden">
-                                <div className="grid grid-cols-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 bg-zinc-900/80 px-4 py-2.5 border-b border-zinc-800">
-                                    <span>Tipo</span>
-                                    <span>Nombre</span>
-                                    <span>Valor</span>
-                                </div>
-                                <div className="grid grid-cols-3 items-center px-4 py-3 bg-zinc-950/50">
-                                    <span className="text-sm font-bold text-violet-400">A</span>
-                                    <span className="text-sm font-mono text-zinc-300">@</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-mono text-zinc-300">76.76.21.21</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText("76.76.21.21");
-                                                toast.success("IP copiada al portapapeles");
-                                            }}
-                                            className="p-1 rounded-md hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-white"
-                                            title="Copiar IP"
-                                        >
-                                            <Copy size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Extra note */}
-                            <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/10">
-                                <CheckCircle2 className="text-violet-400 shrink-0 mt-0.5" size={14} />
-                                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                    Los cambios DNS pueden tardar entre <strong className="text-zinc-300">5 minutos y 48 horas</strong> en propagarse.
-                                    El certificado SSL se genera automaticamente una vez que el dominio apunte correctamente.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Dominio Propio removido — v2.0 */}
 
                 <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center sm:justify-end border-t border-zinc-800/80 bg-zinc-950/80 px-4 sm:px-6 py-4 backdrop-blur-xl md:left-64">
                     <button

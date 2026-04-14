@@ -13,7 +13,7 @@ export interface CategoryConfig {
 
 export const CATEGORIES: CategoryConfig[] = [
     { key: "hamburgueseria", label: "Hamburguesas",  emoji: "🍔", image: "/hamburguesas.png",      from: "from-orange-400", to: "to-red-500" },
-    { key: "pizzeria",       label: "Pizzerías",     emoji: "🍕", image: null,                     from: "from-yellow-400", to: "to-orange-500" },
+    { key: "pizzeria",       label: "Pizzas",         emoji: "🍕", image: null,                     from: "from-yellow-400", to: "to-orange-500" },
     { key: "empanadas",      label: "Empanadas",     emoji: "🥟", image: "/empanadas.png",         from: "from-amber-400",  to: "to-yellow-600" },
     { key: "heladeria",      label: "Helados",       emoji: "🍦", image: "/helado_cabecera.png",   from: "from-pink-300",   to: "to-purple-500" },
     { key: "cafeteria",      label: "Cafeterías",    emoji: "☕", image: "/cafeterias.png",        from: "from-amber-600",  to: "to-yellow-800" },
