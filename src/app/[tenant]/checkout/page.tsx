@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,7 +42,7 @@ const checkoutSchema = z
         firstName: z.string().min(2, "Ingresá tu nombre"),
         lastName: z.string().min(2, "Ingresá tu apellido"),
         phone: z.string().min(8, "Teléfono inválido"),
-        deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY"]),
+        deliveryMethod: z.enum(["DELIVERY", "TAKEAWAY", "DINE_IN"]),
         street: z.string().optional(),
         apartment: z.string().optional(),
         betweenStreets: z.string().optional(),
@@ -51,11 +51,11 @@ const checkoutSchema = z
         is_asap: z.boolean(),
         paymentMethod: z.enum(["CASH", "TRANSFER", "MERCADOPAGO"]),
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.street && data.street.trim().length >= 3), {
+    .refine((data) => data.deliveryMethod !== "DELIVERY" || (data.street && data.street.trim().length >= 3), {
         message: "Ingresá la calle de entrega",
         path: ["street"],
     })
-    .refine((data) => data.deliveryMethod === "TAKEAWAY" || (data.betweenStreets && data.betweenStreets.trim().length >= 3), {
+    .refine((data) => data.deliveryMethod !== "DELIVERY" || (data.betweenStreets && data.betweenStreets.trim().length >= 3), {
         message: "Obligatorio (Ej: Entre Calle 1 y 2)",
         path: ["betweenStreets"],
     });
@@ -99,6 +99,9 @@ function saveAddressToHistory(tenantSlug: string, addr: SavedHistoryAddress) {
 export default function CheckoutPage({ params }: { params: Promise<{ tenant: string }> }) {
     const { tenant: tenantSlug } = React.use(params);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const tableNumber = searchParams.get("mesa");
+    const isDineIn = !!tableNumber;
     const { items, clearCart } = useCartStore();
     const { getAddress, saveAddress } = useAddressStore();
     const savedAddress = getAddress(tenantSlug);
@@ -234,7 +237,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         formState: { errors },
     } = useForm<CheckoutForm>({
         resolver: zodResolver(checkoutSchema),
-        defaultValues: { deliveryMethod: "DELIVERY", is_asap: true, paymentMethod: "CASH" },
+        defaultValues: { deliveryMethod: isDineIn ? "DINE_IN" : "DELIVERY", is_asap: true, paymentMethod: "CASH" },
     });
 
     const deliveryMethod = watch("deliveryMethod");
@@ -460,7 +463,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
             const finalAddress = data.deliveryMethod === "DELIVERY"
                 ? `${data.street} (Entre: ${data.betweenStreets})${data.apartment ? `, Piso/Depto: ${data.apartment}` : ""}`
-                : null;
+                : data.deliveryMethod === "DINE_IN" ? `Mesa ${tableNumber}` : null;
 
             // Construir el payload para la transacción atómica
             const checkoutPayload = {
@@ -470,7 +473,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 last_name: data.lastName,
                 customer_phone: data.phone,
                 customer_address: finalAddress,
-                delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : null,
+                delivery_notes: data.deliveryMethod === "DELIVERY" ? data.delivery_notes : (data.deliveryMethod === "DINE_IN" ? `Mesa ${tableNumber}` : null),
                 delivery_method: data.deliveryMethod,
                 payment_method: data.paymentMethod,
                 is_asap: data.is_asap,
@@ -478,6 +481,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 scheduled_slot: !data.is_asap && data.deliveryTime ? data.deliveryTime : null,
                 total_amount: total,
                 delivery_fee: data.deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0,
+                table_number: tableNumber || null,
                 status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
                 receipt_url: receiptUrl,
                 items: items.map((item) => ({
@@ -619,7 +623,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
                     {/* SECCIÓN 2: ENTREGA */}
                     <section className="space-y-3">
-                        <SectionHeader number="2" title="Entrega" accentColor={accentColor} isLight={isLight} />
+                        <SectionHeader number="2" title={isDineIn ? "Mesa" : "Entrega"} accentColor={accentColor} isLight={isLight} />
+
+                        {isDineIn ? (
+                            <div className={`flex items-center gap-3 p-4 rounded-2xl border ${isLight ? "border-gray-200 bg-gray-50" : "border-zinc-800 bg-zinc-900/50"}`}>
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold" style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                                    {tableNumber}
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-bold ${isLight ? "text-gray-900" : "text-white"}`}>Mesa {tableNumber}</p>
+                                    <p className={`text-xs ${isLight ? "text-gray-500" : "text-zinc-500"}`}>Pedido para consumir en el local</p>
+                                </div>
+                            </div>
+                        ) : (
                         <div className="grid grid-cols-2 gap-3">
                             <MethodButton
                                 active={deliveryMethod === "DELIVERY"}
@@ -638,6 +654,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 isLight={isLight}
                             />
                         </div>
+                        )}
 
                         {deliveryMethod === "DELIVERY" && (
                             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
