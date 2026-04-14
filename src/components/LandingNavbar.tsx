@@ -22,7 +22,7 @@ export default function LandingNavbar() {
                 {/* Right side Actions */}
                 <div className="flex items-center gap-3">
                     <Link
-                        href="/login-posta"
+                        href="/login"
                         className="hidden sm:flex px-4 py-2.5 text-sm font-semibold text-zinc-300 hover:text-white transition-colors border-transparent hover:bg-zinc-900 rounded-xl"
                     >
                         Iniciar Sesión

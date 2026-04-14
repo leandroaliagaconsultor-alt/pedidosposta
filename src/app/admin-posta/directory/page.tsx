@@ -85,9 +85,17 @@ export default function DirectoryAdminPage() {
             .order("name", { ascending: true });
         if (tenantsData) setTenants(tenantsData);
 
-        // Fetch cities
-        const { data: citiesData } = await supabase.from("directory_cities").select("*").eq("is_active", true).order("name");
-        if (citiesData) setCities(citiesData);
+        // Fetch cities (fallback to unique cities from tenants if table doesn't exist yet)
+        const { data: citiesData, error: citiesError } = await supabase.from("directory_cities").select("*").eq("is_active", true).order("name");
+        if (citiesData && citiesData.length > 0) {
+            setCities(citiesData);
+        } else {
+            // Fallback: extract unique cities from tenants
+            if (tenantsData) {
+                const unique = [...new Set(tenantsData.map((t: any) => t.city).filter(Boolean))];
+                setCities(unique.map(c => ({ id: c, name: (c as string).charAt(0).toUpperCase() + (c as string).slice(1), slug: c })));
+            }
+        }
 
         // Aggregate clicks per tenant (last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

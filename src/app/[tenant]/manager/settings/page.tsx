@@ -213,9 +213,14 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             setLoading(false);
         };
         fetchTenant();
-        // Fetch cities for directory dropdown
+        // Fetch cities for directory dropdown (fallback if table doesn't exist)
         supabase.from("directory_cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
-            if (data) setAvailableCities(data);
+            if (data && data.length > 0) {
+                setAvailableCities(data);
+            } else {
+                // Fallback
+                setAvailableCities([{ id: "mercedes", name: "Mercedes", slug: "mercedes" }]);
+            }
         });
     }, [supabase, tenant, form, setAddressValue]);
 
