@@ -1,0 +1,18 @@
+{
+  "name": "PedidosPosta",
+  "short_name": "PedidosPosta",
+  "description": "Sistema de pedidos online para gastronómicos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#22c55e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
