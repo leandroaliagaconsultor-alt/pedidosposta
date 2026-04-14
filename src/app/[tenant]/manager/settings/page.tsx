@@ -11,8 +11,9 @@ import {
     Loader2, Save, Store, MapPin, Clock, Bike, ShoppingCart,
     Calendar, Plus, Trash2, CreditCard, Key, Lock,
     ArrowRightLeft, User, Instagram, Facebook, Phone, Megaphone,
-    Globe, Copy, CheckCircle2, ExternalLink, Eye, EyeOff
+    Globe, Copy, CheckCircle2, ExternalLink, Eye, EyeOff, Map
 } from "lucide-react";
+import { CATEGORIES } from "@/lib/categories";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
@@ -51,6 +52,10 @@ const settingsSchema = z.object({
     enable_delivery_tickets: z.boolean().default(false),
     store_address: z.string().optional().nullable(),
     custom_domain: z.string().optional().nullable(),
+    // Directory fields
+    city: z.string().optional().nullable(),
+    categories: z.array(z.string()).default([]),
+    is_directory_active: z.boolean().default(true),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -121,6 +126,9 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             enable_delivery_tickets: false,
             store_address: "",
             custom_domain: "",
+            city: "",
+            categories: [] as string[],
+            is_directory_active: true,
         },
     });
 
@@ -192,6 +200,9 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     enable_delivery_tickets: !!data.enable_delivery_tickets,
                     store_address: data.store_address || "",
                     custom_domain: data.custom_domain || "",
+                    city: data.city || "",
+                    categories: data.categories || [],
+                    is_directory_active: data.is_directory_active ?? true,
                 });
 
                 if (data.store_address) {
@@ -240,6 +251,9 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     enable_kitchen_tickets: data.enable_kitchen_tickets,
                     enable_delivery_tickets: data.enable_delivery_tickets,
                     custom_domain: data.custom_domain,
+                    city: data.city || null,
+                    categories: data.categories?.length ? data.categories : null,
+                    is_directory_active: data.is_directory_active,
                 })
                 .eq("id", tenantId);
 
@@ -675,6 +689,89 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </label>
                         </div>
                     </div>
+                </div>
+
+                {/* ── Visibilidad en el Directorio ── */}
+                <div className="rounded-3xl border border-primary/20 bg-zinc-900/20 p-6 backdrop-blur-xl xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                            <Map className="text-primary" size={24} /> Visibilidad en el Directorio Público
+                        </h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-500 -mt-2 mb-6">
+                        Aparecé en nuestro directorio gastronómico para que los clientes de tu ciudad te encuentren. Configurá tu ciudad y las categorías donde querés aparecer.
+                    </p>
+
+                    {/* Toggle active */}
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 mb-5">
+                        <div>
+                            <h3 className="text-sm font-bold text-white">Visible en el Directorio</h3>
+                            <p className="text-xs text-zinc-500">Si está activo, tu local aparecerá en el directorio de tu ciudad.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                role="switch"
+                                aria-label="Visible en directorio"
+                                className="sr-only peer"
+                                checked={watchValues.is_directory_active}
+                                onChange={e => form.setValue("is_directory_active", e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    {watchValues.is_directory_active && (
+                        <div className="space-y-5">
+                            {/* City */}
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Ciudad</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <input
+                                        type="text"
+                                        {...form.register("city")}
+                                        placeholder="Ej: Mercedes, Luján, Chivilcoy"
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
+                                    />
+                                </div>
+                                <p className="text-[11px] text-zinc-600 mt-1.5">Escribí el nombre de tu ciudad en minúscula. Los clientes te encontrarán en pedidosposta.com/directorio/tu-ciudad</p>
+                            </div>
+
+                            {/* Categories multi-select */}
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Categorías (elegí una o más)</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {CATEGORIES.map(cat => {
+                                        const selected = (watchValues.categories || []).includes(cat.key);
+                                        return (
+                                            <button
+                                                key={cat.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = watchValues.categories || [];
+                                                    form.setValue("categories", selected
+                                                        ? current.filter((k: string) => k !== cat.key)
+                                                        : [...current, cat.key]
+                                                    );
+                                                }}
+                                                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                                                    selected
+                                                        ? "bg-primary/15 text-primary border border-primary/30"
+                                                        : "bg-zinc-950/50 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                                                }`}
+                                            >
+                                                <span className="text-lg">{cat.emoji}</span>
+                                                {cat.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná las categorías que mejor describan tu local. Podés elegir más de una.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Transfer Integration ── */}
