@@ -43,12 +43,129 @@ async function trackClick(tenantId: string) {
     try { await fetch("/api/directory/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId }) }); } catch { /* silent */ }
 }
 
+// ── Detail Modal ────────────────────────────────────────────────────────────
+function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }) {
+    const isOpen = checkIsOpen(tenant.opening_hours);
+    const isSaas = tenant.type === "saas";
+    const href = isSaas ? `/${tenant.slug}` : (tenant.external_url || "#");
+    const cats = getTenantCategories(tenant);
+    const primaryCat = CATEGORY_MAP[cats[0]] || CATEGORY_MAP.otros;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center" onClick={onClose}>
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+            {/* Card */}
+            <div
+                className="relative w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Green top accent */}
+                <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-600" />
+
+                {/* Close */}
+                <button onClick={onClose} className="absolute top-5 right-4 z-10 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition">
+                    <X size={16} />
+                </button>
+
+                {/* Content */}
+                <div className="px-6 pt-6 pb-5">
+                    {/* Logo + Name + Status */}
+                    <div className="flex items-center gap-4 mb-4">
+                        {tenant.logo_url ? (
+                            <img src={tenant.logo_url} alt="" className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 shadow-md" />
+                        ) : (
+                            <div className={`w-20 h-20 rounded-2xl border-2 border-gray-100 shadow-md bg-gradient-to-br ${primaryCat.from} ${primaryCat.to} flex items-center justify-center text-3xl font-black text-white`}>
+                                {tenant.name.charAt(0)}
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-xl font-bold text-gray-900 truncate">{tenant.name}</h2>
+                                {isSaas && (
+                                    <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200" title="Pedí online">
+                                        <Zap size={12} className="text-emerald-600 fill-emerald-200" />
+                                    </span>
+                                )}
+                            </div>
+                            {isOpen ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    Abierto ahora
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-xs font-semibold text-gray-500 border border-gray-200">
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                    Cerrado
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Categories */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                        {cats.map(catKey => {
+                            const c = CATEGORY_MAP[catKey];
+                            return c ? (
+                                <span key={catKey} className="text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
+                                    {c.emoji} {c.label}
+                                </span>
+                            ) : null;
+                        })}
+                    </div>
+
+                    {/* Description */}
+                    {tenant.description ? (
+                        <p className="text-sm text-gray-600 leading-relaxed mb-5">{tenant.description}</p>
+                    ) : (
+                        <div className="mb-5" />
+                    )}
+
+                    {/* Separator */}
+                    <div className="h-px bg-gray-100 mb-5" />
+
+                    {/* CTA Button */}
+                    <a
+                        href={href}
+                        onClick={() => { trackClick(tenant.id); onClose(); }}
+                        target={isSaas ? undefined : "_blank"}
+                        rel={isSaas ? undefined : "noopener noreferrer"}
+                        className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-sm font-bold transition-all ${
+                            !isOpen
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none"
+                                : isSaas
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-[0.98]"
+                                    : "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98]"
+                        }`}
+                    >
+                        {!isOpen ? (
+                            <><Clock size={16} /> Abre más tarde</>
+                        ) : isSaas ? (
+                            <><ShoppingBag size={16} /> Ver Menú y Pedir</>
+                        ) : (
+                            <><ExternalLink size={16} /> Contactar por WhatsApp</>
+                        )}
+                    </a>
+
+                    {isSaas && isOpen && (
+                        <p className="text-[10px] text-center text-gray-400 mt-2.5">Pedí online directo — sin intermediarios</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN
 // ═════════════════════════════════════════════════════════════════════════════
 
 export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: string }) {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [showOpenOnly, setShowOpenOnly] = useState(false);
+    const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const cityName = city.charAt(0).toUpperCase() + city.slice(1);
@@ -82,11 +199,11 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* ════════ BRAND BAR (acento de color) ════════ */}
+            {/* ════════ BRAND BAR ════════ */}
             <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-600" />
 
             {/* ════════ NAVBAR ════════ */}
-            <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm">
+            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/60 shadow-sm">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <Link href="/">
                         <Image src="/logo.png" alt="PedidosPosta" width={180} height={40} className="h-9 sm:h-10 w-auto" priority />
@@ -100,7 +217,6 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
 
             {/* ════════ HERO + SEARCH ════════ */}
             <section className="relative overflow-hidden">
-                {/* Decorative bg */}
                 <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-white to-gray-50" />
                 <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-40 -mr-48 -mt-24" />
                 <div className="absolute bottom-0 left-0 w-72 h-72 bg-green-100 rounded-full blur-3xl opacity-30 -ml-36 -mb-12" />
@@ -204,7 +320,7 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
                 <span className="text-xs text-gray-400 ml-auto font-medium">{sorted.length} locales</span>
             </div>
 
-            {/* ════════ STORE CARDS ════════ */}
+            {/* ════════ STORE GRID (Compact Cards) ════════ */}
             <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
                 <h2 className="text-xl font-bold text-gray-900 mb-5">
                     {selectedCategory ? (CATEGORY_MAP[selectedCategory]?.label || "Locales") : "Locales en tu ciudad"}
@@ -219,96 +335,74 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                         {sorted.map(tenant => {
                             const isOpen = checkIsOpen(tenant.opening_hours);
                             const isSaas = tenant.type === "saas";
-                            const href = isSaas ? `/${tenant.slug}` : (tenant.external_url || "#");
                             const cats = getTenantCategories(tenant);
                             const primaryCat = CATEGORY_MAP[cats[0]] || CATEGORY_MAP.otros;
 
                             return (
-                                <article
+                                <button
                                     key={tenant.id}
-                                    className={`group rounded-2xl bg-white p-5 transition-all duration-300 hover:shadow-lg ${
+                                    onClick={() => setSelectedTenant(tenant)}
+                                    className={`group text-left rounded-2xl bg-white p-3 sm:p-4 transition-all duration-200 hover:shadow-lg active:scale-[0.98] ${
                                         isSaas
-                                            ? "border-2 border-emerald-200 hover:border-emerald-300 shadow-sm shadow-emerald-50"
+                                            ? "border-2 border-emerald-200 hover:border-emerald-300 shadow-sm"
                                             : "border border-gray-200 hover:border-gray-300 shadow-sm"
                                     }`}
                                 >
-                                    {/* Top row: Logo + Info */}
-                                    <div className="flex items-start gap-4">
+                                    {/* Logo */}
+                                    <div className="flex justify-center mb-3">
                                         {tenant.logo_url ? (
-                                            <img src={tenant.logo_url} alt="" className="w-20 h-20 rounded-full object-cover border-2 border-gray-100 shadow shrink-0" />
+                                            <img src={tenant.logo_url} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-gray-100 shadow" />
                                         ) : (
-                                            <div className={`w-20 h-20 rounded-full border-2 border-gray-100 shadow shrink-0 bg-gradient-to-br ${primaryCat.from} ${primaryCat.to} flex items-center justify-center text-2xl font-black text-white`}>
+                                            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-gray-100 shadow bg-gradient-to-br ${primaryCat.from} ${primaryCat.to} flex items-center justify-center text-xl sm:text-2xl font-black text-white`}>
                                                 {tenant.name.charAt(0)}
                                             </div>
                                         )}
-
-                                        <div className="flex-1 min-w-0 pt-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold text-gray-900 leading-tight truncate">{tenant.name}</h3>
-                                                {isSaas && (
-                                                    <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200" title="Verificado — Pedí online directo">
-                                                        <Zap size={12} className="text-emerald-600 fill-emerald-200" />
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Category tags */}
-                                            <div className="flex flex-wrap gap-1 mb-2">
-                                                {cats.map(catKey => {
-                                                    const c = CATEGORY_MAP[catKey];
-                                                    return c ? (
-                                                        <span key={catKey} className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full font-medium">
-                                                            {c.emoji} {c.label}
-                                                        </span>
-                                                    ) : null;
-                                                })}
-                                            </div>
-
-                                            {/* Open/Closed badge */}
-                                            {isOpen ? (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                    Abierto
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-[10px] font-semibold text-gray-400 border border-gray-200">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                                    Cerrado
-                                                </span>
-                                            )}
-                                        </div>
                                     </div>
 
-                                    {tenant.description && (
-                                        <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed mt-3">{tenant.description}</p>
-                                    )}
+                                    {/* Name */}
+                                    <h3 className="text-sm sm:text-[15px] font-bold text-gray-900 text-center truncate leading-tight">
+                                        {tenant.name}
+                                    </h3>
 
-                                    <a
-                                        href={href}
-                                        onClick={() => trackClick(tenant.id)}
-                                        target={isSaas ? undefined : "_blank"}
-                                        rel={isSaas ? undefined : "noopener noreferrer"}
-                                        className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
-                                            !isOpen
-                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none"
-                                                : isSaas
-                                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md hover:shadow-emerald-200 active:scale-[0.98]"
-                                                    : "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98]"
-                                        }`}
-                                    >
-                                        {!isOpen ? (
-                                            <><Clock size={14} /> Abre más tarde</>
-                                        ) : isSaas ? (
-                                            <><ShoppingBag size={14} /> Ver Menú y Pedir</>
-                                        ) : (
-                                            <><ExternalLink size={14} /> Contactar</>
+                                    {/* Categories */}
+                                    <div className="flex flex-wrap justify-center gap-1 mt-1.5 mb-2">
+                                        {cats.slice(0, 2).map(catKey => {
+                                            const c = CATEGORY_MAP[catKey];
+                                            return c ? (
+                                                <span key={catKey} className="text-[9px] sm:text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full font-medium">
+                                                    {c.emoji} {c.label}
+                                                </span>
+                                            ) : null;
+                                        })}
+                                        {cats.length > 2 && (
+                                            <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">+{cats.length - 2}</span>
                                         )}
-                                    </a>
-                                </article>
+                                    </div>
+
+                                    {/* Open/Closed */}
+                                    <div className="flex justify-center">
+                                        {isOpen ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-[9px] sm:text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                Abierto
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-[9px] sm:text-[10px] font-semibold text-gray-400 border border-gray-200">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                                Cerrado
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* SaaS indicator */}
+                                    {isSaas && (
+                                        <p className="text-[9px] text-emerald-600 font-semibold text-center mt-2">Pedí Online</p>
+                                    )}
+                                </button>
                             );
                         })}
                     </div>
@@ -324,9 +418,13 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
                         ¿Tenés un local? <Link href="/register" className="text-emerald-600 hover:underline font-semibold">Registrate gratis</Link>
                     </p>
                 </div>
-                {/* Bottom brand accent */}
                 <div className="h-1 bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-600" />
             </footer>
+
+            {/* ════════ DETAIL MODAL ════════ */}
+            {selectedTenant && (
+                <StoreModal tenant={selectedTenant} onClose={() => setSelectedTenant(null)} />
+            )}
         </div>
     );
 }
