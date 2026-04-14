@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/store/cartStore";
 import type { ThemeTokens } from "@/lib/utils/theme";
@@ -25,6 +25,8 @@ interface CartDrawerProps {
 export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, accentColor, accentTextColor }: CartDrawerProps) {
     const router = useRouter();
     const params = useParams() as { tenant: string };
+    const searchParams = useSearchParams();
+    const tableNumber = searchParams.get("mesa");
     const tenantSlug = params.tenant;
 
     const { items, updateQuantity, removeItem } = useCartStore();
@@ -34,7 +36,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
     const handleCheckoutRedirect = () => {
         onOpenChange(false);
         setTimeout(() => {
-            router.push(`/${tenantSlug}/checkout`);
+            router.push(`/${tenantSlug}/checkout${tableNumber ? `?mesa=${tableNumber}` : ""}`);
         }, 300);
     };
 

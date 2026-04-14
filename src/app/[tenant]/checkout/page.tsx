@@ -143,6 +143,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
 
     // Grouped theme config (1 setState instead of 4)
+    const [themeLoaded, setThemeLoaded] = useState(false);
     const [themeState, setThemeState] = useState({
         tenantColorHex: "#10b981",
         tenantThemeMode: "",
@@ -314,6 +315,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     tenantFontFamily: thObj?.font_family || "",
                     tenantTemplate: thObj?.template || "",
                 });
+                setThemeLoaded(true);
 
                 // Resolve store coords (may need geocode)
                 let resolvedCoords: { lat: number; lng: number } | null = null;
@@ -573,6 +575,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const accentColor = themeEngine.primaryColor;
     const accentTextColor = themeEngine.accentIsLight ? '#18181b' : '#ffffff';
     const isLight = t.mode === "light";
+
+    // Wait for theme to load to avoid dark→light flash
+    if (!themeLoaded) {
+        return <div className="min-h-screen bg-transparent" />;
+    }
 
     if (items.length === 0) {
         return (

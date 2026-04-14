@@ -22,13 +22,13 @@ const SheetContent = React.forwardRef<
         <SheetPrimitive.Content
             ref={ref}
             className={cn(
-                "fixed z-50 gap-4 bg-zinc-950 p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out inset-y-0 right-0 h-full w-3/4 border-l border-zinc-800 sm:max-w-md data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+                "fixed z-50 gap-4 p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out inset-y-0 right-0 h-full w-3/4 sm:max-w-md data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
                 className
             )}
             {...props}
         >
             <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                <X className="h-4 w-4 text-zinc-400" />
+                <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
             </SheetPrimitive.Close>
             {children}
@@ -57,7 +57,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <SheetPrimitive.Title
         ref={ref}
-        className={cn("text-lg font-semibold text-zinc-50", className)}
+        className={cn("text-lg font-semibold", className)}
         {...props}
     />
 ))
