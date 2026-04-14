@@ -21,10 +21,10 @@ export default async function DirectoryPage({ params }: Props) {
 
     const { data: tenants, error } = await supabase
         .from("tenants")
-        .select("id, name, slug, description, category, categories, type, logo_url, banner_url, external_url, opening_hours, is_directory_active, city")
+        .select("id, name, slug, description, category, categories, type, logo_url, external_url, opening_hours, schedule, override_status, is_directory_active, city, business_hours")
         .eq("city", city.toLowerCase())
         .eq("is_directory_active", true)
-        .order("type", { ascending: true }) // saas first
+        .order("type", { ascending: true })
         .order("name", { ascending: true });
 
     if (error || !tenants) return notFound();

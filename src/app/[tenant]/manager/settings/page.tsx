@@ -72,6 +72,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
     const [showMPPublicKey, setShowMPPublicKey] = useState(false);
     const [showMPAccessToken, setShowMPAccessToken] = useState(false);
+    const [availableCities, setAvailableCities] = useState<any[]>([]);
 
     // Load Google Maps Script
     const { isLoaded } = useJsApiLoader({
@@ -212,6 +213,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             setLoading(false);
         };
         fetchTenant();
+        // Fetch cities for directory dropdown
+        supabase.from("directory_cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
+            if (data) setAvailableCities(data);
+        });
     }, [supabase, tenant, form, setAddressValue]);
 
     const onSubmit = async (data: SettingsForm) => {
@@ -729,14 +734,15 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                 <label className="mb-2 block text-sm font-semibold text-zinc-300">Ciudad</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                                    <input
-                                        type="text"
+                                    <select
                                         {...form.register("city")}
-                                        placeholder="Ej: Mercedes, Luján, Chivilcoy"
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
-                                    />
+                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary appearance-none"
+                                    >
+                                        <option value="">Seleccionar ciudad</option>
+                                        {availableCities.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                                    </select>
                                 </div>
-                                <p className="text-[11px] text-zinc-600 mt-1.5">Escribí el nombre de tu ciudad en minúscula. Los clientes te encontrarán en pedidosposta.com/directorio/tu-ciudad</p>
+                                <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná tu ciudad. Los clientes te encontrarán en pedidosposta.com/directorio/tu-ciudad</p>
                             </div>
 
                             {/* Categories multi-select */}

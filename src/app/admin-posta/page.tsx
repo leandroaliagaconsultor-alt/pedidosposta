@@ -198,6 +198,16 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
+            {/* ── Quick Links ── */}
+            <div className="flex flex-wrap gap-3">
+                <a href="/admin-posta/directory" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900/50 border border-zinc-800 text-sm font-bold text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+                    <Store size={16} className="text-primary" /> Directorio
+                </a>
+                <a href="/admin-posta/cities" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900/50 border border-zinc-800 text-sm font-bold text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+                    <Wallet size={16} className="text-sky-400" /> Ciudades
+                </a>
+            </div>
+
             {/* ── TENANTS TABLE ── */}
             <div className="rounded-2xl border border-zinc-800 bg-[#09090b] shadow-2xl overflow-hidden mt-8">
                 <div className="p-6 border-b border-zinc-800/80 bg-zinc-900/30 flex justify-between items-center">

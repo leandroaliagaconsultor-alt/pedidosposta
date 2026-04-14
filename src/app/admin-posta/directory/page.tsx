@@ -53,6 +53,7 @@ export default function DirectoryAdminPage() {
     const [form, setForm] = useState<FormData>(emptyForm);
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [cities, setCities] = useState<any[]>([]);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -83,6 +84,10 @@ export default function DirectoryAdminPage() {
             .order("type", { ascending: true })
             .order("name", { ascending: true });
         if (tenantsData) setTenants(tenantsData);
+
+        // Fetch cities
+        const { data: citiesData } = await supabase.from("directory_cities").select("*").eq("is_active", true).order("name");
+        if (citiesData) setCities(citiesData);
 
         // Aggregate clicks per tenant (last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -363,12 +368,14 @@ export default function DirectoryAdminPage() {
                             {/* City */}
                             <div>
                                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Ciudad</label>
-                                <input
+                                <select
                                     value={form.city}
                                     onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
                                     className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none"
-                                    placeholder="mercedes"
-                                />
+                                >
+                                    <option value="">Seleccionar ciudad</option>
+                                    {cities.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                                </select>
                             </div>
 
                             {/* Type + Active */}
