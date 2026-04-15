@@ -168,9 +168,9 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
             if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59`);
             const { data } = await q;
             if (!data) return;
-            const delivered = data.filter(o => o.status === "delivered");
-            const revenue = delivered.reduce((s, o) => s + Number(o.total_amount || 0), 0);
-            const deliveryCount = delivered.filter(o => o.delivery_method === "DELIVERY").length;
+            const delivered = data.filter((o: any) => o.status === "delivered");
+            const revenue = delivered.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+            const deliveryCount = delivered.filter((o: any) => o.delivery_method === "DELIVERY").length;
             setKpi({ totalRevenue: revenue, totalOrders: delivered.length, avgTicket: delivered.length ? Math.round(revenue / delivered.length) : 0, deliveryCount, takeawayCount: delivered.length - deliveryCount });
         };
         fetchKpi();
@@ -183,7 +183,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
         const map: Record<string, number> = {};
         interval.forEach(d => { map[format(d, "yyyy-MM-dd")] = 0; });
 
-        allOrders.filter(o => o.status === "delivered").forEach(o => {
+        allOrders.filter((o: any) => o.status === "delivered").forEach((o: any) => {
             const day = format(parseISO(o.created_at), "yyyy-MM-dd");
             if (map[day] !== undefined) map[day] += Number(o.total_amount || 0);
         });
@@ -197,7 +197,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
     // ── Chart data: orders by hour ──
     const ordersByHour = useMemo(() => {
         const hours = Array.from({ length: 24 }, (_, i) => ({ hour: `${i.toString().padStart(2, "0")}:00`, Pedidos: 0 }));
-        allOrders.filter(o => o.status === "delivered").forEach(o => {
+        allOrders.filter((o: any) => o.status === "delivered").forEach((o: any) => {
             const h = new Date(o.created_at).getHours();
             hours[h].Pedidos++;
         });
@@ -206,8 +206,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
 
     // ── Chart data: delivery vs takeaway ──
     const deliveryPie = useMemo(() => {
-        const delivered = allOrders.filter(o => o.status === "delivered");
-        const del = delivered.filter(o => o.delivery_method === "DELIVERY").length;
+        const delivered = allOrders.filter((o: any) => o.status === "delivered");
+        const del = delivered.filter((o: any) => o.delivery_method === "DELIVERY").length;
         const tak = delivered.length - del;
         if (!delivered.length) return [];
         return [
@@ -230,7 +230,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
         if (!data) { toast.error("Error al exportar.", { id: "csv" }); setExporting(false); return; }
         const headers = ["Pedido #", "Fecha", "Cliente", "Tipo", "Total", "Estado"];
         const rows = data.map((o: any) => [o.order_number, format(parseISO(o.created_at), "dd/MM/yyyy HH:mm"), o.customer_name || `${o.first_name || ""} ${o.last_name || ""}`.trim() || "—", o.delivery_method === "DELIVERY" ? "Delivery" : "Take Away", Number(o.total_amount).toFixed(2), STATUS_LABELS[o.status]?.label || o.status]);
-        const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
         const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a"); link.href = url; link.download = `pedidos_${tenant}_${format(new Date(), "yyyyMMdd_HHmm")}.csv`; link.click(); URL.revokeObjectURL(url);

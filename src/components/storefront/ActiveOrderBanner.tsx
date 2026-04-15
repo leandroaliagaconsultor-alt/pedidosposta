@@ -24,7 +24,7 @@ export default function ActiveOrderBanner({ tenant }: { tenant: string }) {
             .select("id, status")
             .eq("id", stored)
             .single()
-            .then(({ data }) => {
+            .then(({ data }: { data: any }) => {
                 if (!data) {
                     localStorage.removeItem(key);
                     return;

@@ -48,7 +48,7 @@ export default function SubscriptionPage({
             .select("subscription_status, trial_ends_at, subscription_ends_at, mp_subscription_id, name")
             .eq("slug", tenant)
             .single()
-            .then(({ data }) => {
+            .then(({ data }: { data: any }) => {
                 if (data) setData(data as SubData);
                 setLoading(false);
             });

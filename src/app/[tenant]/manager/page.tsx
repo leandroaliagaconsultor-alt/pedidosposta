@@ -120,7 +120,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     table: "orders",
                     filter: `tenant_id=eq.${tenantId}`,
                 },
-                async (payload) => {
+                async (payload: any) => {
                     const newOrderRow = payload.new as Order;
                     if (newOrderRow.status === "awaiting_payment") return;
 
@@ -158,7 +158,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     table: "orders",
                     filter: `tenant_id=eq.${tenantId}`,
                 },
-                async (payload) => {
+                async (payload: any) => {
                     const updated = payload.new as Order;
 
                     if (updated.status === "cancelled" || updated.status === "awaiting_payment") {

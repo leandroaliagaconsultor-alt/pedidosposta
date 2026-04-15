@@ -81,7 +81,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                     table: "orders",
                     filter: `id=eq.${orderId}`,
                 },
-                (payload) => {
+                (payload: any) => {
                     const newStatus = payload.new.status;
                     const method = payload.new.delivery_method || order?.delivery_method;
                     const isTakeaway = method !== "DELIVERY";

@@ -160,7 +160,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             }, {});
 
             if (prodRes.data) {
-                setProducts(prodRes.data.map(p => ({
+                setProducts(prodRes.data.map((p: any) => ({
                     ...p,
                     modifier_ids: prodModMap[p.id] || []
                 })));
@@ -174,7 +174,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                     return acc;
                 }, {});
 
-                setModifiers(modRes.data.map(m => ({
+                setModifiers(modRes.data.map((m: any) => ({
                     ...m,
                     options: groupedOptions[m.id] || []
                 })));
