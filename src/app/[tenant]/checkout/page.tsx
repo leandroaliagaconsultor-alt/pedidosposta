@@ -155,6 +155,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [isLocating, setIsLocating] = useState(false);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isManualAddressMode, setIsManualAddressMode] = useState(false);
+    const [showManualLink, setShowManualLink] = useState(false);
+    const [manualGpsLoading, setManualGpsLoading] = useState(false);
+    const [manualGpsDone, setManualGpsDone] = useState(false);
+    const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
     const [addressHistory, setAddressHistory] = useState<SavedHistoryAddress[]>([]);
 
@@ -714,64 +718,109 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                 <MapPin size={14} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isCalculatingDistance ? "text-primary animate-bounce" : "text-zinc-500"}`} />
                                                 <input
                                                     value={addressValue}
-                                                    onChange={(e) => { setAddressValue(e.target.value); setValue("street", e.target.value); }}
+                                                    onChange={(e) => {
+                                                        setAddressValue(e.target.value);
+                                                        setValue("street", e.target.value);
+                                                        // Show manual link after typing without selecting
+                                                        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                                                        if (e.target.value.length > 5) {
+                                                            searchTimeoutRef.current = setTimeout(() => setShowManualLink(true), 4000);
+                                                        }
+                                                    }}
                                                     disabled={!ready || !isLoaded}
                                                     placeholder="Ej: Calle 22 N° 1207"
-                                                    className={`${inputStyle(!!errors.street, isLight)} pl-10 pr-12`}
+                                                    className={`${inputStyle(!!errors.street, isLight)} pl-10`}
                                                 />
-                                                {/* GPS inline button */}
-                                                <button
-                                                    type="button"
-                                                    onClick={handleGeolocation}
-                                                    disabled={isLocating}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-zinc-800/50"
-                                                    aria-label="Usar mi ubicacion"
-                                                >
-                                                    {isLocating
-                                                        ? <Loader2 size={16} className="animate-spin" style={{ color: accentColor }} />
-                                                        : <Navigation size={16} className="text-zinc-500 hover:text-zinc-300" />
-                                                    }
-                                                </button>
                                             </div>
 
                                             {status === "OK" && (
                                                 <ul className={`mt-1.5 border rounded-xl overflow-hidden shadow-2xl relative z-20 ${isLight ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800"}`}>
-                                                    {suggestions.map((s) => (
-                                                        <button key={s.place_id} type="button" onClick={() => handleAddressSelect(s.description)} className={`w-full text-left px-4 py-3 text-sm transition-colors border-b last:border-0 ${isLight ? "text-zinc-700 hover:bg-zinc-50 border-zinc-100" : "text-zinc-300 hover:bg-zinc-800 border-zinc-800/50"}`}>
+                                                    {suggestions.map((s: any) => (
+                                                        <button key={s.place_id} type="button" onClick={() => { handleAddressSelect(s.description); setShowManualLink(false); if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); }} className={`w-full text-left px-4 py-3 text-sm transition-colors border-b last:border-0 ${isLight ? "text-zinc-700 hover:bg-zinc-50 border-zinc-100" : "text-zinc-300 hover:bg-zinc-800 border-zinc-800/50"}`}>
                                                             {s.description}
                                                         </button>
                                                     ))}
                                                 </ul>
                                             )}
                                         </Field>
+
+                                        {/* Manual address link — appears after typing without selecting */}
+                                        {showManualLink && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsManualAddressMode(true);
+                                                    setShowManualLink(false);
+                                                    setValue("street", "", { shouldValidate: false });
+                                                    setAddressValue("", false);
+                                                }}
+                                                className={`text-[11px] font-medium underline underline-offset-2 transition ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}
+                                            >
+                                                ¿No encontrás tu calle? Ingresala manualmente
+                                            </button>
+                                        )}
                                     </>
                                 ) : (
                                     <>
-                                        <Field label="Calle y Altura exactas *" error={errors.street?.message}>
-                                            <div className="relative">
-                                                <input
-                                                    {...register("street")}
-                                                    placeholder="Ej: Calle 22 N° 1207"
-                                                    className={`${inputStyle(!!errors.street, isLight)} pr-12`}
-                                                />
-                                                {/* Back to autocomplete */}
+                                        {/* GPS prompt for manual mode */}
+                                        {!manualGpsDone && (
+                                            <div className={`rounded-xl border p-4 text-center space-y-2 ${isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20"}`}>
+                                                <p className={`text-xs font-medium ${isLight ? "text-amber-800" : "text-amber-300"}`}>
+                                                    Para calcular el costo de envío necesitamos tu ubicación
+                                                </p>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        setIsManualAddressMode(false);
-                                                        setSelectedCoords(null);
-                                                        setCalculatedDistance(null);
-                                                        setCalculatedDeliveryCost(tenantDeliveryType === "fixed" ? tenantFixedPrice : tenantBasePrice);
-                                                        setValue("street", "", { shouldValidate: false });
-                                                        setAddressValue("", false);
+                                                        if (!navigator.geolocation) { toast.error("Tu navegador no soporta geolocalización."); return; }
+                                                        setManualGpsLoading(true);
+                                                        navigator.geolocation.getCurrentPosition(
+                                                            (position) => {
+                                                                const { latitude: lat, longitude: lng } = position.coords;
+                                                                setSelectedCoords({ lat, lng });
+                                                                if (storeCoords && tenantDeliveryType === "distance") {
+                                                                    computeDeliveryCost(lat, lng);
+                                                                }
+                                                                setManualGpsLoading(false);
+                                                                setManualGpsDone(true);
+                                                                toast.success("Ubicación detectada. Escribí tu dirección abajo.");
+                                                            },
+                                                            () => { setManualGpsLoading(false); toast.error("No pudimos obtener tu ubicación. Intentá de nuevo."); },
+                                                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                                                        );
                                                     }}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-zinc-800/50"
-                                                    aria-label="Buscar en el mapa"
+                                                    disabled={manualGpsLoading}
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition"
+                                                    style={{ backgroundColor: accentColor, color: accentTextColor }}
                                                 >
-                                                    <MapPin size={16} className="text-zinc-500 hover:text-zinc-300" />
+                                                    {manualGpsLoading ? <><Loader2 size={14} className="animate-spin" /> Detectando...</> : <><Navigation size={14} /> Compartir mi ubicación</>}
                                                 </button>
                                             </div>
+                                        )}
+
+                                        <Field label="Calle y Altura exactas *" error={errors.street?.message}>
+                                            <input
+                                                {...register("street")}
+                                                placeholder="Ej: Barrio Los Álamos, Manzana 3, Casa 12"
+                                                className={inputStyle(!!errors.street, isLight)}
+                                            />
                                         </Field>
+
+                                        {/* Back to autocomplete */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsManualAddressMode(false);
+                                                setManualGpsDone(false);
+                                                setSelectedCoords(null);
+                                                setCalculatedDistance(null);
+                                                setCalculatedDeliveryCost(tenantDeliveryType === "fixed" ? tenantFixedPrice : tenantBasePrice);
+                                                setValue("street", "", { shouldValidate: false });
+                                                setAddressValue("", false);
+                                            }}
+                                            className={`text-[11px] font-medium underline underline-offset-2 transition ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}
+                                        >
+                                            Volver a buscar en el mapa
+                                        </button>
                                     </>
                                 )}
 
