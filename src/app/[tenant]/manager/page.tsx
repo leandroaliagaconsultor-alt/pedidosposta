@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-    CheckCircle2, Clock, Phone, MapPin, Package, Truck,
+    CheckCircle2, Clock, Phone, MapPin, Package, Truck, CreditCard,
     Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -39,6 +39,8 @@ interface Order {
     extra_charge?: number;
     internal_notes?: string | null;
     push_subscription?: any;
+    table_number?: string | null;
+    delivery_notes?: string | null;
 }
 
 // ── Tab config ───────────────────────────────────────────────────────────────
@@ -468,13 +470,16 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     </div>
                                 </div>
                                 <div
-                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${order.delivery_method === "DELIVERY"
-                                        ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
-                                        : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                                        order.delivery_method === "DINE_IN"
+                                            ? "bg-violet-500/10 text-violet-400 ring-1 ring-inset ring-violet-500/20"
+                                            : order.delivery_method === "DELIVERY"
+                                                ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
+                                                : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
                                         }`}
                                 >
-                                    {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
-                                    {order.delivery_method}
+                                    {order.delivery_method === "DINE_IN" ? <ChefHat size={14} /> : order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
+                                    {order.delivery_method === "DINE_IN" ? `Mesa ${order.table_number || "?"}` : order.delivery_method}
                                     <div className="flex gap-1 ml-auto">
                                         {tenantSettings?.enable_kitchen_tickets && (
                                             <button
@@ -526,6 +531,21 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         <div className="flex items-start gap-2">
                                             <MapPin size={14} className="mt-0.5 flex-shrink-0 text-zinc-500" />
                                             <span className="font-medium text-zinc-300 line-clamp-2">{order.customer_address}</span>
+                                        </div>
+                                    )}
+                                    {/* Payment method */}
+                                    {order.payment_method && order.delivery_method !== "DINE_IN" && (
+                                        <div className="flex items-center gap-2">
+                                            <CreditCard size={14} className="text-zinc-500" />
+                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                order.payment_method === "MERCADOPAGO" ? "bg-sky-500/10 text-sky-400" :
+                                                order.payment_method === "TRANSFER" ? "bg-amber-500/10 text-amber-400" :
+                                                "bg-emerald-500/10 text-emerald-400"
+                                            }`}>
+                                                {order.payment_method === "MERCADOPAGO" ? "MercadoPago" :
+                                                 order.payment_method === "TRANSFER" ? "Transferencia" :
+                                                 order.payment_method === "CASH" ? "Efectivo" : order.payment_method}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
