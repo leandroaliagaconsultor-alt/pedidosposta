@@ -1022,7 +1022,7 @@ function inputStyle(hasError: boolean, isLight: boolean = false) {
             ? "border-zinc-300 focus:border-primary focus:ring-1 focus:ring-primary"
             : "border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary";
     const text = isLight ? "text-zinc-900 placeholder:text-zinc-400" : "text-white placeholder:text-zinc-400";
-    return `w-full ${bg} border ${border} rounded-xl py-3 px-4 ${text} text-sm font-medium outline-none transition-all`;
+    return `w-full ${bg} border ${border} rounded-xl py-3 px-4 ${text} text-base sm:text-sm font-medium outline-none transition-all`;
 }
 
 function MethodButton({ active, onClick, icon, label, accentColor, isLight }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; accentColor?: string; isLight?: boolean }) {

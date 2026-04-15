@@ -10,6 +10,7 @@ const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-vanguardia" 
 export const viewport: Viewport = {
     width: "device-width",
     initialScale: 1,
+    maximumScale: 1,
 };
 
 export const metadata: Metadata = {
