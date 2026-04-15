@@ -31,7 +31,7 @@ export default function ManagerShell({
 
     useEffect(() => {
         supabase.from("tenants").select("name, logo_url").eq("slug", tenant).single()
-            .then(({ data }) => { if (data) setTenantData(data); });
+            .then(({ data }: { data: any }) => { if (data) setTenantData(data); });
     }, [supabase, tenant]);
 
     const handleSignOut = async () => {
