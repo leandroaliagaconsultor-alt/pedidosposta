@@ -214,7 +214,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
         };
         fetchTenant();
         // Fetch cities for directory dropdown (fallback if table doesn't exist)
-        supabase.from("directory_cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
+        supabase.from("directory_cities").select("*").eq("is_active", true).order("name").then(({ data }: { data: any }) => {
             if (data && data.length > 0) {
                 setAvailableCities(data);
             } else {

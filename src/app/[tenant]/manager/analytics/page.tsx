@@ -98,7 +98,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
     // ── Fetch tenant ID ──
     useEffect(() => {
         supabase.from("tenants").select("id").eq("slug", tenant).single()
-            .then(({ data }) => { if (data) setTenantId(data.id); });
+            .then(({ data }: { data: any }) => { if (data) setTenantId(data.id); });
     }, [supabase, tenant]);
 
     // ── Fetch chart data (all orders for range) ──
@@ -114,19 +114,19 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
             .gte("created_at", since)
             .neq("status", "cancelled")
             .order("created_at", { ascending: true })
-            .then(({ data }) => { if (data) setAllOrders(data); });
+            .then(({ data }: { data: any }) => { if (data) setAllOrders(data); });
 
         // Top products
         supabase
             .from("order_items")
             .select("quantity, total_price, product:products(name)")
             .eq("order.tenant_id", tenantId)
-            .then(({ data }) => {
+            .then(({ data }: { data: any }) => {
                 // Fallback: fetch via orders
             });
 
         // Simple approach: fetch order_items joined
-        supabase.rpc("get_top_products", { p_tenant_id: tenantId, p_limit: 5 }).then(({ data }) => {
+        supabase.rpc("get_top_products", { p_tenant_id: tenantId, p_limit: 5 }).then(({ data }: { data: any }) => {
             if (data) setTopProducts(data);
         });
     }, [supabase, tenantId, chartRange]);
