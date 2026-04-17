@@ -57,20 +57,36 @@ export default async function proxy(request: NextRequest) {
     const hostname = request.headers.get("host") || "";
 
     const isLocalhost = hostname.includes("localhost:") || hostname.includes("127.0.0.1");
-    const isVercel = hostname.includes("vercel.app"); // Le enseñamos qué es Vercel
+    const isVercel = hostname.includes("vercel.app");
 
+    // 4a. Subdominios de CIUDAD para directorio (mercedes.pedidosposta.com)
+    const CITY_SUBDOMAINS = new Set(["mercedes"]);
+    if (!isLocalhost && !isVercel) {
+        const cityMatch = hostname.match(/^([a-z0-9-]+)\.pedidosposta\.com$/i);
+        if (cityMatch && CITY_SUBDOMAINS.has(cityMatch[1].toLowerCase()) && url.pathname === "/") {
+            url.pathname = `/directorio/${cityMatch[1].toLowerCase()}`;
+            const rewriteResponse = NextResponse.rewrite(url);
+            response.cookies.getAll().forEach(({ name, value }) => {
+                rewriteResponse.cookies.set(name, value);
+            });
+            return rewriteResponse;
+        }
+    }
+
+    // 4b. Subdominios de TENANT (futuro: tenant.pedidosposta.com)
     let tenantSlug = "";
 
-    // SOLO buscamos un subdominio si NO es localhost y NO es Vercel
-    // (Esto te servirá a futuro cuando compres pedidosposta.com)
     if (!isLocalhost && !isVercel && !hostname.startsWith("www.")) {
-        tenantSlug = hostname.split(".")[0];
+        const sub = hostname.split(".")[0];
+        // No tratar ciudades como tenants
+        if (!CITY_SUBDOMAINS.has(sub)) {
+            tenantSlug = sub;
+        }
     }
 
     if (tenantSlug && !url.pathname.startsWith(`/${tenantSlug}`)) {
         url.pathname = `/${tenantSlug}${url.pathname}`;
 
-        // IMPORTANTE: al reescribir debemos propagar las cookies de sesión
         const rewriteResponse = NextResponse.rewrite(url);
         response.cookies.getAll().forEach(({ name, value }) => {
             rewriteResponse.cookies.set(name, value);
