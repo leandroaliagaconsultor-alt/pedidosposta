@@ -208,7 +208,7 @@ function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }
                         ) : isSaas ? (
                             <><ShoppingBag size={16} /> Ver Menú y Pedir</>
                         ) : (
-                            <><ExternalLink size={16} /> Contactar por WhatsApp</>
+                            <><ExternalLink size={16} /> Hacer Pedido</>
                         )}
                     </a>
                     {isSaas && isOpen && (
