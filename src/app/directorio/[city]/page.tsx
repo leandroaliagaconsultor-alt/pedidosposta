@@ -21,7 +21,7 @@ export default async function DirectoryPage({ params }: Props) {
 
     const { data: tenants, error } = await supabase
         .from("tenants")
-        .select("id, name, slug, description, category, categories, type, logo_url, external_url, opening_hours, schedule, override_status, is_directory_active, city, business_hours")
+        .select("id, name, slug, description, category, categories, type, logo_url, external_url, opening_hours, schedule, override_status, is_directory_active, city, business_hours, address")
         .eq("city", city.toLowerCase())
         .eq("is_directory_active", true)
         .order("type", { ascending: true })

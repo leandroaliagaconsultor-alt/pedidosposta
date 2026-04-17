@@ -14,6 +14,7 @@ interface Tenant {
     external_url: string | null; opening_hours: any;
     schedule: Schedule | null; override_status: OverrideStatus | null;
     is_directory_active: boolean; city: string; business_hours: string | null;
+    address: string | null;
 }
 
 function getTenantCategories(t: Tenant): string[] {
@@ -129,6 +130,14 @@ function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }
                             ) : null;
                         })}
                     </div>
+
+                    {/* Address */}
+                    {tenant.address && (
+                        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+                            <MapPin size={14} className="text-gray-400 shrink-0" />
+                            <span>{tenant.address}</span>
+                        </div>
+                    )}
 
                     {/* Description */}
                     {tenant.description && (
@@ -340,6 +349,11 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
                                         )}
                                     </div>
                                     <h3 className="text-sm sm:text-[15px] font-bold text-gray-900 text-center truncate leading-tight">{tenant.name}</h3>
+                                    {tenant.address && (
+                                        <p className="text-[9px] sm:text-[10px] text-gray-400 text-center truncate mt-0.5 flex items-center justify-center gap-0.5">
+                                            <MapPin size={9} className="shrink-0" /> {tenant.address}
+                                        </p>
+                                    )}
                                     <div className="flex flex-wrap justify-center gap-1 mt-1.5 mb-2">
                                         {cats.slice(0, 2).map(catKey => { const c = CATEGORY_MAP[catKey]; return c ? <span key={catKey} className="text-[9px] sm:text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full font-medium">{c.emoji} {c.label}</span> : null; })}
                                         {cats.length > 2 && <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">+{cats.length - 2}</span>}

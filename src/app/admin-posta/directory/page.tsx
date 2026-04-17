@@ -28,6 +28,7 @@ interface FormData {
     is_directory_active: boolean;
     external_url: string;
     logo_url: string;
+    address: string;
     opening_hours: OpeningHours;
 }
 
@@ -40,6 +41,7 @@ const emptyForm: FormData = {
     is_directory_active: true,
     external_url: "",
     logo_url: "",
+    address: "",
     opening_hours: {},
 };
 
@@ -129,6 +131,7 @@ export default function DirectoryAdminPage() {
             is_directory_active: tenant.is_directory_active ?? true,
             external_url: tenant.external_url || "",
             logo_url: tenant.logo_url || "",
+            address: tenant.address || "",
             opening_hours: tenant.opening_hours || {},
         });
         setEditingId(tenant.id);
@@ -149,6 +152,7 @@ export default function DirectoryAdminPage() {
             is_directory_active: form.is_directory_active,
             external_url: form.external_url.trim() || null,
             logo_url: form.logo_url.trim() || null,
+            address: form.address.trim() || null,
             opening_hours: Object.keys(form.opening_hours).length > 0 ? form.opening_hours : null,
         };
 
@@ -177,11 +181,11 @@ export default function DirectoryAdminPage() {
         fetchData();
     };
 
-    const updateHour = (day: string, field: "start" | "end", value: string) => {
+    const updateHour = (day: string, slotIndex: number, field: "start" | "end", value: string) => {
         setForm(prev => {
             const hours = { ...prev.opening_hours };
             if (!hours[day]) hours[day] = [{ start: "", end: "" }];
-            hours[day] = [{ ...hours[day][0], [field]: value }];
+            hours[day] = hours[day].map((s: any, i: number) => i === slotIndex ? { ...s, [field]: value } : s);
             return { ...prev, opening_hours: hours };
         });
     };
@@ -190,6 +194,26 @@ export default function DirectoryAdminPage() {
         setForm(prev => {
             const hours = { ...prev.opening_hours };
             if (hours[day]) { delete hours[day]; } else { hours[day] = [{ start: "19:00", end: "23:30" }]; }
+            return { ...prev, opening_hours: hours };
+        });
+    };
+
+    const addSlot = (day: string) => {
+        setForm(prev => {
+            const hours = { ...prev.opening_hours };
+            if (!hours[day]) hours[day] = [];
+            hours[day] = [...hours[day], { start: "12:00", end: "15:00" }];
+            // Sort: earlier slot first (tarde before noche)
+            hours[day].sort((a: any, b: any) => a.start.localeCompare(b.start));
+            return { ...prev, opening_hours: hours };
+        });
+    };
+
+    const removeSlot = (day: string, slotIndex: number) => {
+        setForm(prev => {
+            const hours = { ...prev.opening_hours };
+            hours[day] = hours[day].filter((_: any, i: number) => i !== slotIndex);
+            if (hours[day].length === 0) delete hours[day];
             return { ...prev, opening_hours: hours };
         });
     };
@@ -261,7 +285,7 @@ export default function DirectoryAdminPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/50">
-                            {tenants.map(t => (
+                            {directoryTenants.map(t => (
                                 <tr key={t.id} className="hover:bg-zinc-900/40 transition-colors">
                                     <td className="px-4 py-3 font-bold text-white flex items-center gap-2.5">
                                         {t.logo_url ? (
@@ -434,6 +458,20 @@ export default function DirectoryAdminPage() {
                                 <p className="text-[9px] text-zinc-600 mt-1">Para locales SaaS se usa su menú en PedidosPosta. Este campo es para locales de directorio.</p>
                             </div>
 
+                            {/* Address */}
+                            <div>
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Dirección</label>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <MapPin size={14} className="text-zinc-600 shrink-0" />
+                                    <input
+                                        value={form.address}
+                                        onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none"
+                                        placeholder="Ej: Av. 29 esq. 22, Mercedes"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Logo Upload */}
                             <div>
                                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Logo del Local</label>
@@ -467,43 +505,63 @@ export default function DirectoryAdminPage() {
                                 </div>
                             </div>
 
-                            {/* Opening Hours */}
+                            {/* Opening Hours — doble turno */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
                                     <Clock size={14} className="text-zinc-500" />
                                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Horarios de Apertura</label>
                                 </div>
-                                <div className="space-y-2">
+                                <p className="text-[9px] text-zinc-600 mb-3">Podés agregar dos turnos por día (ej: mediodía y noche)</p>
+                                <div className="space-y-2.5">
                                     {DAYS.map(day => {
-                                        const active = !!form.opening_hours[day];
-                                        const hours = form.opening_hours[day]?.[0];
+                                        const slots = form.opening_hours[day] || [];
+                                        const active = slots.length > 0;
                                         return (
-                                            <div key={day} className="flex items-center gap-2">
+                                            <div key={day} className="flex items-start gap-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleDay(day)}
-                                                    className={`w-20 text-left px-2 py-1.5 rounded-lg text-[10px] font-bold transition ${active ? "bg-primary/20 text-primary" : "bg-zinc-900 text-zinc-600 border border-zinc-800"}`}
+                                                    className={`w-20 shrink-0 text-left px-2 py-1.5 rounded-lg text-[10px] font-bold transition mt-0.5 ${active ? "bg-primary/20 text-primary" : "bg-zinc-900 text-zinc-600 border border-zinc-800"}`}
                                                 >
                                                     {DAY_LABELS[day]}
                                                 </button>
                                                 {active ? (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <input
-                                                            type="time"
-                                                            value={hours?.start || ""}
-                                                            onChange={e => updateHour(day, "start", e.target.value)}
-                                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
-                                                        />
-                                                        <span className="text-zinc-600 text-xs">a</span>
-                                                        <input
-                                                            type="time"
-                                                            value={hours?.end || ""}
-                                                            onChange={e => updateHour(day, "end", e.target.value)}
-                                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
-                                                        />
+                                                    <div className="flex-1 space-y-1.5">
+                                                        {slots.map((slot: any, idx: number) => (
+                                                            <div key={idx} className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] text-zinc-600 w-12 shrink-0">{idx === 0 && slots.length > 1 ? "Tarde" : idx === 1 ? "Noche" : ""}</span>
+                                                                <input
+                                                                    type="time"
+                                                                    value={slot.start || ""}
+                                                                    onChange={e => updateHour(day, idx, "start", e.target.value)}
+                                                                    className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                                />
+                                                                <span className="text-zinc-600 text-xs">a</span>
+                                                                <input
+                                                                    type="time"
+                                                                    value={slot.end || ""}
+                                                                    onChange={e => updateHour(day, idx, "end", e.target.value)}
+                                                                    className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                                />
+                                                                {slots.length > 1 && (
+                                                                    <button type="button" onClick={() => removeSlot(day, idx)} className="p-1 rounded text-zinc-600 hover:text-red-400 transition">
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                        {slots.length < 2 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addSlot(day)}
+                                                                className="text-[9px] text-primary hover:text-primary/80 font-bold transition"
+                                                            >
+                                                                + Agregar turno
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] text-zinc-700">Cerrado</span>
+                                                    <span className="text-[10px] text-zinc-700 mt-1">Cerrado</span>
                                                 )}
                                             </div>
                                         );
