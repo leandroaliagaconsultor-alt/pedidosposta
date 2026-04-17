@@ -81,7 +81,8 @@ async function trackClick(id: string, type: "saas" | "directory") {
 function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }) {
     const isOpen = isStoreOpen(tenant);
     const isSaas = tenant.type === "saas";
-    const href = isSaas ? `/${tenant.slug}` : (tenant.external_url || "#");
+    const rawUrl = tenant.external_url || "#";
+    const href = isSaas ? `/${tenant.slug}` : (rawUrl !== "#" && !rawUrl.startsWith("http") ? `https://${rawUrl}` : rawUrl);
     const cats = getTenantCategories(tenant);
     const primaryCat = CATEGORY_MAP[cats[0]] || CATEGORY_MAP.otros;
     const schedule = getScheduleForDisplay(tenant);
