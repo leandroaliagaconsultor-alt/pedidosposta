@@ -33,18 +33,29 @@ function isStoreOpen(t: Tenant): boolean {
     if (!t.opening_hours) return false;
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
     const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-    const today = dayMap[now.getDay()];
-    const slots = t.opening_hours[today];
-    if (!slots || slots.length === 0) return false;
+    const todayIdx = now.getDay();
+    const today = dayMap[todayIdx];
+    const yesterday = dayMap[(todayIdx + 6) % 7];
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    return slots.some((slot: { start: string; end: string }) => {
-        const [sh, sm] = slot.start.split(":").map(Number);
-        const [eh, em] = slot.end.split(":").map(Number);
-        const startMin = sh * 60 + sm;
-        const endMin = eh * 60 + em;
-        if (endMin <= startMin) return currentMinutes >= startMin || currentMinutes <= endMin;
-        return currentMinutes >= startMin && currentMinutes <= endMin;
-    });
+
+    const checkSlots = (slots: { start: string; end: string }[] | undefined, isYesterday: boolean) => {
+        if (!slots || slots.length === 0) return false;
+        return slots.some((slot) => {
+            const [sh, sm] = slot.start.split(":").map(Number);
+            const [eh, em] = slot.end.split(":").map(Number);
+            const startMin = sh * 60 + sm;
+            const endMin = eh * 60 + em;
+            if (endMin <= startMin) {
+                // Crosses midnight: if checking yesterday's slot, only the tail matters (00:00 to end)
+                if (isYesterday) return currentMinutes <= endMin;
+                // If checking today's slot, only the start matters (start to 23:59)
+                return currentMinutes >= startMin;
+            }
+            return !isYesterday && currentMinutes >= startMin && currentMinutes <= endMin;
+        });
+    };
+
+    return checkSlots(t.opening_hours[today], false) || checkSlots(t.opening_hours[yesterday], true);
 }
 
 const DAY_LABELS: Record<string, string> = {
