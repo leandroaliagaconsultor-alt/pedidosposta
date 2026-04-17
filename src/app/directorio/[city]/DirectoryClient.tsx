@@ -61,8 +61,9 @@ function getScheduleForDisplay(t: Tenant): Record<string, { start: string; end: 
     return null;
 }
 
-async function trackClick(tenantId: string) {
-    try { await fetch("/api/directory/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId }) }); } catch { /* silent */ }
+async function trackClick(id: string, type: "saas" | "directory") {
+    const body = type === "saas" ? { tenantId: id } : { listingId: id };
+    try { await fetch("/api/directory/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); } catch { /* silent */ }
 }
 
 // ── Detail Modal ────────────────────────────────────────────────────────────
@@ -180,7 +181,7 @@ function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }
                     {/* CTA */}
                     <a
                         href={href}
-                        onClick={() => { trackClick(tenant.id); onClose(); }}
+                        onClick={() => { trackClick(tenant.id, tenant.type); onClose(); }}
                         target={isSaas ? undefined : "_blank"}
                         rel={isSaas ? undefined : "noopener noreferrer"}
                         className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-sm font-bold transition-all ${

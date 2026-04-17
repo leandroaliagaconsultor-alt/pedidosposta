@@ -24,8 +24,7 @@ interface FormData {
     description: string;
     categories: string[];
     city: string;
-    type: "saas" | "directory";
-    is_directory_active: boolean;
+    is_active: boolean;
     external_url: string;
     logo_url: string;
     address: string;
@@ -37,8 +36,7 @@ const emptyForm: FormData = {
     description: "",
     categories: [],
     city: "mercedes",
-    type: "directory",
-    is_directory_active: true,
+    is_active: true,
     external_url: "",
     logo_url: "",
     address: "",
@@ -47,7 +45,7 @@ const emptyForm: FormData = {
 
 export default function DirectoryAdminPage() {
     const supabase = createClient();
-    const [tenants, setTenants] = useState<any[]>([]);
+    const [listings, setListings] = useState<any[]>([]);
     const [clicks, setClicks] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -80,35 +78,36 @@ export default function DirectoryAdminPage() {
 
     const fetchData = async () => {
         setLoading(true);
-        const { data: tenantsData } = await supabase
-            .from("tenants")
-            .select("*")
-            .order("type", { ascending: true })
-            .order("name", { ascending: true });
-        if (tenantsData) setTenants(tenantsData);
 
-        // Fetch cities (fallback to unique cities from tenants if table doesn't exist yet)
-        const { data: citiesData, error: citiesError } = await supabase.from("directory_cities").select("*").eq("is_active", true).order("name");
+        // Fetch directory listings
+        const { data: listingsData } = await supabase
+            .from("directory_listings")
+            .select("*")
+            .order("name", { ascending: true });
+        if (listingsData) setListings(listingsData);
+
+        // Fetch cities
+        const { data: citiesData } = await supabase.from("directory_cities").select("*").eq("is_active", true).order("name");
         if (citiesData && citiesData.length > 0) {
             setCities(citiesData);
         } else {
-            // Fallback: extract unique cities from tenants
-            if (tenantsData) {
-                const unique = [...new Set(tenantsData.map((t: any) => t.city).filter(Boolean))];
+            if (listingsData) {
+                const unique = [...new Set(listingsData.map((t: any) => t.city).filter(Boolean))];
                 setCities(unique.map(c => ({ id: c, name: (c as string).charAt(0).toUpperCase() + (c as string).slice(1), slug: c })));
             }
         }
 
-        // Aggregate clicks per tenant (last 30 days)
+        // Aggregate clicks per listing (last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data: clicksData } = await supabase
             .from("directory_clicks")
-            .select("tenant_id")
+            .select("listing_id")
+            .not("listing_id", "is", null)
             .gte("clicked_at", thirtyDaysAgo);
 
         if (clicksData) {
             const map: Record<string, number> = {};
-            clicksData.forEach((c: any) => { map[c.tenant_id] = (map[c.tenant_id] || 0) + 1; });
+            clicksData.forEach((c: any) => { map[c.listing_id] = (map[c.listing_id] || 0) + 1; });
             setClicks(map);
         }
         setLoading(false);
@@ -120,21 +119,19 @@ export default function DirectoryAdminPage() {
         setShowForm(true);
     };
 
-    const openEdit = (tenant: any) => {
-        const cats = tenant.categories?.length > 0 ? tenant.categories : (tenant.category ? [tenant.category] : []);
+    const openEdit = (listing: any) => {
         setForm({
-            name: tenant.name || "",
-            description: tenant.description || "",
-            categories: cats,
-            city: tenant.city || "mercedes",
-            type: tenant.type || "directory",
-            is_directory_active: tenant.is_directory_active ?? true,
-            external_url: tenant.external_url || "",
-            logo_url: tenant.logo_url || "",
-            address: tenant.address || "",
-            opening_hours: tenant.opening_hours || {},
+            name: listing.name || "",
+            description: listing.description || "",
+            categories: listing.categories || [],
+            city: listing.city || "mercedes",
+            is_active: listing.is_active ?? true,
+            external_url: listing.external_url || "",
+            logo_url: listing.logo_url || "",
+            address: listing.address || "",
+            opening_hours: listing.opening_hours || {},
         });
-        setEditingId(tenant.id);
+        setEditingId(listing.id);
         setShowForm(true);
     };
 
@@ -146,10 +143,8 @@ export default function DirectoryAdminPage() {
             name: form.name.trim(),
             description: form.description.trim() || null,
             categories: form.categories.length > 0 ? form.categories : null,
-            category: form.categories[0] || "otros",  // backward compat
             city: form.city.toLowerCase().trim(),
-            type: form.type,
-            is_directory_active: form.is_directory_active,
+            is_active: form.is_active,
             external_url: form.external_url.trim() || null,
             logo_url: form.logo_url.trim() || null,
             address: form.address.trim() || null,
@@ -157,13 +152,11 @@ export default function DirectoryAdminPage() {
         };
 
         if (editingId) {
-            const { error } = await supabase.from("tenants").update(payload).eq("id", editingId);
+            const { error } = await supabase.from("directory_listings").update(payload).eq("id", editingId);
             if (error) { toast.error("Error: " + error.message); setSaving(false); return; }
             toast.success("Local actualizado");
         } else {
-            // Crear nuevo tenant de directorio con slug auto-generado
-            const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-            const { error } = await supabase.from("tenants").insert({ ...payload, slug });
+            const { error } = await supabase.from("directory_listings").insert(payload);
             if (error) { toast.error("Error: " + error.message); setSaving(false); return; }
             toast.success("Local creado");
         }
@@ -175,7 +168,7 @@ export default function DirectoryAdminPage() {
 
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`¿Eliminar "${name}" del directorio? Esta acción no se puede deshacer.`)) return;
-        const { error } = await supabase.from("tenants").delete().eq("id", id);
+        const { error } = await supabase.from("directory_listings").delete().eq("id", id);
         if (error) { toast.error("Error: " + error.message); return; }
         toast.success("Local eliminado");
         fetchData();
@@ -203,7 +196,6 @@ export default function DirectoryAdminPage() {
             const hours = { ...prev.opening_hours };
             if (!hours[day]) hours[day] = [];
             hours[day] = [...hours[day], { start: "12:00", end: "15:00" }];
-            // Sort: earlier slot first (tarde before noche)
             hours[day].sort((a: any, b: any) => a.start.localeCompare(b.start));
             return { ...prev, opening_hours: hours };
         });
@@ -226,9 +218,6 @@ export default function DirectoryAdminPage() {
         );
     }
 
-    const directoryTenants = tenants.filter(t => t.type === "directory");
-    const saasInDirectory = tenants.filter(t => t.type === "saas" && t.is_directory_active);
-
     return (
         <div className="space-y-6 animate-in fade-in">
             <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
@@ -241,7 +230,7 @@ export default function DirectoryAdminPage() {
                     </Link>
                     <h1 className="text-2xl font-extrabold tracking-tight">Directorio Gastronómico</h1>
                     <p className="text-sm text-zinc-400 mt-1">
-                        {directoryTenants.length} locales de directorio · {saasInDirectory.length} clientes SaaS visibles
+                        {listings.length} locales en el directorio
                     </p>
                 </div>
                 <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-black font-bold px-5 py-2.5 rounded-xl hover:brightness-110 transition shrink-0">
@@ -250,18 +239,14 @@ export default function DirectoryAdminPage() {
             </div>
 
             {/* Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-zinc-900/50 border border-zinc-800 p-4 text-center">
-                    <p className="text-[10px] text-zinc-500 uppercase font-bold">Total Locales</p>
-                    <p className="text-2xl font-black text-white mt-1">{tenants.length}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold">Locales</p>
+                    <p className="text-2xl font-black text-amber-400 mt-1">{listings.length}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-900/50 border border-zinc-800 p-4 text-center">
-                    <p className="text-[10px] text-zinc-500 uppercase font-bold">Directorio</p>
-                    <p className="text-2xl font-black text-amber-400 mt-1">{directoryTenants.length}</p>
-                </div>
-                <div className="rounded-xl bg-zinc-900/50 border border-zinc-800 p-4 text-center">
-                    <p className="text-[10px] text-zinc-500 uppercase font-bold">Clientes SaaS</p>
-                    <p className="text-2xl font-black text-emerald-400 mt-1">{tenants.filter(t => t.type === "saas").length}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold">Activos</p>
+                    <p className="text-2xl font-black text-emerald-400 mt-1">{listings.filter((l: any) => l.is_active).length}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-900/50 border border-zinc-800 p-4 text-center">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold">Clics (30d)</p>
@@ -276,58 +261,47 @@ export default function DirectoryAdminPage() {
                         <thead className="bg-zinc-900 text-[10px] uppercase font-extrabold tracking-widest text-zinc-500">
                             <tr>
                                 <th className="px-4 py-3">Local</th>
-                                <th className="px-4 py-3">Tipo</th>
                                 <th className="px-4 py-3">Categoría</th>
                                 <th className="px-4 py-3">Ciudad</th>
+                                <th className="px-4 py-3">Dirección</th>
                                 <th className="px-4 py-3">Clics 30d</th>
                                 <th className="px-4 py-3">Estado</th>
                                 <th className="px-4 py-3 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/50">
-                            {directoryTenants.map(t => (
-                                <tr key={t.id} className="hover:bg-zinc-900/40 transition-colors">
+                            {listings.map(l => (
+                                <tr key={l.id} className="hover:bg-zinc-900/40 transition-colors">
                                     <td className="px-4 py-3 font-bold text-white flex items-center gap-2.5">
-                                        {t.logo_url ? (
-                                            <img src={t.logo_url} className="w-8 h-8 rounded-lg object-cover" alt="" />
+                                        {l.logo_url ? (
+                                            <img src={l.logo_url} className="w-8 h-8 rounded-lg object-cover" alt="" />
                                         ) : (
-                                            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-500">{t.name?.charAt(0)}</div>
+                                            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-500">{l.name?.charAt(0)}</div>
                                         )}
-                                        <div>
-                                            <p className="text-sm">{t.name}</p>
-                                            {t.slug && <p className="text-[10px] text-zinc-600 font-mono">/{t.slug}</p>}
-                                        </div>
+                                        <p className="text-sm">{l.name}</p>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                                            t.type === "saas" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                        }`}>
-                                            {t.type === "saas" ? "SaaS" : "Directorio"}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-zinc-400 text-xs">{(t.categories?.length > 0 ? t.categories : [t.category]).map((c: string) => CATEGORY_MAP[c]?.label || c).join(", ") || "—"}</td>
-                                    <td className="px-4 py-3 text-zinc-400 text-xs capitalize">{t.city || "—"}</td>
+                                    <td className="px-4 py-3 text-zinc-400 text-xs">{(l.categories || []).map((c: string) => CATEGORY_MAP[c]?.label || c).join(", ") || "—"}</td>
+                                    <td className="px-4 py-3 text-zinc-400 text-xs capitalize">{l.city || "—"}</td>
+                                    <td className="px-4 py-3 text-zinc-400 text-xs">{l.address || "—"}</td>
                                     <td className="px-4 py-3">
                                         <span className="inline-flex items-center gap-1 text-xs font-mono text-sky-400">
-                                            <MousePointerClick size={11} /> {clicks[t.id] || 0}
+                                            <MousePointerClick size={11} /> {clicks[l.id] || 0}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {t.is_directory_active ? (
+                                        {l.is_active ? (
                                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400"><Eye size={11} /> Visible</span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-600"><EyeOff size={11} /> Oculto</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-right space-x-1">
-                                        <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition" title="Editar">
+                                        <button onClick={() => openEdit(l)} className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition" title="Editar">
                                             <Store size={13} />
                                         </button>
-                                        {t.type === "directory" && (
-                                            <button onClick={() => handleDelete(t.id, t.name)} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition" title="Eliminar">
-                                                <Trash2 size={13} />
-                                            </button>
-                                        )}
+                                        <button onClick={() => handleDelete(l.id, l.name)} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition" title="Eliminar">
+                                            <Trash2 size={13} />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -410,37 +384,16 @@ export default function DirectoryAdminPage() {
                                 </select>
                             </div>
 
-                            {/* Type + Active */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Tipo</label>
-                                    <div className="flex gap-2 mt-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => setForm(p => ({ ...p, type: "saas" }))}
-                                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${form.type === "saas" ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}
-                                        >
-                                            SaaS
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setForm(p => ({ ...p, type: "directory" }))}
-                                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${form.type === "directory" ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}
-                                        >
-                                            Directorio
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Visible en Directorio</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm(p => ({ ...p, is_directory_active: !p.is_directory_active }))}
-                                        className={`mt-1 w-full py-2 rounded-lg text-xs font-bold transition ${form.is_directory_active ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}
-                                    >
-                                        {form.is_directory_active ? "Activo" : "Oculto"}
-                                    </button>
-                                </div>
+                            {/* Active toggle */}
+                            <div>
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Visible en Directorio</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(p => ({ ...p, is_active: !p.is_active }))}
+                                    className={`mt-1 w-full py-2 rounded-lg text-xs font-bold transition ${form.is_active ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}
+                                >
+                                    {form.is_active ? "Activo" : "Oculto"}
+                                </button>
                             </div>
 
                             {/* External URL */}
@@ -455,7 +408,6 @@ export default function DirectoryAdminPage() {
                                         placeholder="https://wa.me/5491100000000"
                                     />
                                 </div>
-                                <p className="text-[9px] text-zinc-600 mt-1">Para locales SaaS se usa su menú en PedidosPosta. Este campo es para locales de directorio.</p>
                             </div>
 
                             {/* Address */}
@@ -476,7 +428,6 @@ export default function DirectoryAdminPage() {
                             <div>
                                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Logo del Local</label>
                                 <div className="mt-2 flex items-center gap-4">
-                                    {/* Preview */}
                                     {form.logo_url ? (
                                         <img src={form.logo_url} alt="Logo" className="w-16 h-16 rounded-full object-cover border-2 border-zinc-800" />
                                     ) : (
