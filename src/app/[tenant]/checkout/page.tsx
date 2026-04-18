@@ -108,6 +108,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const supabase = createClient();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [tenantId, setTenantId] = useState<string | null>(null);
     const [showSavedAddress, setShowSavedAddress] = useState(!!savedAddress);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
@@ -161,6 +162,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const [mapSessionToken, setMapSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
     const [addressHistory, setAddressHistory] = useState<SavedHistoryAddress[]>([]);
+
+    // ── Cupón ──
+    const [couponCode, setCouponCode] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null);
+    const [couponError, setCouponError] = useState("");
 
     const betweenStreetsRef = React.useRef<HTMLInputElement>(null);
     // streetNumberRef removed — merged into single street field
@@ -252,8 +259,38 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     // Validamos estricto que no esté vacío para desactivar botón
     const isAddressIncomplete = deliveryMethod === "DELIVERY" && (!streetVal || streetVal.trim().length === 0);
 
-    const total = subtotal + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
+    const couponDiscount = React.useMemo(() => {
+        if (!appliedCoupon) return 0;
+        if (appliedCoupon.discount_type === "percentage") return Math.round(subtotal * appliedCoupon.discount_value / 100);
+        return Math.min(appliedCoupon.discount_value, subtotal);
+    }, [appliedCoupon, subtotal]);
+
+    const total = subtotal - couponDiscount + (deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0);
     const isBelowMinOrder = minOrder > 0 && subtotal < minOrder;
+
+    const applyCoupon = async () => {
+        const code = couponCode.trim().toUpperCase();
+        if (!code || !tenantId) return;
+        setCouponLoading(true);
+        setCouponError("");
+
+        const { data, error } = await supabase
+            .from("coupons")
+            .select("id, code, discount_type, discount_value, min_order, max_uses, used_count, is_active, expires_at")
+            .eq("tenant_id", tenantId)
+            .eq("code", code)
+            .single();
+
+        if (error || !data) { setCouponError("Cupón no encontrado"); setCouponLoading(false); return; }
+        if (!data.is_active) { setCouponError("Este cupón está desactivado"); setCouponLoading(false); return; }
+        if (data.expires_at && new Date(data.expires_at) < new Date()) { setCouponError("Este cupón venció"); setCouponLoading(false); return; }
+        if (data.max_uses && data.used_count >= data.max_uses) { setCouponError("Este cupón alcanzó el límite de usos"); setCouponLoading(false); return; }
+        if (data.min_order && subtotal < data.min_order) { setCouponError(`Pedido mínimo de $${Number(data.min_order).toLocaleString("es-AR")} para este cupón`); setCouponLoading(false); return; }
+
+        setAppliedCoupon({ code: data.code, discount_type: data.discount_type, discount_value: Number(data.discount_value) });
+        setCouponLoading(false);
+        toast.success(`Cupón ${data.code} aplicado`);
+    };
 
     // Aplicar una dirección del historial
     const applyHistoryAddress = React.useCallback((addr: SavedHistoryAddress) => {
@@ -303,6 +340,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 .single();
 
             if (tenantData) {
+                setTenantId(tenantData.id);
                 // Batch tenant config (1 render)
                 setTenantConfig({
                     isMPActive: !!tenantData.is_mp_active,
@@ -488,6 +526,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 total_amount: total,
                 delivery_fee: data.deliveryMethod === "DELIVERY" ? calculatedDeliveryCost : 0,
                 table_number: tableNumber || null,
+                coupon_code: appliedCoupon?.code || null,
+                discount_amount: couponDiscount,
                 status: data.paymentMethod === "MERCADOPAGO" ? "awaiting_payment" : "pending",
                 receipt_url: receiptUrl,
                 items: items.map((item) => ({
@@ -965,12 +1005,56 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                 ))}
                             </ul>
 
+                            {/* Cupón */}
+                            <div>
+                                {appliedCoupon ? (
+                                    <div className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${isLight ? "bg-emerald-50 border border-emerald-200" : "bg-emerald-500/10 border border-emerald-500/20"}`}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-emerald-600">🎟 {appliedCoupon.code}</span>
+                                            <span className="text-[10px] text-emerald-500">
+                                                -{appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value.toLocaleString("es-AR")}`}
+                                            </span>
+                                        </div>
+                                        <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); setCouponError(""); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-bold">
+                                            Quitar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                value={couponCode}
+                                                onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                                                placeholder="Código de cupón"
+                                                className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider outline-none transition text-base ${isLight ? "bg-zinc-100 border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400" : "bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:border-zinc-600"}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={applyCoupon}
+                                                disabled={!couponCode.trim() || couponLoading}
+                                                className="px-4 py-2.5 rounded-xl text-xs font-bold transition disabled:opacity-40"
+                                                style={{ backgroundColor: accentColor, color: accentTextColor }}
+                                            >
+                                                {couponLoading ? "..." : "Aplicar"}
+                                            </button>
+                                        </div>
+                                        {couponError && <p className="text-[10px] text-red-500 font-bold mt-1.5 ml-1">{couponError}</p>}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Totales */}
                             <div className="space-y-2">
                                 <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
                                     <span>Subtotal</span>
                                     <span className={t.text}>${subtotal.toLocaleString("es-AR")}</span>
                                 </div>
+                                {couponDiscount > 0 && (
+                                    <div className="flex justify-between font-medium text-xs text-emerald-500">
+                                        <span>Descuento ({appliedCoupon?.code})</span>
+                                        <span>- ${couponDiscount.toLocaleString("es-AR")}</span>
+                                    </div>
+                                )}
                                 {deliveryMethod === "DELIVERY" && (
                                     <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
                                         <span>Envío {tenantDeliveryType === "distance" && !selectedCoords && <span className="text-[10px] opacity-60">(se calcula con tu direccion)</span>}</span>
