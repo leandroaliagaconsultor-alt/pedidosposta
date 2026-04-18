@@ -763,7 +763,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 )}
                             </div>
                             {/* Column Body — scrollable */}
-                            <div className="flex-1 overflow-y-auto space-y-4 pr-1 pb-4" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
+                            <div className="flex-1 overflow-y-auto overflow-x-visible px-2 -mx-2 pb-10" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
+                                <div className="space-y-4">
                                 {colOrders.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 opacity-40">
                                         <Icon size={32} className="text-zinc-700 mb-2" />
@@ -771,11 +772,12 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     </div>
                                 ) : (
                                     colOrders.map((order) => (
-                                        <div key={order.id} className="transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                                        <div key={order.id} className="shrink-0 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
                                             {renderOrderCard(order)}
                                         </div>
                                     ))
                                 )}
+                                </div>
                             </div>
                         </div>
                     );
