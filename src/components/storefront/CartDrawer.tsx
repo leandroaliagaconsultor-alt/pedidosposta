@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { X, Minus, Plus, ShoppingBag, ChefHat, Loader2, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { useCartStore } from "@/lib/store/cartStore";
 import { createClient } from "@/lib/supabase/client";
 import type { ThemeTokens } from "@/lib/utils/theme";
@@ -109,6 +110,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
             }, 3000);
         } catch (err) {
             console.error("Error sending to kitchen:", err);
+            toast.error("No se pudo enviar el pedido. Intentá de nuevo.");
             setSendingToKitchen(false);
         }
     };

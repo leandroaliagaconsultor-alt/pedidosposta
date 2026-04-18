@@ -98,7 +98,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ tenant: st
     // ── Fetch tenant ID ──
     useEffect(() => {
         supabase.from("tenants").select("id").eq("slug", tenant).single()
-            .then(({ data }: { data: any }) => { if (data) setTenantId(data.id); });
+            .then(({ data, error }: { data: any; error: any }) => {
+                if (data) setTenantId(data.id);
+                if (error || !data) setLoading(false);
+            });
     }, [supabase, tenant]);
 
     // ── Fetch chart data (all orders for range) ──

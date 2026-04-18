@@ -76,13 +76,16 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     // ── Fetch all orders (including delivered for the Finalizados tab) ────
     useEffect(() => {
         const fetchOrders = async () => {
-            const { data: tenantData } = await supabase
+            const { data: tenantData, error: tenantError } = await supabase
                 .from("tenants")
                 .select("id, name, logo_url, enable_kitchen_tickets, enable_delivery_tickets")
                 .eq("slug", tenant)
                 .single();
 
-            if (!tenantData) return;
+            if (tenantError || !tenantData) {
+                setLoading(false);
+                return;
+            }
             setTenantId(tenantData.id);
             setTenantName(tenantData.name);
             setTenantLogo(tenantData.logo_url);

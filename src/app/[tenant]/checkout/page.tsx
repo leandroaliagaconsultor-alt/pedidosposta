@@ -591,7 +591,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     window.location.href = mpData.init_point;
                     return;
                 } else {
-                    toast.error("Error al generar pago en MercadoPago. Tu pedido quedó pendiente.");
+                    // MP falló → cancelar la orden para no dejarla huérfana
+                    await supabase.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+                    toast.error("No pudimos conectar con MercadoPago. Intentá de nuevo o elegí otro medio de pago.");
+                    setIsSubmitting(false);
+                    return;
                 }
             }
 

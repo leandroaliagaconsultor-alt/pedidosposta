@@ -38,7 +38,10 @@ export default function CouponsPage({ params }: { params: Promise<{ tenant: stri
 
     useEffect(() => {
         supabase.from("tenants").select("id").eq("slug", tenant).single()
-            .then(({ data }: { data: any }) => { if (data) { setTenantId(data.id); fetchCoupons(data.id); } });
+            .then(({ data, error }: { data: any; error: any }) => {
+                if (data) { setTenantId(data.id); fetchCoupons(data.id); }
+                if (error || !data) setLoading(false);
+            });
     }, [supabase, tenant]);
 
     const fetchCoupons = async (tid: string) => {
