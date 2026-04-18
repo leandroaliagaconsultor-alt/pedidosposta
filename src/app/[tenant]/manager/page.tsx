@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck, CreditCard,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle, ChevronDown
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PrintableReceipt } from "@/components/PrintableReceipt";
@@ -86,6 +86,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [tenantSettings, setTenantSettings] = useState<{ enable_kitchen_tickets: boolean; enable_delivery_tickets: boolean } | null>(null);
     const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
     const [customTime, setCustomTime] = useState<string>("");
+    const [showDelivered, setShowDelivered] = useState(false);
 
     // ── Adjustment State ──
     const [adjustingOrder, setAdjustingOrder] = useState<Order | null>(null);
@@ -744,44 +745,78 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             </div>
 
             {/* ════════════════════════════════════════════════════════
-                DESKTOP: Kanban Board (4 columnas) — hidden en mobile
+                DESKTOP: Kanban Board (3 columnas) — hidden en mobile
                ════════════════════════════════════════════════════════ */}
-            <div className="hidden lg:grid lg:grid-cols-4 gap-4 lg:h-[calc(100vh-180px)]">
-                {TABS.map((tab) => {
-                    const Icon = tab.icon;
-                    const colOrders = columnOrders[tab.key];
-                    return (
-                        <div key={tab.key} className="flex flex-col min-h-0">
-                            {/* Column Header */}
-                            <div className={`flex items-center gap-2 px-3 py-2.5 mb-3 rounded-xl bg-zinc-900/60 border border-zinc-800/50`}>
-                                <Icon size={14} className={tab.color} />
-                                <span className={`text-[10px] font-extrabold uppercase tracking-widest ${tab.color}`}>{tab.label}</span>
-                                {colOrders.length > 0 && (
-                                    <span className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black bg-white/5 ${tab.color}`}>
-                                        {colOrders.length}
-                                    </span>
-                                )}
-                            </div>
-                            {/* Column Body — scrollable */}
-                            <div className="flex-1 overflow-y-auto overflow-x-visible px-2 -mx-2 pb-10" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
-                                <div className="space-y-4">
-                                {colOrders.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16 opacity-40">
-                                        <Icon size={32} className="text-zinc-700 mb-2" />
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider">Sin pedidos</p>
-                                    </div>
-                                ) : (
-                                    colOrders.map((order) => (
-                                        <div key={order.id} className="shrink-0 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
-                                            {renderOrderCard(order)}
+            <div className="hidden lg:flex lg:flex-col gap-4">
+                {/* 3 columnas principales */}
+                <div className="grid grid-cols-3 gap-5 h-[calc(100vh-240px)]">
+                    {TABS.filter(t => t.key !== "delivered").map((tab) => {
+                        const Icon = tab.icon;
+                        const colOrders = columnOrders[tab.key];
+                        return (
+                            <div key={tab.key} className="flex flex-col min-h-0">
+                                {/* Column Header */}
+                                <div className="flex items-center gap-2.5 px-4 py-3 mb-3 rounded-xl bg-zinc-900/60 border border-zinc-800/50">
+                                    <Icon size={15} className={tab.color} />
+                                    <span className={`text-xs font-extrabold uppercase tracking-widest ${tab.color}`}>{tab.label}</span>
+                                    {colOrders.length > 0 && (
+                                        <span className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black bg-white/5 ${tab.color}`}>
+                                            {colOrders.length}
+                                        </span>
+                                    )}
+                                </div>
+                                {/* Column Body — scrollable */}
+                                <div className="flex-1 overflow-y-auto overflow-x-visible px-2 -mx-2 pb-6" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
+                                    <div className="space-y-4">
+                                    {colOrders.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 opacity-40">
+                                            <Icon size={32} className="text-zinc-700 mb-2" />
+                                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider">Sin pedidos</p>
                                         </div>
-                                    ))
-                                )}
+                                    ) : (
+                                        colOrders.map((order) => (
+                                            <div key={order.id} className="shrink-0 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                                                {renderOrderCard(order)}
+                                            </div>
+                                        ))
+                                    )}
+                                    </div>
                                 </div>
                             </div>
+                        );
+                    })}
+                </div>
+
+                {/* Finalizados — toggle colapsable */}
+                <div>
+                    <button
+                        onClick={() => setShowDelivered(!showDelivered)}
+                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/50 hover:bg-zinc-900/80 transition-colors"
+                    >
+                        <PartyPopper size={15} className="text-emerald-400" />
+                        <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Finalizados</span>
+                        {columnOrders.delivered.length > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black bg-white/5 text-emerald-400">
+                                {columnOrders.delivered.length}
+                            </span>
+                        )}
+                        <ChevronDown size={14} className={`ml-auto text-zinc-500 transition-transform duration-200 ${showDelivered ? "rotate-180" : ""}`} />
+                    </button>
+                    {showDelivered && (
+                        <div className="grid grid-cols-3 gap-5 mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {columnOrders.delivered.map((order) => (
+                                <div key={order.id} className="shrink-0">
+                                    {renderOrderCard(order)}
+                                </div>
+                            ))}
+                            {columnOrders.delivered.length === 0 && (
+                                <div className="col-span-3 flex items-center justify-center py-8 opacity-40">
+                                    <p className="text-xs font-bold text-zinc-600">Sin pedidos finalizados</p>
+                                </div>
+                            )}
                         </div>
-                    );
-                })}
+                    )}
+                </div>
             </div>
 
             {/* ════════════════════════════════════════════════════════
