@@ -606,7 +606,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     <div className="flex items-center justify-between rounded-xl bg-zinc-800/40 px-4 py-3 font-bold">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] uppercase tracking-widest text-zinc-500">Total</span>
-                                            {order.extra_charge && order.extra_charge > 0 && (
+                                            {order.extra_charge != null && order.extra_charge > 0 && (
                                                 <div className="flex items-center gap-1 text-[10px] text-amber-500/80 group/note relative cursor-help">
                                                     <AlertCircle size={10} />
                                                     <span>+${order.extra_charge} ajuste</span>
