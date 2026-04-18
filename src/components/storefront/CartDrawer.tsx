@@ -34,6 +34,13 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
     const [sendingToKitchen, setSendingToKitchen] = useState(false);
     const [sentSuccess, setSentSuccess] = useState(false);
 
+    // Cerrar el drawer si se queda sin items
+    React.useEffect(() => {
+        if (open && items.length === 0 && !sentSuccess) {
+            onOpenChange(false);
+        }
+    }, [items.length, open, sentSuccess, onOpenChange]);
+
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
     const handleCheckoutRedirect = () => {
