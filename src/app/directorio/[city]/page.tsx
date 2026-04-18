@@ -58,7 +58,7 @@ export default async function DirectoryPage({ params }: Props) {
 
     const allTenants = [...(saasTenants || []), ...normalizedListings];
 
-    if (allTenants.length === 0 && !listings && !saasTenants) return notFound();
+    if (allTenants.length === 0) return notFound();
 
     return <DirectoryClient tenants={allTenants} city={city} />;
 }

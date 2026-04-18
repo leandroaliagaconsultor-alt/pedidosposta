@@ -60,16 +60,34 @@ export default async function proxy(request: NextRequest) {
     const isVercel = hostname.includes("vercel.app");
 
     // 4a. Subdominios de CIUDAD para directorio (mercedes.pedidosposta.com)
-    const CITY_SUBDOMAINS = new Set(["mercedes"]);
+    //     Ciudades se resuelven dinámicamente contra directory_cities.
+    //     Fallback hardcoded si la query falla.
+    const RESERVED = new Set(["www", "api", "app", "admin", "mail", "ftp", "staging", "dev"]);
+    let citySlug = "";
+
     if (!isLocalhost && !isVercel) {
         const cityMatch = hostname.match(/^([a-z0-9-]+)\.pedidosposta\.com$/i);
-        if (cityMatch && CITY_SUBDOMAINS.has(cityMatch[1].toLowerCase()) && url.pathname === "/") {
-            url.pathname = `/directorio/${cityMatch[1].toLowerCase()}`;
-            const rewriteResponse = NextResponse.rewrite(url);
-            response.cookies.getAll().forEach(({ name, value }) => {
-                rewriteResponse.cookies.set(name, value);
-            });
-            return rewriteResponse;
+        if (cityMatch && url.pathname === "/") {
+            const sub = cityMatch[1].toLowerCase();
+            if (!RESERVED.has(sub)) {
+                // Check if it's a city
+                const { data: cityRow } = await supabase
+                    .from("directory_cities")
+                    .select("slug")
+                    .eq("slug", sub)
+                    .eq("is_active", true)
+                    .maybeSingle();
+
+                if (cityRow) {
+                    citySlug = sub;
+                    url.pathname = `/directorio/${sub}`;
+                    const rewriteResponse = NextResponse.rewrite(url);
+                    response.cookies.getAll().forEach(({ name, value }) => {
+                        rewriteResponse.cookies.set(name, value);
+                    });
+                    return rewriteResponse;
+                }
+            }
         }
     }
 
@@ -78,8 +96,7 @@ export default async function proxy(request: NextRequest) {
 
     if (!isLocalhost && !isVercel && !hostname.startsWith("www.")) {
         const sub = hostname.split(".")[0];
-        // No tratar ciudades como tenants
-        if (!CITY_SUBDOMAINS.has(sub)) {
+        if (!RESERVED.has(sub) && !citySlug) {
             tenantSlug = sub;
         }
     }

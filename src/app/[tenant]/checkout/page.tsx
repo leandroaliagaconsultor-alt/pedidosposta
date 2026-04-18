@@ -552,7 +552,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     setIsSubmitting(false);
                     return;
                 }
-                throw new Error(rpcError.message);
+                // Mensaje amigable en vez de error técnico crudo
+                console.error("Checkout RPC error:", rpcError.message);
+                toast.error("No pudimos procesar tu pedido. Revisá los datos e intentá de nuevo.");
+                setIsSubmitting(false);
+                return;
             }
 
             const order = { id: rpcResult.order_id };

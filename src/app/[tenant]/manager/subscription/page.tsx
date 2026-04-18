@@ -76,6 +76,7 @@ export default function SubscriptionPage({
     };
 
     const handleCancel = async () => {
+        if (cancelling) return; // prevenir doble-click
         setCancelling(true);
         try {
             const res = await fetch("/api/subscription/manage", {
