@@ -128,14 +128,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     if (newOrderRow.status === "awaiting_payment") return;
 
                     // Fetch con items en un solo viaje (JOIN profundo)
-                    const { data: fullOrder } = await supabase
+                    const { data: fullOrder, error: fetchErr } = await supabase
                         .from("orders")
                         .select("*, order_items(*, product:products(name))")
                         .eq("id", newOrderRow.id)
                         .eq("tenant_id", tenantId)
                         .single();
 
-                    if (!fullOrder) return;
+                    if (fetchErr || !fullOrder) return;
                     const newOrder = fullOrder as unknown as Order;
 
                     // Evitar duplicados si el realtime dispara dos veces
@@ -191,14 +191,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         return prev;
                     });
                     if (needsFetch) {
-                        const { data: fullOrder } = await supabase
+                        const { data: fullOrder, error: fetchErr2 } = await supabase
                             .from("orders")
                             .select("*, order_items(*, product:products(name))")
                             .eq("id", updated.id)
                             .eq("tenant_id", tenantId)
                             .single();
 
-                        if (fullOrder) {
+                        if (!fetchErr2 && fullOrder) {
                             setOrders((p) => {
                                 if (p.some((o) => o.id === updated.id)) return p;
                                 return [fullOrder as unknown as Order, ...p];

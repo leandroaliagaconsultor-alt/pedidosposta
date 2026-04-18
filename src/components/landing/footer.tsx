@@ -9,7 +9,7 @@ const links = {
   ],
   soporte: [
     { label: "Soporte", href: "mailto:hola@pedidosposta.com" },
-    { label: "WhatsApp", href: "https://wa.me/5491100000000", external: true },
+    { label: "WhatsApp", href: "https://wa.me/542324627679", external: true },
   ],
   legal: [
     { label: "Privacidad", href: "/legal/privacidad" },

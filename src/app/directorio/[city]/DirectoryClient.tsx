@@ -191,27 +191,35 @@ function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }
                     <div className="h-px bg-gray-100 mb-5" />
 
                     {/* CTA */}
-                    <a
-                        href={href}
-                        onClick={() => { trackClick(tenant.id, tenant.type); onClose(); }}
-                        target={isSaas ? undefined : "_blank"}
-                        rel={isSaas ? undefined : "noopener noreferrer"}
-                        className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-sm font-bold transition-all ${
-                            !isOpen
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none"
-                                : isSaas
-                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-[0.98]"
-                                    : "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98]"
-                        }`}
-                    >
-                        {!isOpen ? (
-                            <><Clock size={16} /> Abre más tarde</>
-                        ) : isSaas ? (
-                            <><ShoppingBag size={16} /> Ver Menú y Pedir</>
-                        ) : (
-                            <><ExternalLink size={16} /> Hacer Pedido</>
-                        )}
-                    </a>
+                    {(() => {
+                        const noLink = !isSaas && href === "#";
+                        const disabled = !isOpen || noLink;
+                        return (
+                            <a
+                                href={disabled ? undefined : href}
+                                onClick={disabled ? undefined : () => { trackClick(tenant.id, tenant.type); onClose(); }}
+                                target={isSaas ? undefined : "_blank"}
+                                rel={isSaas ? undefined : "noopener noreferrer"}
+                                className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-sm font-bold transition-all ${
+                                    disabled
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none"
+                                        : isSaas
+                                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-[0.98]"
+                                            : "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98]"
+                                }`}
+                            >
+                                {!isOpen ? (
+                                    <><Clock size={16} /> Abre más tarde</>
+                                ) : noLink ? (
+                                    <><Clock size={16} /> Sin link de pedido</>
+                                ) : isSaas ? (
+                                    <><ShoppingBag size={16} /> Ver Menú y Pedir</>
+                                ) : (
+                                    <><ExternalLink size={16} /> Hacer Pedido</>
+                                )}
+                            </a>
+                        );
+                    })()}
                     {isSaas && isOpen && (
                         <p className="text-[10px] text-center text-gray-400 mt-2.5">Pedí online directo — sin intermediarios</p>
                     )}
