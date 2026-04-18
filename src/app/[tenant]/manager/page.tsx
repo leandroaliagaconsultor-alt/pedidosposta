@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     CheckCircle2, Clock, Phone, MapPin, Package, Truck, CreditCard,
-    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle, ChevronDown
+    Loader2, Undo2, ChefHat, Bike, PartyPopper, Receipt, MessageCircle, Edit3, AlertCircle
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PrintableReceipt } from "@/components/PrintableReceipt";
@@ -86,7 +86,6 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     const [tenantSettings, setTenantSettings] = useState<{ enable_kitchen_tickets: boolean; enable_delivery_tickets: boolean } | null>(null);
     const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
     const [customTime, setCustomTime] = useState<string>("");
-    const [showDelivered, setShowDelivered] = useState(false);
 
     // ── Adjustment State ──
     const [adjustingOrder, setAdjustingOrder] = useState<Order | null>(null);
@@ -374,25 +373,12 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         }, 100);
     };
 
-    // ── Filtered orders for Active Tab — mobile only (memoized) ────────
+    // ── Filtered orders for Active Tab (memoized) ──────────────────────
     const currentTabConfig = TABS.find((t) => t.key === activeTab)!;
     const filteredOrders = React.useMemo(() => {
         const filtered = orders.filter((o) => currentTabConfig.statuses.includes(o.status));
         return activeTab === "delivered" ? filtered.slice(0, 15) : filtered;
     }, [orders, activeTab, currentTabConfig.statuses]);
-
-    // ── Orders by column — desktop Kanban (memoized) ────────────────
-    const columnOrders = React.useMemo(() => {
-        const result: Record<TabKey, Order[]> = { pending: [], preparing: [], on_the_way: [], delivered: [] };
-        for (const o of orders) {
-            const tab = TABS.find(t => t.statuses.includes(o.status));
-            if (tab) {
-                if (tab.key === "delivered" && result.delivered.length >= 15) continue;
-                result[tab.key].push(o);
-            }
-        }
-        return result;
-    }, [orders]);
 
     // Count badges (memoized)
     const tabCounts = React.useMemo(() => {
@@ -412,8 +398,63 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
         );
     }
 
-    // ── Render a single order card (shared between mobile & desktop) ──
-    const renderOrderCard = (order: Order) => {
+    return (
+        <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500">
+            {/* ── Header ─────────────────────────────────────────── */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
+                        Live Orders
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-400">
+                        Monitor de estado de operaciones en tiempo real.
+                    </p>
+                </div>
+            </div>
+
+            {/* ── Tabs ───────────────────────────────────────────── */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+                {TABS.map((tab) => {
+                    const isActive = activeTab === tab.key;
+                    const count = tabCounts[tab.key] || 0;
+                    const Icon = tab.icon;
+                    return (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`group relative flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95
+                                ${isActive
+                                    ? `bg-zinc-800/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
+                                    : "bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                                }`}
+                        >
+                            <Icon size={15} className={isActive ? tab.color : "text-zinc-600"} />
+                            {tab.label}
+                            {count > 0 && (
+                                <span className={`ml-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${isActive
+                                    ? "bg-white/10 text-white"
+                                    : "bg-zinc-800 text-zinc-500"
+                                    }`}>
+                                    {count}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* ── Cards Grid ─────────────────────────────────────── */}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredOrders.length === 0 ? (
+                    <div className="col-span-full flex h-[35vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
+                        <currentTabConfig.icon size={48} className="mb-4 text-zinc-700 opacity-40" />
+                        <p className="text-base font-bold text-zinc-500">Sin pedidos {currentTabConfig.label.toLowerCase()}</p>
+                        <p className="mt-1 max-w-xs text-center text-sm text-zinc-600">
+                            Los pedidos aparecerán aquí cuando cambien a este estado.
+                        </p>
+                    </div>
+                ) : (
+                    filteredOrders.map((order) => {
                         const statusTab = TABS.find(t => t.statuses.includes(order.status));
                         const borderClass = statusTab?.borderColor || "border-l-zinc-700";
                         return (
@@ -728,144 +769,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             </div>
                         </div>
                         );
-    };
-
-    return (
-        <div className="animate-in fade-in duration-500">
-            {/* ── Header ─────────────────────────────────────────── */}
-            <div className="flex items-center justify-between mb-5">
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
-                        Live Orders
-                    </h1>
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Monitor de estado de operaciones en tiempo real.
-                    </p>
-                </div>
-            </div>
-
-            {/* ════════════════════════════════════════════════════════
-                DESKTOP: Kanban Board (3 columnas) — hidden en mobile
-               ════════════════════════════════════════════════════════ */}
-            <div className="hidden lg:flex lg:flex-col gap-4">
-                {/* 3 columnas principales */}
-                <div className="grid grid-cols-3 gap-5 h-[calc(100vh-240px)]">
-                    {TABS.filter(t => t.key !== "delivered").map((tab) => {
-                        const Icon = tab.icon;
-                        const colOrders = columnOrders[tab.key];
-                        return (
-                            <div key={tab.key} className="flex flex-col min-h-0">
-                                {/* Column Header */}
-                                <div className="flex items-center gap-2.5 px-4 py-3 mb-3 rounded-xl bg-zinc-900/60 border border-zinc-800/50">
-                                    <Icon size={15} className={tab.color} />
-                                    <span className={`text-xs font-extrabold uppercase tracking-widest ${tab.color}`}>{tab.label}</span>
-                                    {colOrders.length > 0 && (
-                                        <span className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black bg-white/5 ${tab.color}`}>
-                                            {colOrders.length}
-                                        </span>
-                                    )}
-                                </div>
-                                {/* Column Body — scrollable */}
-                                <div className="flex-1 overflow-y-auto overflow-x-visible px-2 -mx-2 pb-6" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
-                                    <div className="space-y-4">
-                                    {colOrders.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-16 opacity-40">
-                                            <Icon size={32} className="text-zinc-700 mb-2" />
-                                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider">Sin pedidos</p>
-                                        </div>
-                                    ) : (
-                                        colOrders.map((order) => (
-                                            <div key={order.id} className="shrink-0 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
-                                                {renderOrderCard(order)}
-                                            </div>
-                                        ))
-                                    )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Finalizados — toggle colapsable */}
-                <div>
-                    <button
-                        onClick={() => setShowDelivered(!showDelivered)}
-                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/50 hover:bg-zinc-900/80 transition-colors"
-                    >
-                        <PartyPopper size={15} className="text-emerald-400" />
-                        <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Finalizados</span>
-                        {columnOrders.delivered.length > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black bg-white/5 text-emerald-400">
-                                {columnOrders.delivered.length}
-                            </span>
-                        )}
-                        <ChevronDown size={14} className={`ml-auto text-zinc-500 transition-transform duration-200 ${showDelivered ? "rotate-180" : ""}`} />
-                    </button>
-                    {showDelivered && (
-                        <div className="grid grid-cols-3 gap-5 mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                            {columnOrders.delivered.map((order) => (
-                                <div key={order.id} className="shrink-0">
-                                    {renderOrderCard(order)}
-                                </div>
-                            ))}
-                            {columnOrders.delivered.length === 0 && (
-                                <div className="col-span-3 flex items-center justify-center py-8 opacity-40">
-                                    <p className="text-xs font-bold text-zinc-600">Sin pedidos finalizados</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* ════════════════════════════════════════════════════════
-                MOBILE: Tabs + Cards (1 columna) — hidden en desktop
-               ════════════════════════════════════════════════════════ */}
-            <div className="lg:hidden space-y-4">
-                {/* Tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                    {TABS.map((tab) => {
-                        const isActive = activeTab === tab.key;
-                        const count = tabCounts[tab.key] || 0;
-                        const Icon = tab.icon;
-                        return (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                className={`group relative flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95
-                                    ${isActive
-                                        ? `bg-zinc-800/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
-                                        : "bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                                    }`}
-                            >
-                                <Icon size={13} className={isActive ? tab.color : "text-zinc-600"} />
-                                {tab.label}
-                                {count > 0 && (
-                                    <span className={`ml-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-black ${isActive ? "bg-white/10 text-white" : "bg-zinc-800 text-zinc-500"}`}>
-                                        {count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Cards */}
-                <div className="space-y-4 pb-20">
-                    {filteredOrders.length === 0 ? (
-                        <div className="flex h-[40vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20">
-                            <currentTabConfig.icon size={40} className="mb-3 text-zinc-700 opacity-40" />
-                            <p className="text-sm font-bold text-zinc-500">Sin pedidos {currentTabConfig.label.toLowerCase()}</p>
-                        </div>
-                    ) : (
-                        filteredOrders.map((order) => (
-                            <div key={order.id} className="transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
-                                {renderOrderCard(order)}
-                            </div>
-                        ))
-                    )}
-                </div>
+                    })
+                )}
             </div>
 
             {/* ── Receipt viewer modal ── */}
