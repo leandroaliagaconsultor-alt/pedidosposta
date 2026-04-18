@@ -399,7 +399,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     }
 
     return (
-        <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500">
+        <div className="mx-auto max-w-7xl space-y-6 animate-in fade-in duration-500">
             {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
                 <div>
@@ -444,7 +444,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             </div>
 
             {/* ── Cards Grid ─────────────────────────────────────── */}
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredOrders.length === 0 ? (
                     <div className="col-span-full flex h-[35vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
                         <currentTabConfig.icon size={48} className="mb-4 text-zinc-700 opacity-40" />
