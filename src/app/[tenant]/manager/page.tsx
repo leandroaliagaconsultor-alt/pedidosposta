@@ -46,12 +46,29 @@ interface Order {
 // ── Tab config ───────────────────────────────────────────────────────────────
 type TabKey = "pending" | "preparing" | "on_the_way" | "delivered";
 
-const TABS: { key: TabKey; label: string; statuses: string[]; icon: React.ElementType; color: string; ringColor: string }[] = [
-    { key: "pending", label: "RECIBIDOS", statuses: ["pending"], icon: Package, color: "text-primary", ringColor: "ring-primary/30" },
-    { key: "preparing", label: "CONFIRMADOS", statuses: ["preparing"], icon: ChefHat, color: "text-amber-400", ringColor: "ring-amber-400/30" },
-    { key: "on_the_way", label: "DESPACHADOS", statuses: ["on_the_way"], icon: Bike, color: "text-sky-400", ringColor: "ring-sky-400/30" },
-    { key: "delivered", label: "FINALIZADOS", statuses: ["delivered"], icon: PartyPopper, color: "text-emerald-400", ringColor: "ring-emerald-400/30" },
+const TABS: { key: TabKey; label: string; statuses: string[]; icon: React.ElementType; color: string; ringColor: string; borderColor: string }[] = [
+    { key: "pending", label: "RECIBIDOS", statuses: ["pending"], icon: Package, color: "text-primary", ringColor: "ring-primary/30", borderColor: "border-l-primary" },
+    { key: "preparing", label: "CONFIRMADOS", statuses: ["preparing"], icon: ChefHat, color: "text-amber-400", ringColor: "ring-amber-400/30", borderColor: "border-l-amber-400" },
+    { key: "on_the_way", label: "DESPACHADOS", statuses: ["on_the_way"], icon: Bike, color: "text-sky-400", ringColor: "ring-sky-400/30", borderColor: "border-l-sky-400" },
+    { key: "delivered", label: "FINALIZADOS", statuses: ["delivered"], icon: PartyPopper, color: "text-emerald-400", ringColor: "ring-emerald-400/30", borderColor: "border-l-emerald-400" },
 ];
+
+// ── Tiempo transcurrido ─────────────────────────────────────────────────────
+function TimeAgo({ createdAt }: { createdAt: string }) {
+    const [ago, setAgo] = React.useState("");
+    React.useEffect(() => {
+        const calc = () => {
+            const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+            if (diff < 1) setAgo("ahora");
+            else if (diff < 60) setAgo(`hace ${diff} min`);
+            else setAgo(`hace ${Math.floor(diff / 60)}h ${diff % 60}m`);
+        };
+        calc();
+        const interval = setInterval(calc, 30000);
+        return () => clearInterval(interval);
+    }, [createdAt]);
+    return <span className="text-[10px] font-medium text-zinc-600">{ago}</span>;
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: string }> }) {
@@ -437,22 +454,31 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         </p>
                     </div>
                 ) : (
-                    filteredOrders.map((order) => (
+                    filteredOrders.map((order) => {
+                        const statusTab = TABS.find(t => t.statuses.includes(order.status));
+                        const borderClass = statusTab?.borderColor || "border-l-zinc-700";
+                        return (
                         <div
                             key={order.id}
-                            className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-zinc-900/30 shadow-2xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${order.status === "pending"
-                                ? "border-primary/50 ring-1 ring-primary/20"
-                                : "border-zinc-800"
-                                }`}
+                            className={`flex h-full flex-col overflow-hidden rounded-2xl border-l-4 border border-zinc-800/60 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 shadow-2xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${borderClass} ${
+                                order.is_asap && order.status === "pending"
+                                    ? "shadow-[0_0_25px_-5px] shadow-red-500/15"
+                                    : ""
+                            }`}
                         >
                             {/* Card Header */}
-                            <div className="flex items-center justify-between border-b border-zinc-800/50 bg-zinc-900/80 px-5 py-4">
+                            <div className="flex items-center justify-between border-b border-zinc-800/50 bg-zinc-900/60 px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="flex items-center justify-center rounded-md bg-zinc-800 px-2.5 py-1 font-mono text-sm font-bold text-zinc-300 ring-1 ring-inset ring-zinc-700">
+                                    <span className={`flex items-center justify-center rounded-lg px-3 py-1.5 font-mono text-lg font-black tracking-tight ring-1 ring-inset ${
+                                        order.status === "pending"
+                                            ? "bg-primary/10 text-primary ring-primary/20"
+                                            : "bg-zinc-800/80 text-zinc-200 ring-zinc-700/50"
+                                    }`}>
                                         #{order.order_number}
                                     </span>
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
-                                        {order.is_asap ? (
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
+                                            {order.is_asap ? (
                                             <>
                                                 <span className="relative flex h-2 w-2">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -470,6 +496,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                 </span>
                                             </>
                                         )}
+                                        </div>
+                                        <TimeAgo createdAt={order.created_at} />
                                     </div>
                                 </div>
                                 <div
@@ -574,14 +602,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     </div>
                                 )}
 
-                                <div className="mt-auto pt-6">
-                                    <div className="flex items-center justify-between border-t border-zinc-800/50 pt-3 font-bold">
+                                <div className="mt-auto pt-4">
+                                    <div className="flex items-center justify-between rounded-xl bg-zinc-800/40 px-4 py-3 font-bold">
                                         <div className="flex flex-col">
-                                            <span className="text-xs uppercase tracking-widest text-zinc-500">Total Pago</span>
+                                            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Total</span>
                                             {order.extra_charge && order.extra_charge > 0 && (
                                                 <div className="flex items-center gap-1 text-[10px] text-amber-500/80 group/note relative cursor-help">
                                                     <AlertCircle size={10} />
-                                                    <span>Incluye ajuste: +${order.extra_charge}</span>
+                                                    <span>+${order.extra_charge} ajuste</span>
                                                     {order.internal_notes && (
                                                         <div className="absolute bottom-full left-0 mb-2 hidden group-hover/note:block w-48 rounded-lg bg-zinc-950 p-2 text-[10px] font-normal text-zinc-300 ring-1 ring-zinc-800 shadow-xl z-50">
                                                             {order.internal_notes}
@@ -590,7 +618,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-lg text-primary drop-shadow-sm font-mono">
+                                        <span className="text-xl text-primary drop-shadow-sm font-mono font-black">
                                             ${order.total_amount.toLocaleString("es-AR")}
                                         </span>
                                     </div>
@@ -740,7 +768,8 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 )}
                             </div>
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 
