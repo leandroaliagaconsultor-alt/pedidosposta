@@ -83,14 +83,30 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Right - Phone mockup with store */}
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="relative w-[280px] md:w-[320px]">
-              {/* Ambient glow behind phone */}
-              <div className="absolute -inset-8 bg-primary/15 rounded-full blur-[80px] pointer-events-none" />
+          {/* Right - Phone mockup with store (3D floating) */}
+          <div className="relative flex justify-center lg:justify-end [perspective:1200px]">
+            <div
+              className="relative w-[280px] md:w-[320px]"
+              style={{ transform: "rotateY(-6deg) rotateX(2deg)" }}
+            >
+              {/* ── Layer 0: Projected shadow (levitation) ── */}
+              <div
+                className="absolute inset-x-6 -bottom-8 h-24 rounded-[50%] pointer-events-none"
+                style={{ background: "radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 70%)", filter: "blur(18px)" }}
+              />
 
-              {/* Phone frame */}
-              <div className="relative rounded-[2.5rem] bg-zinc-900 p-[6px] shadow-2xl shadow-black/50 ring-1 ring-white/[0.08]">
+              {/* ── Layer 1: Ambient glow (green, from left light source) ── */}
+              <div className="absolute -inset-12 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 40%, rgba(34,197,94,0.18) 0%, transparent 65%)" }} />
+
+              {/* ── Layer 2: Phone frame ── */}
+              <div className="relative rounded-[2.5rem] bg-zinc-900 p-[6px] shadow-2xl shadow-black/60 ring-1 ring-white/[0.06]">
+
+                {/* Rim light — left edge green (light source interaction) */}
+                <div
+                  className="absolute -left-px top-12 bottom-12 w-[2px] rounded-full pointer-events-none z-30"
+                  style={{ background: "linear-gradient(to bottom, transparent, rgba(34,197,94,0.5) 30%, rgba(34,197,94,0.6) 50%, rgba(34,197,94,0.4) 70%, transparent)" }}
+                />
+
                 {/* Inner bezel */}
                 <div className="relative rounded-[2rem] bg-black overflow-hidden ring-1 ring-white/[0.04]">
                   {/* Dynamic Island */}
@@ -106,33 +122,55 @@ export function Hero() {
                       sizes="(max-width: 768px) 280px, 320px"
                       className="object-cover object-top"
                     />
-                    {/* Screen edge fade */}
-                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
+                    {/* Glass gloss / sheen (diagonal highlight across screen) */}
+                    <div
+                      className="absolute inset-0 pointer-events-none z-10"
+                      style={{ background: "linear-gradient(125deg, rgba(255,255,255,0.07) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.03) 100%)" }}
+                    />
+
+                    {/* Screen bottom fade */}
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Side buttons (volume + power) */}
+                {/* Side buttons */}
                 <div className="absolute -left-[2px] top-28 w-[3px] h-8 bg-zinc-700 rounded-l-sm" />
                 <div className="absolute -left-[2px] top-40 w-[3px] h-14 bg-zinc-700 rounded-l-sm" />
                 <div className="absolute -right-[2px] top-36 w-[3px] h-12 bg-zinc-700 rounded-r-sm" />
               </div>
 
-              {/* Floating card - Order notification */}
-              <div className="absolute -left-10 top-[30%] rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/10 p-3.5 shadow-2xl shadow-black/40 max-w-[190px] animate-float ring-1 ring-primary/10">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+              {/* ── Layer 3: Top reflection (specular highlight) ── */}
+              <div
+                className="absolute -inset-px rounded-[2.5rem] pointer-events-none"
+                style={{
+                  background: "linear-gradient(170deg, rgba(255,255,255,0.10) 0%, transparent 35%)",
+                  maskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
+                }}
+              />
+
+              {/* ── Layer 4: Floating notification (glassmorphism) ── */}
+              <div className="absolute -left-12 top-[28%] rounded-2xl p-4 max-w-[200px] animate-float shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7)]"
+                style={{
+                  background: "rgba(0,0,0,0.40)",
+                  backdropFilter: "blur(24px) saturate(1.4)",
+                  WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+                  border: "1px solid rgba(34,197,94,0.20)",
+                  transform: "rotateY(6deg) rotateX(-2deg)",
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)" }}>
                     <span className="text-primary text-sm font-bold">+1</span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-white">Nuevo pedido</p>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">2x Cuarto de Libra</p>
+                    <p className="text-[13px] font-semibold text-white/90">Nuevo pedido</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">2x Cuarto de Libra</p>
                     <p className="text-xs font-bold text-primary mt-1.5">$13.000</p>
                   </div>
                 </div>
               </div>
-
-              {/* Reflection line */}
-              <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" style={{ maskImage: "linear-gradient(to bottom, black 0%, transparent 50%)" }} />
             </div>
           </div>
         </div>
