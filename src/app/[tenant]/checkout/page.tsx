@@ -201,13 +201,14 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         libraries,
     });
 
-    // Location bias: priorizar resultados cerca del local (radio 20km)
+    // Location bias: priorizar resultados cerca del local (radio 10km, estricto)
     const locationBias = React.useMemo(() => {
         if (!storeCoords || typeof window === "undefined" || !window.google?.maps) return undefined;
-        return new window.google.maps.Circle({
-            center: { lat: storeCoords.lat, lng: storeCoords.lng },
-            radius: 20000,
-        });
+        const R = 0.09; // ~10km en grados
+        return new window.google.maps.LatLngBounds(
+            { lat: storeCoords.lat - R, lng: storeCoords.lng - R },
+            { lat: storeCoords.lat + R, lng: storeCoords.lng + R }
+        );
     }, [storeCoords]);
 
     const {
@@ -222,7 +223,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         requestOptions: {
             componentRestrictions: { country: "ar" },
             sessionToken: mapSessionToken ?? undefined,
-            ...(locationBias ? { locationBias } : {}),
+            ...(locationBias ? { bounds: locationBias, strictBounds: false } : {}),
         },
         debounce: 600,
     });
