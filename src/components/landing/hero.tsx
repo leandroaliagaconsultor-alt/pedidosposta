@@ -86,39 +86,53 @@ export function Hero() {
           {/* Right - Phone mockup with store */}
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative w-[280px] md:w-[320px]">
-              {/* Phone frame with premium glow */}
-              <div className="relative rounded-3xl border border-white/10 p-2 bg-zinc-900/80 shadow-[0_0_80px_-20px_rgba(34,197,94,0.2)]">
-                <div className="relative rounded-[2rem] border-[6px] border-zinc-800 bg-zinc-900 overflow-hidden">
-                  {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-800 rounded-b-2xl z-10" />
+              {/* Ambient glow behind phone */}
+              <div className="absolute -inset-8 bg-primary/15 rounded-full blur-[80px] pointer-events-none" />
 
-                  {/* Screen content - Store page */}
+              {/* Phone frame */}
+              <div className="relative rounded-[2.5rem] bg-zinc-900 p-[6px] shadow-2xl shadow-black/50 ring-1 ring-white/[0.08]">
+                {/* Inner bezel */}
+                <div className="relative rounded-[2rem] bg-black overflow-hidden ring-1 ring-white/[0.04]">
+                  {/* Dynamic Island */}
+                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-20 ring-1 ring-white/[0.06]" />
+
+                  {/* Screen content */}
                   <div className="relative aspect-[9/19.5] overflow-hidden">
                     <Image
                       src="/tienda.png"
-                      alt="Tienda de ejemplo - Catalogo de productos"
+                      alt="Tienda de ejemplo — Burger Pro"
                       fill
                       priority
                       sizes="(max-width: 768px) 280px, 320px"
-                      className="rounded-2xl object-cover object-top"
+                      className="object-cover object-top"
                     />
+                    {/* Screen edge fade */}
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Side buttons (volume + power) */}
+                <div className="absolute -left-[2px] top-28 w-[3px] h-8 bg-zinc-700 rounded-l-sm" />
+                <div className="absolute -left-[2px] top-40 w-[3px] h-14 bg-zinc-700 rounded-l-sm" />
+                <div className="absolute -right-[2px] top-36 w-[3px] h-12 bg-zinc-700 rounded-r-sm" />
+              </div>
+
+              {/* Floating card - Order notification */}
+              <div className="absolute -left-10 top-[30%] rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/10 p-3.5 shadow-2xl shadow-black/40 max-w-[190px] animate-float ring-1 ring-primary/10">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+                    <span className="text-primary text-sm font-bold">+1</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Nuevo pedido</p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">2x Cuarto de Libra</p>
+                    <p className="text-xs font-bold text-primary mt-1.5">$13.000</p>
                   </div>
                 </div>
               </div>
 
-              {/* Floating card - Order notification */}
-              <div className="absolute -left-8 top-1/3 glass-strong rounded-xl p-3 shadow-xl max-w-[180px] animate-float">
-                <div className="flex items-start gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-primary text-sm">+1</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-foreground">Nuevo pedido</p>
-                    <p className="text-[10px] text-muted-foreground">2x Cuarto de Libra</p>
-                    <p className="text-xs font-semibold text-primary mt-1">$13.000</p>
-                  </div>
-                </div>
-              </div>
+              {/* Reflection line */}
+              <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" style={{ maskImage: "linear-gradient(to bottom, black 0%, transparent 50%)" }} />
             </div>
           </div>
         </div>
