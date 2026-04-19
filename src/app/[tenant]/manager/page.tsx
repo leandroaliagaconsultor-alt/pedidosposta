@@ -47,10 +47,10 @@ interface Order {
 type TabKey = "pending" | "preparing" | "on_the_way" | "delivered";
 
 const TABS: { key: TabKey; label: string; statuses: string[]; icon: React.ElementType; color: string; ringColor: string; borderColor: string }[] = [
-    { key: "pending", label: "RECIBIDOS", statuses: ["pending"], icon: Package, color: "text-primary", ringColor: "ring-primary/30", borderColor: "border-l-primary" },
-    { key: "preparing", label: "CONFIRMADOS", statuses: ["preparing"], icon: ChefHat, color: "text-amber-400", ringColor: "ring-amber-400/30", borderColor: "border-l-amber-400" },
-    { key: "on_the_way", label: "DESPACHADOS", statuses: ["on_the_way"], icon: Bike, color: "text-sky-400", ringColor: "ring-sky-400/30", borderColor: "border-l-sky-400" },
-    { key: "delivered", label: "FINALIZADOS", statuses: ["delivered"], icon: PartyPopper, color: "text-emerald-400", ringColor: "ring-emerald-400/30", borderColor: "border-l-emerald-400" },
+    { key: "pending", label: "RECIBIDOS", statuses: ["pending"], icon: Package, color: "text-primary", ringColor: "ring-primary/30", borderColor: "border-t-primary" },
+    { key: "preparing", label: "CONFIRMADOS", statuses: ["preparing"], icon: ChefHat, color: "text-amber-400", ringColor: "ring-amber-400/30", borderColor: "border-t-amber-400" },
+    { key: "on_the_way", label: "DESPACHADOS", statuses: ["on_the_way"], icon: Bike, color: "text-sky-400", ringColor: "ring-sky-400/30", borderColor: "border-t-sky-400" },
+    { key: "delivered", label: "FINALIZADOS", statuses: ["delivered"], icon: PartyPopper, color: "text-emerald-400", ringColor: "ring-emerald-400/30", borderColor: "border-t-emerald-400" },
 ];
 
 // ── Tiempo transcurrido ─────────────────────────────────────────────────────
@@ -399,7 +399,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
     }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-6 animate-in fade-in duration-500 px-1">
+        <div className="space-y-6 animate-in fade-in duration-500">
             {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
                 <div>
@@ -456,11 +456,11 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                 ) : (
                     filteredOrders.map((order) => {
                         const statusTab = TABS.find(t => t.statuses.includes(order.status));
-                        const borderClass = statusTab?.borderColor || "border-l-zinc-700";
+                        const borderClass = statusTab?.borderColor || "border-t-zinc-700";
                         return (
                         <div
                             key={order.id}
-                            className={`flex h-full flex-col overflow-hidden rounded-2xl border-l-4 border border-zinc-800/60 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 shadow-2xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${borderClass} ${
+                            className={`flex h-full flex-col overflow-hidden rounded-2xl border-t-[3px] border border-zinc-800/60 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${borderClass} ${
                                 order.is_asap && order.status === "pending"
                                     ? "shadow-[0_0_25px_-5px] shadow-red-500/15"
                                     : ""
