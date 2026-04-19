@@ -83,91 +83,126 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Right - Phone mockup with store (3D floating) */}
-          <div className="relative flex justify-center lg:justify-end [perspective:1200px]">
-            <div
-              className="relative w-[280px] md:w-[320px]"
-              style={{ transform: "rotateY(-6deg) rotateX(2deg)" }}
-            >
-              {/* ── Layer 0: Projected shadow (levitation) ── */}
+          {/* Right - Phone mockup — fresh flat-lay scene */}
+          <div className="relative flex justify-center lg:justify-end">
+            {/* ── Scene container: warm surface ── */}
+            <div className="relative w-[340px] md:w-[400px] py-10">
+
+              {/* Warm surface gradient (simulates light wood / marble) */}
               <div
-                className="absolute inset-x-6 -bottom-8 h-24 rounded-[50%] pointer-events-none"
-                style={{ background: "radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 70%)", filter: "blur(18px)" }}
+                className="absolute inset-0 rounded-[2rem] pointer-events-none"
+                style={{
+                  background: "radial-gradient(ellipse at 50% 40%, rgba(250,245,235,0.08) 0%, rgba(250,245,235,0.03) 40%, transparent 70%)",
+                }}
               />
 
-              {/* ── Layer 1: Ambient glow (green, from left light source) ── */}
-              <div className="absolute -inset-12 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 40%, rgba(34,197,94,0.18) 0%, transparent 65%)" }} />
+              {/* ── Decorative food elements (flat-lay scatter) ── */}
+              {/* Pepper grains */}
+              <div className="absolute top-14 right-8 w-1.5 h-1.5 rounded-full bg-amber-900/30 pointer-events-none" />
+              <div className="absolute top-20 right-14 w-1 h-1 rounded-full bg-amber-900/20 pointer-events-none" />
+              <div className="absolute top-24 right-6 w-1 h-1.5 rounded-full bg-amber-800/25 pointer-events-none rotate-45" />
+              <div className="absolute bottom-28 left-10 w-1.5 h-1 rounded-full bg-amber-900/20 pointer-events-none" />
+              <div className="absolute bottom-20 left-6 w-1 h-1 rounded-full bg-amber-800/30 pointer-events-none" />
 
-              {/* ── Layer 2: Phone frame ── */}
-              <div className="relative rounded-[2.5rem] bg-zinc-900 p-[6px] shadow-2xl shadow-black/60 ring-1 ring-white/[0.06]">
+              {/* Herb leaves (rúcula) */}
+              <div
+                className="absolute top-8 left-4 w-8 h-3 rounded-full pointer-events-none rotate-[-25deg]"
+                style={{ background: "linear-gradient(135deg, rgba(74,222,128,0.15), rgba(34,197,94,0.08))" }}
+              />
+              <div
+                className="absolute top-16 left-8 w-6 h-2.5 rounded-full pointer-events-none rotate-[15deg]"
+                style={{ background: "linear-gradient(135deg, rgba(74,222,128,0.12), rgba(34,197,94,0.06))" }}
+              />
+              <div
+                className="absolute bottom-16 right-4 w-7 h-2.5 rounded-full pointer-events-none rotate-[40deg]"
+                style={{ background: "linear-gradient(135deg, rgba(74,222,128,0.13), rgba(34,197,94,0.07))" }}
+              />
+              <div
+                className="absolute bottom-24 right-10 w-5 h-2 rounded-full pointer-events-none rotate-[-10deg]"
+                style={{ background: "linear-gradient(135deg, rgba(74,222,128,0.10), rgba(34,197,94,0.05))" }}
+              />
 
-                {/* Rim light — left edge green (light source interaction) */}
+              {/* Oil drizzle accent */}
+              <div
+                className="absolute top-32 right-3 w-4 h-4 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)" }}
+              />
+              <div
+                className="absolute bottom-32 left-3 w-5 h-5 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(234,179,8,0.06) 0%, transparent 70%)" }}
+              />
+
+              {/* ── 1. CONTENEDOR PADRE — relative, SIN overflow-hidden ── */}
+              <div className="relative mx-auto w-[260px] md:w-[280px]">
+
+                {/* Soft drop shadow on surface */}
                 <div
-                  className="absolute -left-px top-12 bottom-12 w-[2px] rounded-full pointer-events-none z-30"
-                  style={{ background: "linear-gradient(to bottom, transparent, rgba(34,197,94,0.5) 30%, rgba(34,197,94,0.6) 50%, rgba(34,197,94,0.4) 70%, transparent)" }}
+                  className="absolute inset-x-4 -bottom-6 h-16 rounded-[50%] pointer-events-none"
+                  style={{ background: "radial-gradient(ellipse, rgba(0,0,0,0.20) 0%, transparent 70%)", filter: "blur(12px)" }}
                 />
 
-                {/* Inner bezel */}
-                <div className="relative rounded-[2rem] bg-black overflow-hidden ring-1 ring-white/[0.04]">
-                  {/* Dynamic Island */}
-                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-20 ring-1 ring-white/[0.06]" />
+                {/* ── 3. MARCO DEL TELÉFONO (Phone Frame) ── */}
+                <div className="relative rounded-[3rem] bg-zinc-900 border border-zinc-700/50 p-[3px] shadow-2xl shadow-black/30">
+                  {/* Bisel Interno oscuro */}
+                  <div className="rounded-[2.7rem] border-[8px] border-zinc-950 bg-zinc-950">
+                    {/* Dynamic Island */}
+                    <div className="absolute top-[14px] left-1/2 -translate-x-1/2 w-[70px] h-[18px] bg-zinc-950 rounded-full z-20" />
 
-                  {/* Screen content */}
-                  <div className="relative aspect-[9/19.5] overflow-hidden">
-                    <Image
-                      src="/tienda.png"
-                      alt="Tienda de ejemplo — Burger Pro"
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 280px, 320px"
-                      className="object-cover object-top"
-                    />
+                    {/* ── 4. LA PANTALLA — AQUÍ va overflow-hidden ── */}
+                    <div className="relative aspect-[9/19.5] rounded-[2rem] overflow-hidden">
 
-                    {/* Glass gloss / sheen (diagonal highlight across screen) */}
-                    <div
-                      className="absolute inset-0 pointer-events-none z-10"
-                      style={{ background: "linear-gradient(125deg, rgba(255,255,255,0.07) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.03) 100%)" }}
-                    />
+                      {/* ── 5. IMAGEN ── */}
+                      <Image
+                        src="/tienda.png"
+                        alt="Tienda de ejemplo — Burger Pro"
+                        fill
+                        priority
+                        sizes="(max-width: 768px) 260px, 280px"
+                        className="object-cover object-top"
+                      />
 
-                    {/* Screen bottom fade */}
-                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                      {/* Glass sheen */}
+                      <div
+                        className="absolute inset-0 pointer-events-none z-10"
+                        style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 45%)" }}
+                      />
+
+                      {/* Top fade — esfuma contra la barra superior */}
+                      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-zinc-950 via-zinc-950/60 to-transparent pointer-events-none z-10" />
+
+                      {/* ── 5. DEGRADADO DE FUSIÓN — fade to black en la base ── */}
+                      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent pointer-events-none z-10" />
+
+                      {/* Inner shadow — glass depth */}
+                      <div className="absolute inset-0 rounded-[2rem] pointer-events-none z-10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_0_20px_rgba(0,0,0,0.15)]" />
+                    </div>
                   </div>
                 </div>
 
-                {/* Side buttons */}
-                <div className="absolute -left-[2px] top-28 w-[3px] h-8 bg-zinc-700 rounded-l-sm" />
-                <div className="absolute -left-[2px] top-40 w-[3px] h-14 bg-zinc-700 rounded-l-sm" />
-                <div className="absolute -right-[2px] top-36 w-[3px] h-12 bg-zinc-700 rounded-r-sm" />
-              </div>
+                {/* ── 2. TARJETAS FLOTANTES — FUERA del marco, dentro del padre ── */}
 
-              {/* ── Layer 3: Top reflection (specular highlight) ── */}
-              <div
-                className="absolute -inset-px rounded-[2.5rem] pointer-events-none"
-                style={{
-                  background: "linear-gradient(170deg, rgba(255,255,255,0.10) 0%, transparent 35%)",
-                  maskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
-                  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
-                }}
-              />
-
-              {/* ── Layer 4: Floating notification (glassmorphism) ── */}
-              <div className="absolute -left-12 top-[28%] rounded-2xl p-4 max-w-[200px] animate-float shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7)]"
-                style={{
-                  background: "rgba(0,0,0,0.40)",
-                  backdropFilter: "blur(24px) saturate(1.4)",
-                  WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-                  border: "1px solid rgba(34,197,94,0.20)",
-                  transform: "rotateY(6deg) rotateX(-2deg)",
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.30)" }}>
-                    <span className="text-white text-sm font-bold">+1</span>
+                {/* Notification card */}
+                <div className="absolute -left-14 top-[26%] z-30 rounded-2xl p-4 max-w-[210px] animate-float bg-white shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12),0_12px_40px_-8px_rgba(0,0,0,0.08)] border border-zinc-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                      <span className="text-emerald-600 text-sm font-bold">+1</span>
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-zinc-900">Nuevo pedido</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">2x Cuarto de Libra</p>
+                      <p className="text-sm font-extrabold text-emerald-600 mt-1.5">$13.000</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-white">Nuevo pedido</p>
-                    <p className="text-[10px] text-white/70 mt-0.5">2x Cuarto de Libra</p>
-                    <p className="text-xs font-bold text-white mt-1.5">$13.000</p>
+                </div>
+
+                {/* Delivery badge */}
+                <div className="absolute -right-8 bottom-[22%] z-30 rounded-xl px-3.5 py-2.5 animate-float bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.10)] border border-zinc-100" style={{ animationDelay: "1.5s" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🛵</span>
+                    <div>
+                      <p className="text-[10px] font-bold text-zinc-900">Delivery activo</p>
+                      <p className="text-[9px] text-emerald-600 font-semibold">3 pedidos en curso</p>
+                    </div>
                   </div>
                 </div>
               </div>
