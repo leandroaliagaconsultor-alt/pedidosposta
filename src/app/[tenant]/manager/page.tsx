@@ -502,15 +502,13 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 </div>
                                 <div
                                     className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-                                        order.delivery_method === "DINE_IN"
-                                            ? "bg-violet-500/10 text-violet-400 ring-1 ring-inset ring-violet-500/20"
-                                            : order.delivery_method === "DELIVERY"
-                                                ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
-                                                : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
+                                        order.delivery_method === "DELIVERY"
+                                            ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
+                                            : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
                                         }`}
                                 >
-                                    {order.delivery_method === "DINE_IN" ? <ChefHat size={14} /> : order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
-                                    {order.delivery_method === "DINE_IN" ? `Mesa ${order.table_number || "?"}` : order.delivery_method}
+                                    {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
+                                    {order.delivery_method}
                                     <div className="flex gap-1 ml-auto">
                                         {tenantSettings?.enable_kitchen_tickets && (
                                             <button
@@ -565,7 +563,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         </div>
                                     )}
                                     {/* Payment method */}
-                                    {order.payment_method && order.delivery_method !== "DINE_IN" && (
+                                    {order.payment_method && (
                                         <div className="flex items-center gap-2">
                                             <CreditCard size={14} className="text-zinc-500" />
                                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${

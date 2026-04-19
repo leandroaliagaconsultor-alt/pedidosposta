@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { X, Minus, Plus, ShoppingBag, ChefHat, Loader2, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
+import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/store/cartStore";
-import { createClient } from "@/lib/supabase/client";
 import type { ThemeTokens } from "@/lib/utils/theme";
 import {
     Sheet,
@@ -27,20 +25,16 @@ interface CartDrawerProps {
 export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, accentColor, accentTextColor }: CartDrawerProps) {
     const router = useRouter();
     const params = useParams() as { tenant: string };
-    const searchParams = useSearchParams();
-    const tableNumber = searchParams.get("mesa");
     const tenantSlug = params.tenant;
 
-    const { items, updateQuantity, removeItem, clearCart } = useCartStore();
-    const [sendingToKitchen, setSendingToKitchen] = useState(false);
-    const [sentSuccess, setSentSuccess] = useState(false);
+    const { items, updateQuantity, removeItem } = useCartStore();
 
     // Cerrar el drawer si se queda sin items
     React.useEffect(() => {
-        if (open && items.length === 0 && !sentSuccess) {
+        if (open && items.length === 0) {
             onOpenChange(false);
         }
-    }, [items.length, open, sentSuccess, onOpenChange]);
+    }, [items.length, open, onOpenChange]);
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -51,90 +45,6 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
         }, 300);
     };
 
-    // ── MESA: enviar directo a cocina sin checkout ──
-    const handleSendToKitchen = async () => {
-        if (items.length === 0 || sendingToKitchen) return;
-        setSendingToKitchen(true);
-
-        try {
-            const supabase = createClient();
-
-            // Get tenant ID
-            const { data: tenantData } = await supabase
-                .from("tenants")
-                .select("id")
-                .eq("slug", tenantSlug)
-                .single();
-
-            if (!tenantData) throw new Error("Tenant not found");
-
-            // Send order via RPC (same as checkout but minimal data)
-            const { error } = await supabase.rpc("process_checkout", {
-                payload: {
-                    tenant_id: tenantData.id,
-                    customer_name: `Mesa ${tableNumber}`,
-                    first_name: `Mesa ${tableNumber}`,
-                    last_name: "",
-                    customer_phone: "",
-                    customer_address: `Mesa ${tableNumber}`,
-                    delivery_notes: `Mesa ${tableNumber}`,
-                    delivery_method: "DINE_IN",
-                    payment_method: "CASH",
-                    is_asap: true,
-                    scheduled_time: null,
-                    scheduled_slot: null,
-                    total_amount: subtotal,
-                    delivery_fee: 0,
-                    table_number: tableNumber,
-                    status: "pending",
-                    receipt_url: null,
-                    items: items.map((item) => ({
-                        product_id: item.productId,
-                        quantity: item.quantity,
-                        unit_price: item.price,
-                        total_price: item.price * item.quantity,
-                        notes: item.modifiersText || null,
-                    })),
-                },
-            });
-
-            if (error) throw error;
-
-            setSentSuccess(true);
-            clearCart();
-
-            // Reset after 3 seconds
-            setTimeout(() => {
-                setSentSuccess(false);
-                onOpenChange(false);
-            }, 3000);
-        } catch (err) {
-            console.error("Error sending to kitchen:", err);
-            toast.error("No se pudo enviar el pedido. Intentá de nuevo.");
-            setSendingToKitchen(false);
-        }
-    };
-
-    // ── Success screen ──
-    if (sentSuccess) {
-        return (
-            <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent className={`flex w-full flex-col p-0 sm:max-w-md shadow-2xl overflow-hidden ${t.bg} ${t.surfaceBorder}`}>
-                    <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ backgroundColor: `${accentColor}20` }}>
-                            <CheckCircle2 size={40} style={{ color: accentColor }} />
-                        </div>
-                        <h2 className={`text-2xl font-extrabold mb-2 ${t.text}`}>¡Pedido enviado!</h2>
-                        <p className={`text-sm ${t.textMuted}`}>
-                            Tu pedido para la <strong className={t.text}>Mesa {tableNumber}</strong> fue enviado a cocina.
-                        </p>
-                        <p className={`text-xs mt-3 ${t.textMuted}`}>Podés seguir agregando items si querés.</p>
-                    </div>
-                </SheetContent>
-            </Sheet>
-        );
-    }
-
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className={`flex w-full flex-col p-0 sm:max-w-md shadow-2xl overflow-hidden ${t.bg} ${t.surfaceBorder}`}>
@@ -142,7 +52,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
                 <SheetHeader className={`border-b p-5 relative z-10 shrink-0 ${t.navBorder} ${t.navBg}`}>
                     <SheetTitle className={`flex items-center gap-2 text-xl tracking-tight ${t.text}`}>
                         <ShoppingBag className="h-5 w-5" style={{ color: accentColor }} />
-                        {tableNumber ? `Mesa ${tableNumber}` : "Tu Orden"}
+                        Tu Orden
                     </SheetTitle>
                 </SheetHeader>
 
@@ -211,43 +121,24 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
                                 <span>Subtotal</span>
                                 <span>${subtotal.toFixed(0)}</span>
                             </div>
-                            {!tableNumber && (
-                                <div className={`flex justify-between font-medium border-b pb-3 ${t.textMuted} ${t.surfaceBorder}`}>
-                                    <span>Envío y Descuentos</span>
-                                    <span className="text-xs text-right">Se calculan en el Checkout</span>
-                                </div>
-                            )}
+                            <div className={`flex justify-between font-medium border-b pb-3 ${t.textMuted} ${t.surfaceBorder}`}>
+                                <span>Envío y Descuentos</span>
+                                <span className="text-xs text-right">Se calculan en el Checkout</span>
+                            </div>
                             <div className={`flex justify-between pt-1 text-xl font-extrabold tracking-tight ${t.text}`}>
-                                <span>{tableNumber ? "Total" : "Total Parcial"}</span>
+                                <span>Total Parcial</span>
                                 <span style={{ color: accentColor }}>${subtotal.toFixed(0)}</span>
                             </div>
                         </div>
 
                         {isStoreOpen ? (
-                            tableNumber ? (
-                                /* ── MESA: Enviar directo a cocina ── */
-                                <button
-                                    onClick={handleSendToKitchen}
-                                    disabled={sendingToKitchen}
-                                    className="w-full rounded-2xl px-4 py-4 font-black tracking-widest transition-transform hover:scale-[1.02] active:scale-95 text-center uppercase flex items-center justify-center gap-3 disabled:opacity-70"
-                                    style={{ backgroundColor: accentColor, color: accentTextColor }}
-                                >
-                                    {sendingToKitchen ? (
-                                        <><Loader2 size={20} className="animate-spin" /> Enviando...</>
-                                    ) : (
-                                        <><ChefHat size={20} /> Enviar a Cocina</>
-                                    )}
-                                </button>
-                            ) : (
-                                /* ── Normal: ir al checkout ── */
-                                <button
-                                    onClick={handleCheckoutRedirect}
-                                    className="w-full rounded-2xl px-4 py-4 font-black tracking-widest transition-transform hover:scale-[1.02] active:scale-95 text-center uppercase"
-                                    style={{ backgroundColor: accentColor, color: accentTextColor }}
-                                >
-                                    Finalizar Pedido
-                                </button>
-                            )
+                            <button
+                                onClick={handleCheckoutRedirect}
+                                className="w-full rounded-2xl px-4 py-4 font-black tracking-widest transition-transform hover:scale-[1.02] active:scale-95 text-center uppercase"
+                                style={{ backgroundColor: accentColor, color: accentTextColor }}
+                            >
+                                Finalizar Pedido
+                            </button>
                         ) : (
                             <button
                                 disabled

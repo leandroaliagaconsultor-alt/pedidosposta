@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     ListOrdered, Palette, LayoutDashboard, LogOut,
     Loader2, Settings, BarChart, Menu, X, ExternalLink,
-    CreditCard, AlertTriangle, Tag, QrCode,
+    CreditCard, AlertTriangle, Tag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
@@ -63,7 +63,6 @@ export default function ManagerShell({
         { name: "Brand Studio", href: `/${tenant}/manager/brand`, icon: Palette },
         { name: "Configuración", href: `/${tenant}/manager/settings`, icon: Settings },
         { name: "Cupones", href: `/${tenant}/manager/coupons`, icon: Tag },
-        { name: "QR Mesas", href: `/${tenant}/manager/tables`, icon: QrCode },
         { name: "Analytics", href: `/${tenant}/manager/analytics`, icon: BarChart },
         { name: "Suscripción", href: `/${tenant}/manager/subscription`, icon: CreditCard },
     ];

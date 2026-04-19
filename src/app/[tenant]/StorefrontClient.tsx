@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
 import { Toaster } from "sonner";
 import { ShoppingBag, MapPin, Clock, Bike, ShoppingCart, Instagram, Facebook, MessageCircle } from "lucide-react";
 
@@ -68,9 +67,6 @@ function isSubscriptionExpired(brand: StorefrontData["brand"]): boolean {
 
 export default function StorefrontClient({ data }: { data: StorefrontData }) {
     const { brand, categories, products } = data;
-    const searchParams = useSearchParams();
-    const tableNumber = searchParams.get("mesa");
-
     const [activeCategory, setActiveCategory] = useState<string | null>(
         categories.length > 0 ? categories[0].id : null
     );
@@ -78,12 +74,6 @@ export default function StorefrontClient({ data }: { data: StorefrontData }) {
     const [isStoreOpen, setIsStoreOpen] = useState(true);
 
     const cartItems = useCartStore((state) => state.items);
-    const clearCart = useCartStore((state) => state.clearCart);
-
-    // Clear cart when entering with QR mesa (fresh session)
-    useEffect(() => {
-        if (tableNumber) clearCart();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const totalItems = React.useMemo(() => cartItems.reduce((acc, item) => acc + item.quantity, 0), [cartItems]);
 
     const themeEngine = useTenantThemeEngine({
