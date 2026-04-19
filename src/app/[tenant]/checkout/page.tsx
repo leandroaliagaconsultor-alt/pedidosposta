@@ -157,6 +157,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isManualAddressMode, setIsManualAddressMode] = useState(false);
     const [showManualLink, setShowManualLink] = useState(false);
+    const [tenantCity, setTenantCity] = useState<string | null>(null);
     const [manualGpsLoading, setManualGpsLoading] = useState(false);
     const [manualGpsDone, setManualGpsDone] = useState(false);
     const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -336,12 +337,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order")
+                .select("id, city, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order")
                 .eq("slug", tenantSlug)
                 .single();
 
             if (tenantData) {
                 setTenantId(tenantData.id);
+                setTenantCity(tenantData.city || null);
                 // Batch tenant config (1 render)
                 setTenantConfig({
                     isMPActive: !!tenantData.is_mp_active,
@@ -369,6 +371,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         const results = await getGeocode({ address: tenantData.store_address });
                         resolvedCoords = getLatLng(results[0]);
                     } catch { /* store coords unavailable */ }
+                } else if (tenantData.city) {
+                    // Fallback: geocodificar la ciudad del tenant para bias del autocomplete
+                    try {
+                        const results = await getGeocode({ address: `${tenantData.city}, Buenos Aires, Argentina` });
+                        resolvedCoords = getLatLng(results[0]);
+                    } catch { /* city geocode unavailable */ }
                 }
 
                 // Batch delivery config (1 render)
@@ -777,7 +785,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                         }
                                                     }}
                                                     disabled={!ready || !isLoaded}
-                                                    placeholder="Ej: Calle 22 N° 1207"
+                                                    placeholder={tenantCity ? `Ej: Calle 22 N° 1207, ${tenantCity.charAt(0).toUpperCase() + tenantCity.slice(1)}` : "Ej: Calle 22 N° 1207"}
                                                     className={`${inputStyle(!!errors.street, isLight)} pl-10`}
                                                 />
                                             </div>
