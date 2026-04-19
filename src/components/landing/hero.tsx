@@ -161,13 +161,13 @@ export function Hero() {
                 }}
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                    <span className="text-primary text-sm font-bold">+1</span>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.30)" }}>
+                    <span className="text-white text-sm font-bold">+1</span>
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-white/90">Nuevo pedido</p>
-                    <p className="text-[10px] text-white/40 mt-0.5">2x Cuarto de Libra</p>
-                    <p className="text-xs font-bold text-primary mt-1.5">$13.000</p>
+                    <p className="text-[13px] font-semibold text-white">Nuevo pedido</p>
+                    <p className="text-[10px] text-white/70 mt-0.5">2x Cuarto de Libra</p>
+                    <p className="text-xs font-bold text-white mt-1.5">$13.000</p>
                   </div>
                 </div>
               </div>
