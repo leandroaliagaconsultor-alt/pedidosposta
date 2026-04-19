@@ -36,7 +36,7 @@ export function Header() {
           {/* Logo */}
           <a href="/" className="flex items-center">
             <Image
-              src="/logo.png"
+              src="/brand/logo-white.png"
               alt="PedidosPosta"
               width={220}
               height={48}

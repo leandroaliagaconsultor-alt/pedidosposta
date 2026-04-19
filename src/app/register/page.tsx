@@ -48,7 +48,7 @@ export default function RegisterPage() {
                 <div className="mb-8 text-center">
                     <a href="/" className="inline-block mb-6">
                         <Image
-                            src="/logo.png"
+                            src="/brand/logo-white.png"
                             alt="PedidosPosta"
                             width={320}
                             height={72}

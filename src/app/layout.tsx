@@ -73,7 +73,7 @@ export default function RootLayout({
             <head>
                 <link rel="manifest" href="/manifest.json" />
                 <meta name="theme-color" content="#22c55e" />
-                <link rel="apple-touch-icon" href="/logo.png" />
+                <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
             </head>
             <body className={`${inter.variable} ${oswald.variable} ${zilla.variable} ${space.variable} font-sans overflow-x-hidden w-full`}>
                 {children}
