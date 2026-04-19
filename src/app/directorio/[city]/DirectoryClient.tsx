@@ -272,9 +272,9 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
             <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-600" />
 
             <header className="sticky top-0 z-50 bg-zinc-900 border-b border-zinc-800/60 shadow-sm">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between py-4 sm:py-5">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <Link href="/">
-                        <Image src="/brand/logo-white.png" alt="PedidosPosta" width={400} height={80} className="h-14 sm:h-20 w-auto" priority />
+                        <Image src="/brand/logo-white.png" alt="PedidosPosta" width={300} height={80} className="h-8 sm:h-10 w-auto" priority />
                     </Link>
                     <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-sm text-white hover:bg-zinc-700 transition">
                         <MapPin size={14} className="text-emerald-400" />
@@ -400,7 +400,7 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
 
             <footer className="border-t border-zinc-800 bg-zinc-900">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-center space-y-2">
-                    <Image src="/brand/logo-white.png" alt="PedidosPosta" width={180} height={40} className="h-9 w-auto mx-auto opacity-60" />
+                    <Image src="/brand/logo-white.png" alt="PedidosPosta" width={200} height={52} className="h-7 w-auto mx-auto opacity-60" />
                     <p className="text-[11px] text-zinc-500">Directorio gastronómico de {cityName}</p>
                     <p className="text-[11px] text-zinc-500">¿Tenés un local? <Link href="/register" className="text-emerald-400 hover:underline font-semibold">Registrate gratis</Link></p>
                 </div>

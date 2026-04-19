@@ -38,9 +38,9 @@ export function Header() {
             <Image
               src="/brand/logo-white.png"
               alt="PedidosPosta"
-              width={400}
+              width={300}
               height={80}
-              className="h-14 sm:h-20 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain"
               priority
             />
           </a>
