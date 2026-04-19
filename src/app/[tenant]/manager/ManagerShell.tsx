@@ -111,7 +111,7 @@ export default function ManagerShell({
                 <div className="p-6">
                     <Link href={`/${tenant}/manager`} className="flex items-center">
                         <img
-                            src="/brand/logo-white.png"
+                            src="/brand/logo-color.png"
                             alt="PedidosPosta"
                             className="h-10 w-auto object-contain cursor-pointer"
                         />
@@ -169,7 +169,7 @@ export default function ManagerShell({
                 <div>
                     <Link href={`/${tenant}/manager`} className="flex items-center">
                         <img
-                            src="/brand/logo-white.png"
+                            src="/brand/logo-color.png"
                             alt="PedidosPosta"
                             className="h-8 w-auto object-contain cursor-pointer"
                         />
