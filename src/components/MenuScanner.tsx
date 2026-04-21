@@ -229,7 +229,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
               className="px-8 py-4 bg-white text-black font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg shadow-white/5"
             >
               <FileSearch size={22} />
-              Comenzar Magia con Gemini
+              Escanear Menú con IA
             </button>
           )}
         </div>

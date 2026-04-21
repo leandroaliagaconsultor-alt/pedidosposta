@@ -1,12 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: Request) {
   try {
-    // Auth check — solo usuarios logueados con tenant
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -20,75 +19,61 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    // Validar tipo y tamaño de archivo
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Formato de imagen no soportado. Usa JPG, PNG o WebP." }, { status: 400 });
+      return NextResponse.json({ error: "Formato no soportado. Usa JPG, PNG o WebP." }, { status: 400 });
     }
     if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "La imagen es muy pesada. Maximo 10MB." }, { status: 400 });
+      return NextResponse.json({ error: "Imagen muy pesada. Máximo 10MB." }, { status: 400 });
     }
 
-    // Inicializando el modelo estable 2.5 Flash
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    // Convertir archivo a base64
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Data = buffer.toString("base64");
 
-    const prompt = `Actua como un extractor de datos estructurados para menús de restaurantes. 
-Tu tarea es leer la imagen del menú y extraer todas las categorías y productos.
+    const mediaType = file.type === "image/jpg" ? "image/jpeg" : file.type as "image/jpeg" | "image/png" | "image/webp";
 
-Devuelve ÚNICAMENTE un JSON (sin markdown, sin bloques de código, sin texto adicional) con esta estructura exacta:
-{
-  "categorias": [
-    {
-      "nombre": "String",
-      "productos": [
+    const result = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      messages: [
         {
-          "nombre": "String",
-          "descripcion": "String (o vacío)",
-          "precio": Number (o 0 si no se lee)
-        }
-      ]
-    }
-  ]
-}
-
-Si no puedes leer la imagen con claridad o no parece un menú, devuelve un error descriptivo en JSON.`;
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: file.type,
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: base64Data },
+            },
+            {
+              type: "text",
+              text: `Extraé categorías y productos de este menú. Respondé SOLO JSON:
+{"categorias":[{"nombre":"Cat","productos":[{"nombre":"Prod","descripcion":"","precio":0}]}]}
+Si no es un menú legible, respondé: {"error":"descripción del problema"}`,
+            },
+          ],
         },
-      },
-    ]);
+      ],
+    });
 
-    const response = await result.response;
-    const text = response.text();
-
-    console.log("Respuesta cruda de Gemini:", text);
-
-    // Limpieza estricta del JSON
-    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    const cleanText = text.replace(/```json/gi, "").replace(/```/g, "").trim();
 
     try {
-      const parsedData = JSON.parse(cleanText);
-      return NextResponse.json(parsedData);
-    } catch (parseError: any) {
-      console.error("❌ ERROR EN API SCAN-MENU (Parse):", parseError, "Texto recibido:", cleanText);
+      const parsed = JSON.parse(cleanText);
+      if (parsed.error) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      return NextResponse.json(parsed);
+    } catch {
+      console.error("Parse error, raw response:", cleanText);
       return NextResponse.json(
-        { error: "La IA devolvió un formato inválido. Revisa los logs para más detalles." },
+        { error: "La IA devolvió un formato inválido. Intentá con otra foto." },
         { status: 400 }
       );
     }
   } catch (error: any) {
-    console.error("❌ ERROR EN API SCAN-MENU:", error);
+    console.error("Error scan-menu:", error);
     return NextResponse.json(
-      { error: error.message || "Error desconocido en el servidor" },
+      { error: error.message || "Error del servidor" },
       { status: 500 }
     );
   }
