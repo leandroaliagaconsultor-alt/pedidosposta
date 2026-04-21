@@ -45,9 +45,18 @@ export async function POST(req: Request) {
             },
             {
               type: "text",
-              text: `Extraé categorías y productos de este menú. Respondé SOLO JSON:
-{"categorias":[{"nombre":"Cat","productos":[{"nombre":"Prod","descripcion":"","precio":0}]}]}
-Si no es un menú legible, respondé: {"error":"descripción del problema"}`,
+              text: `Extraé el menú de esta imagen. Distinguí PRODUCTOS de MODIFICADORES:
+- PRODUCTO: un plato/item que se pide (ej: "Hamburguesa Clásica", "Pizza Muzzarella")
+- MODIFICADOR: variante de tamaño/tipo que modifica un producto (ej: "Simple/Doble/Triple", "Chica/Grande", "Con queso/Sin queso"). Los modificadores tienen precio extra o reemplazan el precio base.
+
+Respondé SOLO JSON:
+{"categorias":[{"nombre":"Cat","productos":[{"nombre":"Prod","descripcion":"","precio":0,"modificadores":[{"nombre":"Tamaño","opciones":[{"nombre":"Simple","precio_extra":0},{"nombre":"Doble","precio_extra":500}]}]}]}]}
+
+Reglas:
+- Si un producto tiene variantes (simple/doble/triple, chico/mediano/grande), NO crees productos separados. Creá UN producto con un grupo de modificadores.
+- El precio base del producto es el de la opción más barata. Las otras opciones llevan precio_extra (diferencia con el base).
+- Si no hay modificadores, dejá el array vacío [].
+- Si no es un menú legible: {"error":"descripción"}`,
             },
           ],
         },
