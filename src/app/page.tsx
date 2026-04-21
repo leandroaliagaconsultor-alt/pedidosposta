@@ -1,7 +1,10 @@
 import { Header } from "@/components/landing/header"
 import { Hero } from "@/components/landing/hero"
-import { CommissionComparison } from "@/components/landing/commission-comparison"
+import { StatsBand } from "@/components/landing/stats-band"
 import { ProblemSection } from "@/components/landing/problem-section"
+import { CommissionComparison } from "@/components/landing/commission-comparison"
+import { AIMenu } from "@/components/landing/ai-menu"
+import { TargetCities } from "@/components/landing/target-cities"
 import { FeaturesInteractive } from "@/components/landing/features-interactive"
 import { Pricing } from "@/components/landing/pricing"
 import { FAQ } from "@/components/landing/faq"
@@ -31,15 +34,18 @@ const jsonLd = {
 
 export default function LandingPage() {
   return (
-    <main id="main" className="min-h-screen bg-background text-foreground">
+    <main id="main" className="min-h-screen">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
       <Hero />
-      <CommissionComparison />
+      <StatsBand />
       <ProblemSection />
+      <CommissionComparison />
+      <AIMenu />
+      <TargetCities />
       <FeaturesInteractive />
       <Pricing />
       <FAQ />

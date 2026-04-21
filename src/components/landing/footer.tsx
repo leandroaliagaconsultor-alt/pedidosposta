@@ -1,119 +1,53 @@
-import Image from "next/image"
-import { Globe, MessageCircle, Mail } from "lucide-react"
-
-const links = {
-  producto: [
-    { label: "Funcionalidades", href: "#features" },
-    { label: "Precios", href: "#pricing" },
-    { label: "FAQ", href: "#faq" },
-  ],
-  soporte: [
-    { label: "Soporte", href: "mailto:hola@pedidosposta.com" },
-    { label: "WhatsApp", href: "https://wa.me/542324627679", external: true },
-  ],
-  legal: [
-    { label: "Privacidad", href: "/legal/privacidad" },
-    { label: "Términos", href: "/legal/terminos" },
-  ],
-}
-
-const social = [
-  { icon: Globe, href: "#", label: "Instagram" },
-  { icon: MessageCircle, href: "#", label: "Twitter" },
-  { icon: Mail, href: "mailto:hola@pedidosposta.com", label: "Email" },
-]
+import Link from "next/link"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/30 bg-card/30">
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-5 gap-8">
+    <footer className="bg-[var(--ink)] text-[var(--cream)] pt-[60px] pb-[30px] border-t border-white/[.06]">
+      <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10">
           {/* Brand */}
-          <div className="md:col-span-2">
-            <a href="/" className="inline-block mb-4">
-              <Image
-                src="/brand/logo-color.png"
-                alt="PedidosPosta"
-                width={200}
-                height={52}
-                className="h-8 sm:h-10 w-auto object-contain"
-              />
-            </a>
-            <p className="text-sm text-muted-foreground mb-4 max-w-xs">
-              El sistema de pedidos online para gastronómicos que quieren dejar de perder ventas por WhatsApp.
+          <div>
+            <Link href="/" className="flex items-center mb-4">
+              <span className="text-[22px] tracking-tight text-[var(--cream)]/55" style={{ fontFamily: "var(--font-display), sans-serif" }}>Pedidos</span>
+              <span className="text-[22px] tracking-tight text-[var(--cream)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Posta</span>
+              <span className="inline-block w-[10px] h-[10px] rounded-full bg-[var(--teal)] ml-[2px]" />
+            </Link>
+            <p className="text-sm text-[var(--cream)]/60 max-w-[320px] leading-relaxed">
+              El sistema de pedidos online para el gastronómico del interior que quiere dejar de trabajar para otras apps.
             </p>
-            {/* Social */}
-            <div className="flex items-center gap-3">
-              {social.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                  aria-label={item.label}
-                >
-                  <item.icon className="w-4 h-4" />
-                </a>
-              ))}
+            <div className="flex gap-[10px] mt-4">
+              <a href="#" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">IG</a>
+              <a href="https://wa.me/542324627679" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">WA</a>
+              <a href="mailto:hola@pedidosposta.com" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">@</a>
             </div>
           </div>
 
           {/* Producto */}
           <div>
-            <h4 className="font-medium text-sm mb-3">Producto</h4>
-            <ul className="space-y-2">
-              {links.producto.map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <h5 className="text-[13px] tracking-[.08em] uppercase m-0 mb-[14px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Producto</h5>
+            <a href="#features" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">Funcionalidades</a>
+            <a href="#pricing" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">Precios</a>
+            <a href="#faq" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">FAQ</a>
           </div>
 
           {/* Soporte */}
           <div>
-            <h4 className="font-medium text-sm mb-3">Soporte</h4>
-            <ul className="space-y-2">
-              {links.soporte.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    {...("external" in link && link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <h5 className="text-[13px] tracking-[.08em] uppercase m-0 mb-[14px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Soporte</h5>
+            <a href="mailto:hola@pedidosposta.com" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">hola@pedidosposta.com</a>
+            <a href="https://wa.me/542324627679" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">WhatsApp</a>
           </div>
 
           {/* Legal */}
           <div>
-            <h4 className="font-medium text-sm mb-3">Legal</h4>
-            <ul className="space-y-2">
-              {links.legal.map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <h5 className="text-[13px] tracking-[.08em] uppercase m-0 mb-[14px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Legal</h5>
+            <a href="#" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">Privacidad</a>
+            <a href="#" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">Términos</a>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-border/30 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            2026 PedidosPosta. Todos los derechos reservados.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Hecho en Argentina
-          </p>
+        <div className="flex justify-between border-t border-white/[.08] mt-10 pt-6 text-xs text-[var(--cream)]/50 flex-wrap gap-[10px]">
+          <span>2026 PedidosPosta<span className="inline-block w-2 h-2 rounded-full bg-[var(--teal)] mx-1" /> Todos los derechos reservados.</span>
+          <span>Hecho con 🧉 en Argentina</span>
         </div>
       </div>
     </footer>

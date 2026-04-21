@@ -4,88 +4,96 @@
 
 @layer base {
   :root {
-    --brand-color: #22c55e;
+    /* New landing palette */
+    --teal: #43926A;
+    --teal-deep: #2F6E4F;
+    --teal-soft: #D7E9DE;
+    --clay: #E25A2B;
+    --clay-deep: #B9431C;
+    --cream: #F6F2EA;
+    --cream-2: #EFE8D8;
+    --ink: #0F1210;
+    --plomo: #575757;
+    --humo: #E9E7E2;
+    --line: rgba(15,18,16,.12);
+    --line-strong: rgba(15,18,16,.22);
 
-    /* shadcn/landing HSL variables */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 142 71% 45%;
+    --brand-color: #43926A;
+
+    --background: 40 30% 95%;
+    --foreground: 150 14% 6%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 14% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 14% 6%;
+    --primary: 150 37% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --secondary: 40 20% 90%;
+    --secondary-foreground: 150 14% 6%;
+    --muted: 40 15% 92%;
+    --muted-foreground: 0 0% 34%;
+    --accent: 16 77% 53%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 142 71% 45%;
+    --border: 40 10% 88%;
+    --input: 40 10% 88%;
+    --ring: 150 37% 42%;
     --radius: 0.5rem;
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  transition: background-color 0.5s ease;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Override utility colors to use the brand color */
-.text-primary {
-  color: var(--brand-color) !important;
+/* ─── Landing Typography ─── */
+.display {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 0.92;
+  text-transform: uppercase;
 }
 
-.bg-primary {
-  background-color: var(--brand-color) !important;
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
-.border-primary {
-  border-color: var(--brand-color) !important;
-}
-
-/* ─── Landing page custom utilities ─── */
-
+/* ─── Landing Utilities ─── */
 @layer utilities {
   .glass {
     background: hsl(0 0% 8% / 0.6);
     border: 1px solid hsl(0 0% 100% / 0.06);
     backdrop-filter: blur(12px);
   }
-
-  .glass-strong {
-    background: hsl(0 0% 10% / 0.8);
-    border: 1px solid hsl(0 0% 100% / 0.1);
-    backdrop-filter: blur(20px);
-  }
-
-  .text-gradient {
-    background: linear-gradient(135deg, var(--brand-color) 0%, #4ade80 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .bg-grid {
-    background-image:
-      linear-gradient(hsl(0 0% 100% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-
-  .glow-subtle {
-    box-shadow: 0 0 40px -10px hsl(142 71% 45% / 0.15);
-  }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+/* ─── Animations ─── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes scrollX {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }

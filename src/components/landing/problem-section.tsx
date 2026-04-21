@@ -1,176 +1,114 @@
 "use client"
 
-import { MessageCircle, Clock, AlertTriangle, Ban, Mic, CheckCheck } from "lucide-react"
+import { useEffect, useRef } from "react"
 
-const painPoints = [
-  { icon: MessageCircle, text: "Pedidos perdidos en el scroll infinito" },
-  { icon: Clock, text: "Audios de 2 minutos para pedir una pizza" },
-  { icon: AlertTriangle, text: "Errores de interpretacion constantes" },
-  { icon: Ban, text: "Sin historial ni metricas de ventas" },
+const chats = [
+  { n: "María Rodríguez", m: "Hola quiero pedir", t: "23:45", u: 3, urgent: true },
+  { n: "Juan Pérez", m: "🎤 Audio (0:47)", t: "23:42", u: 1, audio: true },
+  { n: "Carla Gómez", m: "me pasas el menú??", t: "23:38", u: 2 },
+  { n: "Pedro Martínez", m: "hola estás?", t: "23:35", u: 5, urgent: true },
+  { n: "Laura Sánchez", m: "🎤 Audio (1:23)", t: "23:30", audio: true },
+  { n: "Diego Fernández", m: "quiero 2 hamburguesas", t: "23:28", u: 1 },
+  { n: "Ana López", m: "cuánto sale el envío?", t: "23:25", u: 4 },
+  { n: "Martín Silva", m: "??", t: "23:20", u: 2, urgent: true },
+  { n: "Sofía Torres", m: "🎤 Audio (0:34)", t: "23:15", audio: true },
+  { n: "Lucas Díaz", m: "todavía están abiertos?", t: "23:10" },
+  { n: "Valentina Ruiz", m: "🎤 Audio (2:14)", t: "23:05", audio: true, urgent: true },
+  { n: "Gonzalo Paz", m: "hola?", t: "23:00", u: 3, urgent: true },
 ]
 
-const chatList = [
-  { name: "Maria Rodriguez", message: "Hola quiero pedir", time: "23:45", unread: 3, urgent: true },
-  { name: "Juan Perez", message: "Audio (0:47)", time: "23:42", unread: 1, isAudio: true },
-  { name: "Carla Gomez", message: "me pasas el menu??", time: "23:38", unread: 2 },
-  { name: "Pedro Martinez", message: "hola estas?", time: "23:35", unread: 5, urgent: true },
-  { name: "Laura Sanchez", message: "Audio (1:23)", time: "23:30", isAudio: true },
-  { name: "Diego Fernandez", message: "quiero 2 hamburguesas", time: "23:28", unread: 1 },
-  { name: "Ana Lopez", message: "cuanto sale el envio?", time: "23:25", unread: 4 },
-  { name: "Martin Silva", message: "??", time: "23:20", unread: 2, urgent: true },
-  { name: "Sofia Torres", message: "Audio (0:34)", time: "23:15", isAudio: true },
-  { name: "Lucas Diaz", message: "todavia estan abiertos?", time: "23:10" },
+const painCards = [
+  { num: "01", title: "Pedidos perdidos", desc: "Se mezclan con reservas, consultas y spam. Uno se cae al scroll y adiós $12.000." },
+  { num: "02", title: "Errores a cocina", desc: "Transcribís mal la dirección, te olvidás del \"sin cebolla\", rehacés la pizza." },
+  { num: "03", title: "Cero historial", desc: "Tu mejor cliente vuelve mañana y tenés que preguntarle todo otra vez. Horrible." },
+  { num: "04", title: "Cero datos", desc: "No sabés qué plato vende, qué hora pega más, ni quién te deja el 40% de la plata." },
 ]
-
-const openChat = {
-  name: "Maria Rodriguez",
-  messages: [
-    { text: "Hola", time: "23:40", sent: false },
-    { text: "Quiero hacer un pedido", time: "23:40", sent: false },
-    { text: "Tienen delivery?", time: "23:41", sent: false },
-    { text: "Audio (0:52)", time: "23:42", sent: false, isAudio: true },
-    { text: "Para la calle 24 entre 15 y 16", time: "23:43", sent: false },
-    { text: "Quiero una clasica", time: "23:43", sent: false },
-    { text: "Con cheddar extra", time: "23:44", sent: false },
-    { text: "Y papas grandes", time: "23:44", sent: false },
-    { text: "Audio (0:23)", time: "23:44", sent: false, isAudio: true },
-    { text: "Ah y una coca", time: "23:45", sent: false },
-    { text: "De litro", time: "23:45", sent: false },
-    { text: "Cuanto sale todo?", time: "23:45", sent: false },
-    { text: "??", time: "23:47", sent: false },
-    { text: "Hola?", time: "23:50", sent: false },
-  ]
-}
 
 export function ProblemSection() {
   return (
-    <section className="py-16 relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Section header */}
-        <div className="text-center mb-12">
-          <p className="text-primary text-sm font-medium mb-2">El Problema</p>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-balance">
-            Esto pasa cuando usas WhatsApp
+    <section className="bg-[var(--cream)] border-t border-[var(--line)] py-[110px] max-sm:py-[80px]" id="problema">
+      <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px]">
+        {/* Head */}
+        <div className="max-w-[900px]">
+          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[var(--teal-deep)] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            <span className="w-6 h-[2px] bg-[var(--teal)]" />
+            Dolor #1 · El caos del WhatsApp
+          </span>
+          <h2 className="text-[clamp(40px,5.2vw,76px)] leading-[.95] tracking-[-0.025em] uppercase mt-[18px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            Son las 21:47,
             <br />
-            <span className="text-muted-foreground">para recibir pedidos</span>
+            tenés <span className="text-[var(--clay)]">147 mensajes</span> sin leer
+            <br />
+            y <span className="text-[var(--teal)]">3 pedidos perdidos</span>.
           </h2>
+          <p className="text-lg leading-relaxed text-[#2a2e2c] max-w-[620px] mt-[18px]">
+            Audios eternos, direcciones mal escritas, &quot;hola?&quot; a los gritos, y al final del día no tenés ni idea de cuánto vendiste. Así trabaja el 80% de los gastronómicos del interior.
+          </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* WhatsApp simulation */}
-          <div className="glass rounded-2xl overflow-hidden max-w-md mx-auto lg:mx-0">
-            {/* WhatsApp header */}
-            <div className="bg-[#075e54] px-4 py-3 flex items-center justify-between">
-              <span className="text-white font-medium text-sm">WhatsApp Business</span>
-              <div className="flex items-center gap-1">
-                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">32</span>
-              </div>
+        {/* Grid: chat + pain cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_.9fr] gap-10 mt-[60px] items-start">
+          {/* Chat panel */}
+          <div className="bg-[#0b1410] rounded-3xl overflow-hidden shadow-[0_30px_60px_-30px_rgba(0,0,0,.5)]">
+            <div className="bg-[#0c2a20] text-[#e9edef] px-[18px] py-[14px] flex items-center justify-between text-[13px] font-bold">
+              <span>WhatsApp · Delivery</span>
+              <span className="bg-[var(--clay)] text-white px-2 py-[2px] rounded-full text-[11px] font-black tracking-[.04em]">147 sin leer</span>
             </div>
-
-            {/* Chat list */}
-            <div className="bg-[#111b21] max-h-[400px] overflow-y-auto">
-              {chatList.map((chat, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 px-4 py-3 border-b border-[#222d34] hover:bg-[#202c33] transition-colors ${
-                    chat.urgent ? "bg-[#1a2c25]" : ""
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-[#2a3942] flex items-center justify-center shrink-0">
-                    <span className="text-[#8696a0] text-sm font-medium">
-                      {chat.name.split(" ").map(n => n[0]).join("")}
-                    </span>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#e9edef] text-sm font-medium truncate">{chat.name}</span>
-                      <span className={`text-[10px] ${chat.unread ? "text-[#00a884]" : "text-[#8696a0]"}`}>
-                        {chat.time}
-                      </span>
+            <div className="max-h-[520px] overflow-y-auto">
+              {chats.map((c, i) => {
+                const initials = c.n.split(" ").map(x => x[0]).join("").slice(0, 2)
+                return (
+                  <div key={i} className={`flex gap-3 px-4 py-3 border-b border-white/5 items-center ${c.urgent ? "bg-[rgba(226,90,43,.08)]" : ""}`}>
+                    <div className="w-[38px] h-[38px] rounded-full bg-[#2a3942] text-[#8ea3ad] inline-flex items-center justify-center text-xs font-extrabold flex-shrink-0">
+                      {initials}
                     </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <div className="flex items-center gap-1.5 text-[#8696a0] text-xs truncate">
-                        {chat.isAudio && <Mic className="w-3 h-3 text-[#00a884]" />}
-                        <span className="truncate">{chat.message}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[#e9edef] text-[13px] font-bold flex justify-between gap-2">
+                        <span>{c.n}</span>
+                        <span className="text-[10px] text-[#8696a0] font-medium">{c.t}</span>
                       </div>
-                      {chat.unread && (
-                        <span className="bg-[#00a884] text-[#111b21] text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-medium">
-                          {chat.unread}
-                        </span>
-                      )}
+                      <div className="text-[#8696a0] text-xs mt-[2px] flex items-center gap-[6px]">
+                        {c.audio && <span className="w-[6px] h-[6px] rounded-full bg-[var(--teal)] inline-block" />}
+                        <span>{c.m}</span>
+                        {c.u && (
+                          <span className="bg-[var(--teal)] text-[#0b1410] text-[10px] font-extrabold min-w-[18px] h-[18px] rounded-full inline-flex items-center justify-center px-[6px] ml-auto">
+                            {c.u}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
-          {/* Open chat + Pain points */}
-          <div className="space-y-6">
-            {/* Open chat simulation */}
-            <div className="glass rounded-2xl overflow-hidden">
-              {/* Chat header */}
-              <div className="bg-[#202c33] px-4 py-2.5 flex items-center gap-3 border-b border-[#222d34]">
-                <div className="w-8 h-8 rounded-full bg-[#2a3942] flex items-center justify-center">
-                  <span className="text-[#8696a0] text-xs font-medium">MR</span>
-                </div>
-                <div>
-                  <p className="text-[#e9edef] text-sm font-medium">{openChat.name}</p>
-                  <p className="text-[#8696a0] text-[10px]">en linea</p>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="bg-[#0b141a] p-3 max-h-[280px] overflow-y-auto space-y-1">
-                {openChat.messages.map((msg, i) => (
-                  <div key={i} className="flex justify-start">
-                    <div className={`max-w-[85%] rounded-lg px-2.5 py-1.5 ${
-                      msg.sent ? "bg-[#005c4b]" : "bg-[#202c33]"
-                    }`}>
-                      {msg.isAudio ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-[#00a884] flex items-center justify-center">
-                            <Mic className="w-3 h-3 text-white" />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="flex gap-0.5">
-                              {[8, 12, 6, 14, 10, 8, 16, 7, 11, 9, 13, 8].map((h, j) => (
-                                <div
-                                  key={j}
-                                  className="w-0.5 bg-[#8696a0] rounded-full"
-                                  style={{ height: `${h}px` }}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-[10px] text-[#8696a0] ml-1">{msg.text.match(/\((.*?)\)/)?.[1]}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-[#e9edef] text-xs">{msg.text}</p>
-                      )}
-                      <div className="flex items-center justify-end gap-1 mt-0.5">
-                        <span className="text-[8px] text-[#8696a0]">{msg.time}</span>
-                        {msg.sent && <CheckCheck className="w-3 h-3 text-[#53bdeb]" />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Pain cards side */}
+          <div>
+            <div className="flex flex-wrap gap-2 mb-7">
+              {["🎤 \"Audio 2:34\"", "📍 \"Calle 24 entre...\"", "❓ \"hola?\"", "❓ \"siguen abiertos?\"", "💬 \"me pasas el menú??\"", "🔁 \"ya salió mi pedido?\"", "🙄 \"y el mío?\""].map((chip, i) => (
+                <span key={i} className="bg-white border border-[var(--line)] rounded-full px-3 py-[6px] text-xs font-semibold text-[#4a4e4c]">{chip}</span>
+              ))}
             </div>
 
-            {/* Pain points */}
-            <div className="grid grid-cols-2 gap-3">
-              {painPoints.map((point, i) => (
-                <div key={i} className="glass rounded-xl p-3 flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
-                    <point.icon className="w-4 h-4 text-red-400" />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{point.text}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {painCards.map((card) => (
+                <div key={card.num} className="bg-white border border-[var(--line)] rounded-[18px] p-[22px] relative overflow-hidden">
+                  <div className="text-5xl text-[var(--clay)] leading-none tracking-[-0.03em]" style={{ fontFamily: "var(--font-display), sans-serif" }}>{card.num}</div>
+                  <h4 className="mt-2 mb-[6px] font-extrabold text-lg" style={{ fontFamily: "var(--font-display), sans-serif" }}>{card.title}</h4>
+                  <p className="text-sm leading-relaxed text-[#4a4e4c] m-0">{card.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Solution teaser */}
+            <div className="mt-8 p-6 bg-white border border-[var(--line)] rounded-2xl flex items-center gap-[18px]">
+              <div className="w-[14px] h-[14px] rounded-full bg-[var(--teal)] flex-shrink-0" />
+              <div className="flex-1">
+                <div className="text-lg tracking-tight" style={{ fontFamily: "var(--font-display), sans-serif" }}>Con PedidosPosta, se acabó.</div>
+                <div className="text-[13px] text-[#4a4e4c] mt-[2px]">Tu cliente entra a tu link, arma su pedido, paga, y vos lo ves ordenado en pantalla tipo cocina.</div>
+              </div>
+              <a href="#features" className="hidden sm:inline-flex items-center px-5 py-3 rounded-full font-bold text-sm bg-[var(--teal)] text-white flex-shrink-0">Mostrame</a>
             </div>
           </div>
         </div>

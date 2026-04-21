@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Oswald, Zilla_Slab, Space_Grotesk } from "next/font/google";
+import { Inter, Archivo_Black, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const oswald = Oswald({ subsets: ["latin"], variable: "--font-urbana" });
-const zilla = Zilla_Slab({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-artesanal" });
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-vanguardia" });
+const archivoBlack = Archivo_Black({ subsets: ["latin"], weight: "400", variable: "--font-display" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const viewport: Viewport = {
     width: "device-width",
@@ -72,10 +71,10 @@ export default function RootLayout({
         <html lang="es" className="overflow-x-hidden">
             <head>
                 <link rel="manifest" href="/manifest.json" />
-                <meta name="theme-color" content="#22c55e" />
+                <meta name="theme-color" content="#43926A" />
                 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
             </head>
-            <body className={`${inter.variable} ${oswald.variable} ${zilla.variable} ${space.variable} font-sans overflow-x-hidden w-full`}>
+            <body className={`${inter.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} font-sans overflow-x-hidden w-full`}>
                 {children}
             </body>
         </html>

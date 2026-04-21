@@ -2,143 +2,89 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Check, Shield, ArrowRight, Zap } from "lucide-react"
-
-const features = [
-  "Pedidos ilimitados (0% comisiones)",
-  "Cobras directo en tu MercadoPago",
-  "Carga de menu automatizada con IA",
-  "Panel de Live Orders en tiempo real",
-  "Setup inicial bonificado (Te cargamos el menu nosotros)",
-  "Soporte prioritario 24/7",
-]
 
 export function Pricing() {
-  const [isAnnual, setIsAnnual] = useState(false)
+  const [billing, setBilling] = useState<"m" | "a">("m")
 
   return (
-    <section id="pricing" className="py-20 relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[150px] pointer-events-none" />
+    <section className="bg-[var(--teal)] text-white py-[110px] max-sm:py-[80px] relative overflow-hidden" id="pricing">
+      <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px] text-center">
+        <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[#D7E9DE] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+          <span className="w-6 h-[2px] bg-white" />
+          Precios
+        </span>
+        <h2 className="text-[clamp(40px,5.2vw,76px)] leading-[.95] tracking-[-0.025em] uppercase mt-[18px] text-white" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+          Un precio.
+          <br />
+          Todo <span className="text-[var(--ink)]">incluido</span>.
+        </h2>
+        <p className="text-lg leading-relaxed text-white/85 max-w-[620px] mx-auto mt-[18px]">
+          Sin comisiones por pedido. Sin sorpresas. Sin letra chica. Te cobramos lo que dice y nada más.
+        </p>
 
-      <div className="max-w-2xl mx-auto px-4 relative">
-        {/* Section header */}
-        <div className="text-center mb-10">
-          <p className="text-primary text-sm font-medium mb-2">Precios</p>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">
-            Simple y transparente.
-            <br />
-            <span className="text-gradient">Sin letra chica.</span>
-          </h2>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Un solo plan con todo incluido. Todos los precios en ARS.
-          </p>
+        {/* Toggle */}
+        <div className="inline-flex items-center gap-[10px] bg-white/15 p-1 rounded-full mt-[22px]">
+          <button onClick={() => setBilling("m")} className={`px-4 py-2 rounded-full font-extrabold text-xs tracking-[.04em] uppercase ${billing === "m" ? "bg-white text-[var(--teal-deep)]" : "text-white opacity-75"}`}>Mensual</button>
+          <button onClick={() => setBilling("a")} className={`px-4 py-2 rounded-full font-extrabold text-xs tracking-[.04em] uppercase ${billing === "a" ? "bg-white text-[var(--teal-deep)]" : "text-white opacity-75"}`}>Anual · 2 meses gratis</button>
         </div>
 
-        {/* Toggle mensual / anual */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          <span className={`text-sm font-medium transition-colors ${!isAnnual ? "text-foreground" : "text-muted-foreground"}`}>
-            Mensual
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isAnnual}
-            aria-label="Cambiar entre suscripcion mensual y anual"
-            onClick={() => setIsAnnual(!isAnnual)}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              isAnnual ? "bg-primary" : "bg-zinc-700"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                isAnnual ? "translate-x-6" : "translate-x-0"
-              }`}
-            />
-          </button>
-          <span className={`text-sm font-medium transition-colors ${isAnnual ? "text-foreground" : "text-muted-foreground"}`}>
-            Anual
-          </span>
-          {isAnnual && (
-            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-              Ahorra 2 meses
-            </span>
-          )}
-        </div>
+        {/* Ticket card */}
+        <div className="mt-[50px] bg-[var(--cream)] text-[var(--ink)] rounded-3xl p-12 max-sm:p-[30px] max-w-[640px] mx-auto shadow-[0_40px_80px_-30px_rgba(0,0,0,.3)] relative text-left">
+          {/* Ticket punch holes */}
+          <span className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--teal)]" />
+          <span className="absolute right-[-16px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--teal)]" />
 
-        {/* Single premium card */}
-        <div className="relative rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-xl p-8 md:p-10 shadow-[0_0_80px_-20px_rgba(34,197,94,0.12)]">
-          {/* Trial badge */}
-          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold tracking-wide shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-              <Zap className="w-3.5 h-3.5" />
-              10 DIAS GRATIS
-            </div>
+          <div className="flex justify-between items-center mb-5">
+            <span className="text-xs tracking-[.1em] text-[#5a5e5c]" style={{ fontFamily: "var(--font-mono), monospace" }}>PLAN FULL COMMERCE · 01/01</span>
+            <span className="bg-[var(--ink)] text-[var(--cream)] px-3 py-[6px] rounded-full text-[11px] font-extrabold tracking-[.06em] uppercase">⚡ 10 días gratis</span>
           </div>
 
-          {/* Plan header */}
-          <div className="text-center mb-8 pt-2">
-            <h3 className="text-2xl font-bold mb-1">Plan Full Commerce</h3>
-            <p className="text-sm text-muted-foreground">
-              Todo lo que necesitas para escalar tu local, sin comisiones.
-            </p>
+          <div className="text-4xl tracking-[-0.02em] uppercase leading-none" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            Todo lo que necesitás<span className="inline-block w-[.4em] h-[.4em] rounded-full bg-[var(--teal)] ml-1" />
+          </div>
+          <div className="text-sm text-[#4a4e4c] mt-[6px]">Pedidos ilimitados · soporte 24/7 · cero comisiones</div>
+
+          <div className="text-[120px] max-sm:text-[80px] leading-[.9] tracking-[-0.04em] mt-6 mb-2" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            <span className="text-[32px] text-[var(--teal-deep)] align-top ml-1">$</span>
+            {billing === "m" ? "60.000" : "50.000"}
+            <span className="inline-block w-[.25em] h-[.25em] rounded-full bg-[var(--teal)]" />
+          </div>
+          <div className="text-sm text-[#4a4e4c]">
+            {billing === "m"
+              ? "por mes · ARS · IVA incluido"
+              : <><b className="text-[var(--teal-deep)]">por mes</b> pagando anual · equivale a $600.000/año · te ahorrás $120.000</>
+            }
           </div>
 
-          {/* Price */}
-          <div className="text-center mb-8">
-            {isAnnual ? (
-              <div>
-                <div className="mb-1">
-                  <span className="text-base text-zinc-400 line-through">$720.000</span>
-                </div>
-                <span className="text-5xl font-extrabold tracking-tight">$600.000</span>
-                <span className="text-muted-foreground text-sm ml-1">/ año</span>
-                <p className="text-xs text-primary font-medium mt-2">
-                  Equivale a $50.000/mes — te ahorras $120.000
-                </p>
-              </div>
-            ) : (
-              <div>
-                <span className="text-5xl font-extrabold tracking-tight">$60.000</span>
-                <span className="text-muted-foreground text-sm ml-1">/ mes</span>
-              </div>
-            )}
-          </div>
+          <div className="border-t border-dashed border-[var(--line-strong)] my-[26px]" />
 
-          {/* Features */}
-          <ul className="space-y-3 mb-8 max-w-sm mx-auto">
-            {features.map((feature, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <Check className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground/80">{feature}</span>
+          <ul className="list-none p-0 m-0 grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
+            {[
+              "Pedidos ilimitados (0% comisiones)",
+              "Cobrás directo en tu MercadoPago",
+              "Menú cargado con IA (de foto a tienda)",
+              "Panel de pedidos en vivo",
+              "Setup bonificado — te lo cargamos nosotros",
+              "Soporte prioritario 24/7 (WhatsApp)",
+              "Analytics + export a Excel",
+            ].map(item => (
+              <li key={item} className="flex gap-[10px] items-center text-sm">
+                <span className="w-[22px] h-[22px] rounded-full bg-[var(--teal)] text-white inline-flex items-center justify-center text-xs font-black flex-shrink-0">✓</span>
+                {item}
               </li>
             ))}
           </ul>
 
-          {/* CTA */}
-          <div className="text-center">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 w-full max-w-sm rounded-full py-3.5 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:shadow-[0_0_30px_rgba(34,197,94,0.25)]"
-            >
-              Empezar mis 10 dias gratis
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          <Link href="/register" className="mt-[26px] block w-full bg-[var(--ink)] text-[var(--cream)] p-[18px] rounded-[14px] text-center font-black text-[15px] tracking-[.06em] uppercase">
+            Empezar mis 10 días gratis →
+          </Link>
 
-          {/* Guarantee */}
-          <div className="mt-6 flex items-start gap-2.5 justify-center max-w-md mx-auto">
-            <Shield className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-zinc-400 leading-relaxed text-center">
-              Garantia de ROI: Si el primer mes no ahorras mas de $60.000 en comisiones comparado con las apps tradicionales, te devolvemos el 100% de tu dinero.
-            </p>
+          <div className="flex gap-[10px] p-[14px] border border-dashed border-[var(--line-strong)] rounded-xl mt-[18px] text-xs leading-relaxed text-[#4a4e4c]">
+            🛡 <div><b className="text-[var(--ink)]">Garantía POSTA:</b> si el primer mes no te ahorrás más de $60.000 en comisiones comparado con las apps, te devolvemos el 100%. Sin preguntas.</div>
           </div>
         </div>
 
-        {/* Trust note */}
-        <p className="text-center text-xs text-muted-foreground mt-8">
-          Cancela cuando quieras. Sin contratos. Sin sorpresas.
-        </p>
+        <p className="mt-6 text-[13px] text-white/80">Cancelás cuando quieras · Sin contratos · Sin sorpresas</p>
       </div>
     </section>
   )

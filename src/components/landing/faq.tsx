@@ -1,94 +1,48 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown } from "lucide-react"
 
 const faqs = [
-  {
-    question: "¿Cobran comision por los pedidos o envios?",
-    answer: "No. A diferencia de las apps tradicionales, en PedidosPosta cobramos 0% de comision por venta. Solo pagas tu suscripcion mensual fija. Todo lo que vendas, es 100% tuyo."
-  },
-  {
-    question: "¿Como funcionan los 10 dias gratis?",
-    answer: "Te registras y empezas a usar el sistema completo al instante, sin poner tarjeta de credito. Tenes 10 dias para recibir pedidos, probar el panel y ver como te facilita la vida. Recien cuando se cumple el plazo, decidis si queres pagar la suscripcion."
-  },
-  {
-    question: "¿Como me pagan mis clientes?",
-    answer: "Tus clientes te pagan directamente a vos. Podes configurar pagos en Efectivo, Transferencia Bancaria o conectar tu propio MercadoPago. Nosotros nunca tocamos tu dinero ni lo retenemos 15 dias."
-  },
-  {
-    question: "No tengo tiempo de cargar todos mis productos, ¿me ayudan?",
-    answer: "Totalmente! Sabemos que estas a mil en el local. Tu plan incluye Setup Bonificado. Nos pasas tu menu por WhatsApp o PDF y nuestro equipo te lo deja cargado y listo para empezar a vender."
-  }
+  { q: "¿De verdad 0% de comisión? ¿Dónde está la trampa?", a: "No hay trampa. Cobramos una suscripción mensual fija. Lo que vendas, es 100% tuyo. Nunca tocamos tu plata, nunca te retenemos 15 días, nunca te descontamos nada por pedido. Punto." },
+  { q: "¿Cómo funcionan los 10 días gratis?", a: "Te registrás, subimos tu menú (lo hacemos nosotros), abrís tu tienda. 10 días para recibir pedidos reales y ver cómo te cambia la vida. Si no te convence, no pagás. Si te convence, cobramos el plan. Sin tarjeta al inicio." },
+  { q: "Yo ya tengo mis motoqueros, ¿me sirve igual?", a: "Sobre todo si ya tenés motoqueros. PedidosPosta no te manda repartidores — te ordena los pedidos, te cobra online, y vos los despachás con tu flota. Justamente por eso no te cobramos 30%." },
+  { q: "No tengo tiempo para cargar el menú, ¿me ayudan?", a: "Incluido en el plan. Nos mandás tu menú por WhatsApp, PDF o foto. Nuestro equipo lo carga, con fotos, categorías y precios. Empezás a vender con todo listo." },
+  { q: "¿Cómo cobro a mis clientes?", a: "Tu cliente paga directo a tu MercadoPago (la plata cae al toque) o por transferencia con comprobante adjunto. También podés aceptar efectivo. Vos elegís." },
+  { q: "Mi ciudad es chica, ¿tiene sentido?", a: "Tiene sentido justamente por eso. Las apps grandes no llegan bien al interior, y si llegan cobran una fortuna. Tenemos locales funcionando en pueblos de 20.000 habitantes facturando bárbaro. Tu ciudad probablemente ya tiene un local nuestro." },
+  { q: "¿Y si dejo de usarlo?", a: "Cancelás cuando quieras desde el panel. Sin llamadas, sin trámites. Te exportamos tus datos en CSV y listo." },
 ]
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((faq) => ({
-    "@type": "Question",
-    name: faq.question,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: faq.answer,
-    },
-  })),
-}
-
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
+  const [open, setOpen] = useState<number>(0)
 
   return (
-    <section id="faq" className="py-20 relative">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Section header */}
-        <div className="text-center mb-12">
-          <p className="text-primary text-sm font-medium mb-2">FAQ</p>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+    <section className="bg-[var(--cream)] py-[110px] max-sm:py-[80px]" id="faq">
+      <div className="max-w-[860px] mx-auto px-7 max-sm:px-[18px]">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[var(--teal-deep)] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            <span className="w-6 h-[2px] bg-[var(--teal)]" />
             Preguntas frecuentes
+          </span>
+          <h2 className="text-[clamp(40px,5.2vw,76px)] leading-[.95] tracking-[-0.025em] uppercase mt-[18px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+            Las dudas
+            <br />
+            de siempre.
           </h2>
-          <p className="text-muted-foreground text-sm">
-            Si no encontras tu respuesta, escribinos a soporte@pedidosposta.com
-          </p>
         </div>
 
-        {/* FAQ items */}
-        <div className="space-y-3">
+        <div className="mt-10 border-t border-[var(--line-strong)]">
           {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className={`glass rounded-xl overflow-hidden transition-all ${
-                openIndex === i ? "border-primary/30" : ""
-              }`}
-            >
+            <div key={i} className="border-b border-[var(--line-strong)]">
               <button
-                aria-expanded={openIndex === i}
-                aria-controls={`faq-answer-${i}`}
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full flex items-center justify-between p-4 text-left"
+                onClick={() => setOpen(open === i ? -1 : i)}
+                className="w-full flex justify-between items-center py-[22px] text-left font-extrabold text-xl tracking-tight"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
-                <span className="text-sm font-medium pr-4">{faq.question}</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${
-                    openIndex === i ? "rotate-180" : ""
-                  }`}
-                />
+                <span>{faq.q}</span>
+                <span className={`text-[26px] text-[var(--teal)] transition-transform duration-300 ${open === i ? "rotate-45" : ""}`} style={{ fontFamily: "var(--font-display), sans-serif" }}>+</span>
               </button>
-
-              <div
-                id={`faq-answer-${i}`}
-                role="region"
-                className={`overflow-hidden transition-all duration-300 ${
-                  openIndex === i ? "max-h-60" : "max-h-0"
-                }`}
-              >
-                <p className="px-4 pb-4 text-sm text-zinc-400 leading-relaxed">
-                  {faq.answer}
-                </p>
+              <div className={`overflow-hidden transition-all duration-400 ${open === i ? "max-h-[400px]" : "max-h-0"}`}>
+                <p className="text-base leading-relaxed text-[#3a3e3c] pb-[22px] max-w-[720px] m-0">{faq.a}</p>
               </div>
             </div>
           ))}

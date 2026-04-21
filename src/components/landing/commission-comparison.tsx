@@ -1,117 +1,84 @@
-import { X, Check, ArrowRight, Zap, Clock, Users, Banknote, BarChart3, Globe } from "lucide-react"
-import Link from "next/link"
-
-const enemyPoints = [
-  { icon: Banknote, text: "Te cobran hasta 30% por pedido" },
-  { icon: Users, text: "Se quedan con los datos de tus clientes" },
-  { icon: Clock, text: "Cobras a los 15 dias o mas" },
-  { icon: BarChart3, text: "Sin acceso a tus propias metricas" },
-]
-
-const heroPoints = [
-  { icon: Banknote, text: "0% de comision, siempre" },
-  { icon: Users, text: "Tus clientes son tuyos" },
-  { icon: Zap, text: "La plata va directo a tu MercadoPago" },
-  { icon: Globe, text: "Tu dominio, tu marca, tu negocio" },
-]
-
 export function CommissionComparison() {
   return (
-    <section className="py-20 relative overflow-hidden">
-      {/* Subtle background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+    <section className="bg-[var(--ink)] text-[var(--cream)] py-[110px] max-sm:py-[80px] relative overflow-hidden">
+      {/* Bleed glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(600px 200px at 20% 120%, rgba(226,90,43,.18), transparent 70%)" }} />
 
-      <div className="max-w-5xl mx-auto px-4 relative">
-        {/* Section header */}
-        <div className="text-center mb-14">
-          <p className="text-red-400 text-sm font-medium mb-2">El costo oculto</p>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-balance">
-            Deja de trabajar
-            <br />
-            <span className="text-red-400">para otras apps.</span>
-          </h2>
-          <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-            Las apps de delivery se llevan hasta el 30% de tu esfuerzo. Con PedidosPosta, la plata que haces es tuya.
-          </p>
-        </div>
+      <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px] relative">
+        <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[#F7C4AE] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+          <span className="w-6 h-[2px] bg-[var(--clay)]" />
+          Dolor #2 · El costo oculto
+        </span>
+        <h2 className="text-[clamp(40px,5.2vw,76px)] leading-[.95] tracking-[-0.025em] uppercase mt-[18px] text-white" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+          Dejá de trabajar
+          <br />
+          para <span className="text-[var(--clay)]">otras apps</span>.
+        </h2>
+        <p className="text-lg leading-relaxed text-[var(--cream)]/75 max-w-[620px] mt-[18px]">
+          Las apps de delivery te cobran del 1 al 30% por pedido, te roban la relación con tus clientes, te cobran a los 15 días y encima ni siquiera tienen repartidores en tu ciudad. <b className="text-white">La plata que haces, tiene que ser tuya.</b>
+        </p>
 
-        {/* Comparison cards */}
-        <div className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-          {/* Enemy card */}
-          <div className="relative rounded-2xl border border-red-500/15 bg-red-950/10 backdrop-blur-sm p-6 md:p-7">
-            {/* Header */}
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-xs font-medium text-red-400 mb-3">
-                Otras Apps
-              </div>
-              <p className="text-xl font-bold text-foreground/90">Apps tradicionales</p>
-              <p className="text-sm text-zinc-400 mt-1">PedidosYa, Rappi, etc.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-7 mt-14 items-stretch">
+          {/* Loss column */}
+          <div className="rounded-3xl p-9 relative overflow-hidden flex flex-col bg-[#261612] border border-[rgba(226,90,43,.25)]">
+            <div className="flex items-center gap-[10px] mb-[18px]">
+              <span className="px-[10px] py-1 rounded-full text-[11px] font-extrabold tracking-[.06em] uppercase bg-[rgba(226,90,43,.2)] text-[#FFBFA8]">Las otras apps</span>
             </div>
-
-            {/* Points */}
-            <ul className="space-y-4">
-              {enemyPoints.map((point, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <X className="w-3.5 h-3.5 text-red-400" />
-                  </div>
-                  <span className="text-sm text-zinc-400 leading-relaxed">{point.text}</span>
+            <h3 className="text-[32px] tracking-[-0.02em] uppercase m-0" style={{ fontFamily: "var(--font-display), sans-serif" }}>Apps tradicionales</h3>
+            <div className="opacity-70 text-sm mt-1">Apps de delivery tradicionales</div>
+            <ul className="list-none p-0 mt-6 flex flex-col gap-3">
+              {[
+                "Te cobran del 1 al 30% por pedido",
+                "Los clientes son de ellos, no tuyos",
+                "Cobrás a los 15+ días",
+                "Sin acceso a tus propias métricas",
+                "Te meten en guerra de promos que te fundan",
+                "En tu ciudad ni tienen repartidores",
+              ].map((item, i) => (
+                <li key={i} className="flex gap-3 items-start text-[15px] leading-snug">
+                  <span className="w-[22px] h-[22px] rounded-full bg-[var(--clay)] text-white inline-flex items-center justify-center text-xs font-black flex-shrink-0 mt-[2px]">✕</span>
+                  {item}
                 </li>
               ))}
             </ul>
-
-            {/* Simulated cost */}
-            <div className="mt-6 pt-5 border-t border-red-500/10">
-              <p className="text-xs text-zinc-400 mb-1">Si vendes $1.000.000/mes</p>
-              <p className="text-lg font-bold text-red-400">-$300.000 <span className="text-xs font-normal text-zinc-400">en comisiones</span></p>
+            <div className="mt-auto pt-[26px] border-t border-dashed border-[rgba(226,90,43,.25)]">
+              <div className="text-[clamp(36px,8vw,54px)] tracking-[-0.03em] leading-[.95] text-[var(--clay)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>-$300.000</div>
+              <div className="flex justify-between items-baseline mt-[6px]">
+                <div className="text-xs opacity-70">vendiendo $1.000.000/mes</div>
+                <div className="text-[11px] tracking-[.1em] uppercase opacity-70 text-right">Se lo lleva la app cada mes.</div>
+              </div>
             </div>
           </div>
 
-          {/* PedidosPosta card */}
-          <div className="relative rounded-2xl border border-primary/20 bg-zinc-900/40 backdrop-blur-xl p-6 md:p-7 shadow-[0_0_60px_-15px_rgba(34,197,94,0.12)]">
-            {/* Recommended badge */}
-            <div className="absolute -top-3 right-5">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold tracking-wide shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                <Zap className="w-3 h-3" />
-                TU MEJOR OPCION
-              </div>
+          {/* Win column */}
+          <div className="rounded-3xl p-9 relative overflow-hidden flex flex-col bg-[var(--teal)] text-white">
+            <span className="absolute top-3 right-3 rotate-[10deg] bg-white text-[var(--teal-deep)] px-[14px] py-[6px] rounded-full text-xs tracking-[.06em] shadow-[0_10px_30px_-10px_rgba(0,0,0,.4)] z-10" style={{ fontFamily: "var(--font-display), sans-serif" }}>★ POSTA ★</span>
+            <div className="flex items-center gap-[10px] mb-[18px]">
+              <span className="px-[10px] py-1 rounded-full text-[11px] font-extrabold tracking-[.06em] uppercase bg-white/[.18] text-white">PedidosPosta</span>
             </div>
-
-            {/* Header */}
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-3">
-                PedidosPosta
-              </div>
-              <p className="text-xl font-bold text-foreground">Plan Full Commerce</p>
-              <p className="text-sm text-zinc-400 mt-1">Todo incluido, sin sorpresas.</p>
-            </div>
-
-            {/* Points */}
-            <ul className="space-y-4">
-              {heroPoints.map((point, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Check className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <span className="text-sm text-foreground/80 leading-relaxed">{point.text}</span>
+            <h3 className="text-[32px] tracking-[-0.02em] uppercase m-0" style={{ fontFamily: "var(--font-display), sans-serif" }}>Plan Full Commerce</h3>
+            <div className="opacity-70 text-sm mt-1">Todo incluido, sin letra chica.</div>
+            <ul className="list-none p-0 mt-6 flex flex-col gap-3">
+              {[
+                "0% de comisión, siempre",
+                "Los clientes son tuyos, 100%",
+                "Cobrás al toque en tu MercadoPago",
+                "Panel con métricas reales",
+                "Usás tus propios repartidores",
+              ].map((item, i) => (
+                <li key={i} className="flex gap-3 items-start text-[15px] leading-snug">
+                  <span className="w-[22px] h-[22px] rounded-full bg-white text-[var(--teal-deep)] inline-flex items-center justify-center text-xs font-black flex-shrink-0 mt-[2px]">✓</span>
+                  {item}
                 </li>
               ))}
             </ul>
-
-            {/* Simulated cost */}
-            <div className="mt-6 pt-5 border-t border-primary/10">
-              <p className="text-xs text-zinc-400 mb-1">Si vendes $1.000.000/mes</p>
-              <p className="text-lg font-bold text-primary">$0 <span className="text-xs font-normal text-zinc-400">en comisiones — te queda todo</span></p>
+            <div className="mt-auto pt-[26px] border-t border-dashed border-white/20">
+              <div className="text-[clamp(36px,8vw,54px)] tracking-[-0.03em] leading-[.95] text-white" style={{ fontFamily: "var(--font-display), sans-serif" }}>+$300.000</div>
+              <div className="flex justify-between items-baseline mt-[6px]">
+                <div className="text-xs opacity-85">te quedan en el bolsillo</div>
+                <div className="text-[11px] tracking-[.1em] uppercase opacity-70 text-right">Con el mismo volumen de ventas.</div>
+              </div>
             </div>
-
-            {/* CTA */}
-            <Link
-              href="/register"
-              className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:shadow-[0_0_30px_rgba(34,197,94,0.25)]"
-            >
-              Empezar mis 10 dias gratis
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </div>

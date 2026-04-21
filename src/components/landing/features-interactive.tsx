@@ -1,528 +1,273 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import {
-  Zap, Palette, CreditCard, Truck, BarChart3, Package, ChefHat, Bike,
-  CheckCircle2, Sun, Moon, ShoppingBag, Star, MapPin, ArrowRightLeft,
-  Clock, FileUp, TrendingUp, DollarSign, ShoppingCart,
-} from "lucide-react"
+import { useState, useEffect } from "react"
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 1. LIVE ORDERS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const ORDER_STATUSES = ["pending", "preparing", "on_the_way", "delivered"] as const
-type OrderStatus = (typeof ORDER_STATUSES)[number]
-
-const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  pending:     { label: "NUEVO",      color: "text-emerald-400", bg: "bg-emerald-500/15", icon: Package },
-  preparing:   { label: "PREPARANDO", color: "text-amber-400",   bg: "bg-amber-500/15",   icon: ChefHat },
-  on_the_way:  { label: "EN CAMINO",  color: "text-sky-400",     bg: "bg-sky-500/15",     icon: Bike },
-  delivered:   { label: "ENTREGADO",  color: "text-zinc-500",    bg: "bg-zinc-500/15",    icon: CheckCircle2 },
-}
-
-const DEMO_ORDERS = [
-  { id: 1, num: 47, name: "María R.", items: "2x Burger + Papas", total: 18500, time: "Hace 2 min" },
-  { id: 2, num: 48, name: "Juan P.", items: "1x Pizza + Fainá", total: 9800, time: "Hace 30 seg" },
+const ORDER_STATES = [
+  { cls: "bg-[rgba(67,146,106,.18)] text-[#78D3A3]", label: "● Nuevo" },
+  { cls: "bg-[rgba(255,194,84,.18)] text-[#FFD78A]", label: "🔥 Preparando" },
+  { cls: "bg-[rgba(110,180,255,.15)] text-[#9CCDFF]", label: "🛵 En camino" },
+  { cls: "bg-[rgba(200,200,200,.1)] text-[#aaa]", label: "✓ Entregado" },
 ]
 
 function LiveOrdersDemo() {
-  const [statuses, setStatuses] = useState<Record<number, OrderStatus>>({ 1: "pending", 2: "pending" })
+  const [orderStates, setOrderStates] = useState({ 1: 0, 2: 1 })
 
-  const advance = useCallback((id: number) => {
-    setStatuses((prev) => {
-      const idx = ORDER_STATUSES.indexOf(prev[id])
-      return { ...prev, [id]: ORDER_STATUSES[(idx + 1) % ORDER_STATUSES.length] }
-    })
-  }, [])
-
-  useEffect(() => {
-    const i1 = setInterval(() => advance(1), 3000)
-    const t = setTimeout(() => {
-      const i2 = setInterval(() => advance(2), 3000)
-      return () => clearInterval(i2)
-    }, 1500)
-    return () => { clearInterval(i1); clearTimeout(t) }
-  }, [advance])
+  function advanceOrder(id: number) {
+    setOrderStates(prev => ({ ...prev, [id]: ((prev[id as keyof typeof prev] || 0) + 1) % 4 }))
+  }
 
   return (
-    <div className="space-y-3 w-full max-w-full overflow-hidden">
-      {/* Status tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-        {ORDER_STATUSES.map((s) => {
-          const cfg = STATUS_CFG[s]
-          const Icon = cfg.icon
-          const count = Object.values(statuses).filter((st) => st === s).length
-          return (
-            <div key={s} className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl text-[9px] sm:text-[10px] font-bold whitespace-nowrap shrink-0 ${cfg.bg} ${cfg.color}`}>
-              <Icon size={11} />
-              {cfg.label}
-              {count > 0 && <span className="ml-0.5 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-white/10 text-[9px]">{count}</span>}
-            </div>
-          )
-        })}
+    <div className="relative bg-[#0e1512] text-[var(--cream)] rounded-3xl border border-white/[.08] p-[22px] shadow-[0_40px_80px_-30px_rgba(0,0,0,.18)] overflow-hidden">
+      <div className="flex gap-[6px] overflow-x-auto pb-[10px] mb-[10px] border-b border-white/[.08]">
+        <div className="inline-flex items-center gap-[6px] px-3 py-2 rounded-xl text-[11px] font-extrabold tracking-[.04em] uppercase whitespace-nowrap bg-[rgba(67,146,106,.18)] text-[#78D3A3]">● Nuevo <span className="bg-white/10 px-[6px] rounded-md ml-[2px]">2</span></div>
+        <div className="inline-flex items-center gap-[6px] px-3 py-2 rounded-xl text-[11px] font-extrabold tracking-[.04em] uppercase whitespace-nowrap bg-[rgba(255,194,84,.18)] text-[#FFD78A]">🔥 Preparando <span className="bg-white/10 px-[6px] rounded-md ml-[2px]">1</span></div>
+        <div className="inline-flex items-center gap-[6px] px-3 py-2 rounded-xl text-[11px] font-extrabold tracking-[.04em] uppercase whitespace-nowrap bg-[rgba(110,180,255,.15)] text-[#9CCDFF]">🛵 En camino</div>
+        <div className="inline-flex items-center gap-[6px] px-3 py-2 rounded-xl text-[11px] font-extrabold tracking-[.04em] uppercase whitespace-nowrap bg-[rgba(200,200,200,.1)] text-[#aaa]">✓ Entregado <span className="bg-white/10 px-[6px] rounded-md ml-[2px]">12</span></div>
       </div>
-      {/* Order cards */}
-      {DEMO_ORDERS.map((order) => {
-        const status = statuses[order.id]
-        const cfg = STATUS_CFG[status]
-        const Icon = cfg.icon
-        return (
-          <div key={order.id} className={`rounded-xl border bg-zinc-900/60 overflow-hidden transition-all duration-500 ${status === "pending" ? "border-emerald-500/40" : "border-zinc-800"}`}>
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/80">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[11px] font-bold text-zinc-300">#{order.num}</span>
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${cfg.bg} ${cfg.color}`}>
-                  <Icon size={9} /> {cfg.label}
-                </span>
-              </div>
-              <span className="text-[9px] text-zinc-500">{order.time}</span>
-            </div>
-            <div className="px-3 py-2.5 space-y-1">
-              <p className="text-[11px] font-semibold text-white">{order.name}</p>
-              <p className="text-[10px] text-zinc-500">{order.items}</p>
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs font-black text-primary font-mono">${order.total.toLocaleString("es-AR")}</span>
-                <button onClick={() => advance(order.id)} className="px-2.5 py-1 rounded-lg text-[9px] font-bold text-primary bg-primary/10 hover:bg-primary/20 transition">
-                  Avanzar
-                </button>
-              </div>
-            </div>
+
+      {[{ id: 1, num: "#48", name: "Juan P.", items: "1× Pizza Muzza + Fainá", total: "$9.800", time: "hace 30s" },
+        { id: 2, num: "#47", name: "María R.", items: "2× Burger + Papas cheddar", total: "$18.500", time: "hace 2min" }
+      ].map(order => (
+        <div key={order.id} className="border border-white/[.08] rounded-[14px] p-[14px] mt-[10px] bg-white/[.02]">
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-bold text-[#bdbdbd]" style={{ fontFamily: "var(--font-mono), monospace" }}>{order.num}</span>
+            <span className={`text-[10px] px-2 py-1 rounded-xl font-extrabold uppercase ${ORDER_STATES[orderStates[order.id as keyof typeof orderStates]].cls}`}>
+              {ORDER_STATES[orderStates[order.id as keyof typeof orderStates]].label}
+            </span>
+            <span className="text-[#8a948e] text-[11px] ml-auto">{order.time}</span>
           </div>
-        )
-      })}
+          <div className="font-extrabold text-white mt-2">{order.name}</div>
+          <div className="text-[#8a948e] text-xs">{order.items}</div>
+          <div className="flex justify-between items-center mt-[10px]">
+            <span className="text-[var(--teal)] text-lg" style={{ fontFamily: "var(--font-display), sans-serif" }}>{order.total}</span>
+            <button onClick={() => advanceOrder(order.id)} className="bg-[rgba(67,146,106,.15)] text-[#78D3A3] px-3 py-[6px] rounded-lg text-[11px] font-extrabold uppercase tracking-[.04em]">Avanzar →</button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 2. BRAND STUDIO
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const COLORS = [
-  { name: "Verde", hex: "#22c55e" },
-  { name: "Naranja", hex: "#f97316" },
-  { name: "Rojo", hex: "#ef4444" },
-  { name: "Azul", hex: "#3b82f6" },
-  { name: "Violeta", hex: "#a855f7" },
-]
 
 function BrandStudioDemo() {
-  const [accent, setAccent] = useState("#22c55e")
-  const [isDark, setIsDark] = useState(true)
-  const bg = isDark ? "bg-zinc-950" : "bg-white"
-  const text = isDark ? "text-white" : "text-zinc-900"
-  const textMuted = isDark ? "text-zinc-400" : "text-zinc-500"
-  const border = isDark ? "border-zinc-800" : "border-zinc-200"
+  const [color, setColor] = useState("#43926A")
+  const colors = ["#43926A", "#E25A2B", "#3b82f6", "#a855f7", "#0F1210"]
 
   return (
-    <div className="space-y-4 w-full max-w-full overflow-hidden">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
-          {COLORS.map((c) => (
-            <button
-              key={c.hex}
-              onClick={() => setAccent(c.hex)}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-all ${accent === c.hex ? "ring-2 ring-offset-2 ring-offset-zinc-950 scale-110" : "hover:scale-105"}`}
-              style={{ backgroundColor: c.hex }}
-              title={c.name}
-            />
+    <div className="relative bg-white rounded-3xl border border-[var(--line)] p-[22px] shadow-[0_40px_80px_-30px_rgba(0,0,0,.18)] overflow-hidden">
+      <div className="flex justify-between items-center mb-[14px]">
+        <div className="flex gap-[10px] items-center">
+          {colors.map(c => (
+            <div key={c} onClick={() => setColor(c)} className={`w-[30px] h-[30px] rounded-lg cursor-pointer transition-transform ${color === c ? "scale-110 shadow-[0_0_0_2px_#fff,0_0_0_4px_currentColor] border-2 border-transparent" : "border-2 border-transparent"}`} style={{ background: c, color: c }} />
           ))}
         </div>
-        <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
-        <button onClick={() => setIsDark(!isDark)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 text-[10px] font-bold hover:bg-zinc-700 transition">
-          {isDark ? <Moon size={12} /> : <Sun size={12} />}
-          {isDark ? "Oscuro" : "Claro"}
-        </button>
       </div>
-      {/* Phone */}
-      <div className={`rounded-2xl ${bg} transition-colors duration-300 overflow-hidden border ${border}`}>
-        <div className="h-20 relative overflow-hidden" style={{ backgroundColor: `${accent}20` }}>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-current" style={{ color: isDark ? "#09090b" : "#ffffff" }} />
-          <div className="absolute bottom-2 left-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[9px] font-black" style={{ backgroundColor: accent }}>BP</div>
-            <div>
-              <p className={`text-[11px] font-bold ${text}`}>Burger Pro</p>
-              <p className={`text-[8px] ${textMuted}`}>Hamburguesería Artesanal</p>
-            </div>
+      <div className="rounded-2xl overflow-hidden border border-[var(--line)]">
+        <div className="px-[14px] py-[14px] text-white flex items-center gap-2" style={{ background: color, fontFamily: "var(--font-display), sans-serif", fontSize: "15px" }}>
+          <span className="w-7 h-7 rounded-lg bg-white text-black inline-flex items-center justify-center text-[11px] font-black">BP</span>
+          <div>
+            <div>Burger Pro</div>
+            <div className="text-[10px] font-medium opacity-85">Hamburguesería artesanal</div>
           </div>
         </div>
-        <div className={`flex gap-1.5 px-3 py-2 border-b ${border}`}>
-          {["Burgers", "Papas", "Bebidas"].map((cat, i) => (
-            <span key={cat} className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${i === 0 ? "text-white" : `${textMuted} ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}`} style={i === 0 ? { backgroundColor: accent } : undefined}>
-              {cat}
-            </span>
-          ))}
-        </div>
-        {[
-          { name: "Hamburguesa Clásica", price: 6500 },
-          { name: "Pizza Muzzarella", price: 7800 },
-        ].map((p) => (
-          <div key={p.name} className={`flex items-center gap-2.5 px-3 py-2.5 border-b ${border}`}>
-            <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center" style={{ backgroundColor: `${accent}15` }}>
-              <ShoppingBag size={14} style={{ color: accent }} />
+        {[{ name: "Hamburguesa Clásica", sub: "Cheddar + panceta", price: "$6.500" },
+          { name: "Pizza Muzzarella", sub: "Masa artesanal", price: "$7.800" },
+          { name: "Papas Cheddar", sub: "Con panceta crocante", price: "$4.200" }
+        ].map(item => (
+          <div key={item.name} className="flex gap-[10px] items-center px-[14px] py-[10px] border-b border-[var(--line)] bg-white">
+            <div className="w-9 h-9 rounded-lg flex-shrink-0" style={{ background: color + "26" }} />
+            <div>
+              <div className="text-xs font-bold">{item.name}</div>
+              <div className="text-[10px] text-[#8a948e]">{item.sub}</div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[10px] font-bold ${text} truncate`}>{p.name}</p>
-              <span className="text-[10px] font-black" style={{ color: accent }}>${p.price.toLocaleString("es-AR")}</span>
-            </div>
-            <Star size={9} className="fill-amber-400 text-amber-400" />
+            <div className="ml-auto text-[13px] font-bold" style={{ color, fontFamily: "var(--font-display), sans-serif" }}>{item.price}</div>
           </div>
         ))}
-        <div className="mx-3 my-2.5 rounded-lg py-2.5 text-center text-[10px] font-black text-white" style={{ backgroundColor: accent }}>
-          Checkout · $14.300
+        <div className="mx-[14px] my-[14px] p-[10px] rounded-[10px] text-white text-center font-black text-xs tracking-[.04em] uppercase" style={{ background: color }}>
+          Checkout · $18.500
         </div>
       </div>
     </div>
   )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3. CHECKOUT PRO + ZONAS DE ENVÍO
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function CheckoutDemo() {
-  const [payMethod, setPayMethod] = useState<"mp" | "transfer">("mp")
+  const [payMethod, setPayMethod] = useState(1)
 
   return (
-    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden w-full max-w-full">
-      <div className="px-3 sm:px-4 py-3 border-b border-zinc-800">
-        <p className="text-[11px] font-bold text-white">Finalizar Pedido</p>
+    <div className="relative bg-[#0e1512] text-[var(--cream)] rounded-3xl border border-white/[.08] p-[22px] shadow-[0_40px_80px_-30px_rgba(0,0,0,.18)] overflow-hidden">
+      <div className="mb-[14px]">
+        <label className="text-[10px] tracking-[.1em] uppercase text-[#8a948e] font-bold">Dirección de entrega</label>
+        <div className="flex items-center gap-2 mt-[6px] bg-white/[.04] border border-white/[.08] rounded-[10px] px-3 py-[10px] text-[13px] text-white">📍 Av. 25 de Mayo 1450 · Mercedes</div>
       </div>
-      <div className="px-3 sm:px-4 py-3 space-y-3">
-        {/* Address */}
-        <div>
-          <label className="text-[9px] font-medium text-zinc-500 uppercase tracking-wider">Dirección</label>
-          <div className="flex items-center gap-2 mt-1 px-2 sm:px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 min-w-0">
-            <MapPin size={11} className="text-emerald-400 shrink-0" />
-            <span className="text-[10px] text-white truncate">Av. Rivadavia 1450, CABA</span>
-          </div>
+      <div className="mb-[14px]">
+        <label className="text-[10px] tracking-[.1em] uppercase text-[#8a948e] font-bold">Método de pago</label>
+        <div className="grid grid-cols-2 gap-[10px] mt-[6px]">
+          <div onClick={() => setPayMethod(1)} className={`p-3 rounded-[10px] text-center text-xs font-extrabold border cursor-pointer ${payMethod === 1 ? "bg-[rgba(67,146,106,.15)] text-[#78D3A3] border-[rgba(67,146,106,.4)]" : "bg-white/[.03] text-[#bdbdbd] border-white/[.08]"}`}>MercadoPago</div>
+          <div onClick={() => setPayMethod(2)} className={`p-3 rounded-[10px] text-center text-xs font-extrabold border cursor-pointer ${payMethod === 2 ? "bg-[rgba(67,146,106,.15)] text-[#78D3A3] border-[rgba(67,146,106,.4)]" : "bg-white/[.03] text-[#bdbdbd] border-white/[.08]"}`}>Transferencia</div>
         </div>
-        {/* Payment method */}
-        <div>
-          <label className="text-[9px] font-medium text-zinc-500 uppercase tracking-wider">Método de pago</label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <button
-              onClick={() => setPayMethod("mp")}
-              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[10px] font-bold transition-all ${
-                payMethod === "mp" ? "bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"
-              }`}
-            >
-              <div className="w-4 h-4 rounded bg-sky-500 flex items-center justify-center text-[7px] font-black text-white">MP</div>
-              MercadoPago
-            </button>
-            <button
-              onClick={() => setPayMethod("transfer")}
-              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[10px] font-bold transition-all ${
-                payMethod === "transfer" ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"
-              }`}
-            >
-              <ArrowRightLeft size={12} />
-              Transferencia
-            </button>
+        {payMethod === 2 && (
+          <div className="mt-[10px] p-[14px] border border-dashed border-[rgba(226,194,87,.4)] rounded-[10px] bg-[rgba(226,194,87,.05)] text-xs text-[#F3D27A]">
+            📎 Adjuntá el comprobante (JPG, PNG o PDF · máx 5MB)
           </div>
-          {/* Transfer upload */}
-          {payMethod === "transfer" && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 transition-all">
-              <FileUp size={14} className="text-amber-400" />
-              <div>
-                <p className="text-[10px] font-bold text-amber-300">Adjuntar comprobante</p>
-                <p className="text-[8px] text-zinc-500">JPG, PNG o PDF · Máx 5MB</p>
-              </div>
-            </div>
-          )}
-        </div>
-        {/* Price breakdown */}
-        <div className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2.5 space-y-1.5">
-          <div className="flex justify-between text-[10px]">
-            <span className="text-zinc-400">Subtotal</span>
-            <span className="text-zinc-300">$14.300</span>
-          </div>
-          <div className="flex justify-between text-[10px]">
-            <span className="text-zinc-400 flex items-center gap-1"><Truck size={10} className="text-emerald-400" /> Envío (Zona Centro)</span>
-            <span className="text-zinc-300">$1.500</span>
-          </div>
-          <div className="flex justify-between text-[11px] font-bold pt-1.5 border-t border-zinc-800">
-            <span className="text-white">Total</span>
-            <span className="text-emerald-400 font-black">$15.800</span>
-          </div>
-        </div>
-        <div className="rounded-lg bg-emerald-500 py-2.5 text-center text-[10px] font-black text-white uppercase tracking-wider">
-          Confirmar Pedido
+        )}
+      </div>
+      <div className="bg-white/[.04] border border-white/[.08] rounded-[10px] p-3 mt-[14px]">
+        <div className="flex justify-between text-xs text-[#bdbdbd] py-[3px]"><span>Subtotal</span><span>$14.300</span></div>
+        <div className="flex justify-between text-xs text-[#bdbdbd] py-[3px]"><span>Envío · Zona Centro</span><span>$1.500</span></div>
+        <div className="flex justify-between text-sm font-black text-[var(--cream)] pt-2 border-t border-dashed border-white/15 mt-[6px]">
+          <span>Total</span>
+          <b className="text-[var(--teal)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>$15.800</b>
         </div>
       </div>
+      <div className="mt-[14px] bg-[var(--teal)] text-white p-[14px] rounded-xl text-center font-black text-xs tracking-[.06em] uppercase">Confirmar pedido</div>
     </div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 4. ORDER STATUS (Cliente Final)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const TRACKING_STEPS = [
-  { key: "received", label: "Recibido", icon: Package },
-  { key: "preparing", label: "Preparando", icon: ChefHat },
-  { key: "on_way", label: "En Camino", icon: Bike },
-  { key: "delivered", label: "Entregado", icon: CheckCircle2 },
-]
-
-function OrderStatusDemo() {
+function TrackingDemo() {
   const [step, setStep] = useState(0)
+  const msgs = [
+    "Tu pedido fue recibido por el local · ~25 min",
+    "¡Están preparando tu comida! 🔥",
+    "Tu pedido va en camino 🛵",
+    "¡Pedido entregado! Buen provecho 🎉",
+  ]
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((prev) => (prev < 3 ? prev + 1 : 0))
-    }, 2500)
+    const interval = setInterval(() => setStep(s => (s + 1) % 4), 3500)
     return () => clearInterval(interval)
   }, [])
 
+  const icons = ["📦", "🔥", "🛵", "✓"]
+
   return (
-    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <p className="text-[11px] font-bold text-white">Pedido #47</p>
-        <span className="text-[9px] text-zinc-500">Hace 12 min</span>
+    <div className="relative bg-[#0e1512] text-[var(--cream)] rounded-3xl border border-white/[.08] p-[22px] shadow-[0_40px_80px_-30px_rgba(0,0,0,.18)] overflow-hidden">
+      <div className="flex justify-between items-center pb-3 border-b border-white/[.08] mb-[14px]">
+        <div>
+          <div className="font-black text-[13px]">Pedido #47</div>
+          <div className="text-[10px] text-[#8a948e] mt-[2px]">hace 12 min</div>
+        </div>
+        <div className="text-[var(--teal)] text-base" style={{ fontFamily: "var(--font-display), sans-serif" }}>$18.500</div>
       </div>
-      <div className="px-4 py-5">
-        {/* Progress bar */}
-        <div className="relative flex items-center justify-between mb-6">
-          {/* Track line */}
-          <div className="absolute top-4 left-4 right-4 h-0.5 bg-zinc-800" />
-          <div
-            className="absolute top-4 left-4 h-0.5 bg-emerald-500 transition-all duration-700"
-            style={{ width: `${(step / 3) * (100 - 10)}%` }}
-          />
-          {TRACKING_STEPS.map((s, i) => {
-            const Icon = s.icon
-            const isActive = i <= step
-            const isCurrent = i === step
-            return (
-              <div key={s.key} className="relative flex flex-col items-center z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${
-                  isActive ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"
-                } ${isCurrent ? "ring-4 ring-emerald-500/20 scale-110" : ""}`}>
-                  <Icon size={14} />
-                </div>
-                <span className={`text-[8px] font-bold mt-1.5 transition-colors ${isActive ? "text-emerald-400" : "text-zinc-600"}`}>
-                  {s.label}
-                </span>
+      <div className="py-2 px-1">
+        <div className="flex justify-between relative mx-2 my-[10px]">
+          <div className="absolute left-4 right-4 top-4 h-[2px] bg-white/10" />
+          <div className="absolute left-4 top-4 h-[2px] bg-[var(--teal)] transition-all duration-600" style={{ width: `${(step / 3) * 94}%` }} />
+          {icons.map((icon, i) => (
+            <div key={i} className="relative z-10 flex flex-col items-center gap-[6px] w-16">
+              <div className={`w-[34px] h-[34px] rounded-full inline-flex items-center justify-center text-sm transition-all ${i <= step ? "bg-[var(--teal)] text-white shadow-[0_0_0_6px_rgba(67,146,106,.15)]" : "bg-white/[.08] text-[#8a948e]"}`}>
+                {icon}
               </div>
-            )
-          })}
-        </div>
-        {/* Current status message */}
-        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2.5 text-center">
-          <p className="text-[11px] font-bold text-emerald-300">
-            {step === 0 && "Tu pedido fue recibido por el local"}
-            {step === 1 && "¡Están preparando tu comida!"}
-            {step === 2 && "Tu pedido va en camino 🛵"}
-            {step === 3 && "¡Pedido entregado! Buen provecho 🎉"}
-          </p>
-          <p className="text-[9px] text-zinc-500 mt-0.5">
-            {step < 3 ? "Tiempo estimado: ~25 min" : "Entregado a las 21:34"}
-          </p>
-        </div>
-        {/* Order summary */}
-        <div className="mt-3 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800">
-          <p className="text-[9px] text-zinc-500">2x Burger Clásica + Papas Cheddar</p>
-          <p className="text-[11px] font-black text-emerald-400 mt-0.5">$18.500</p>
+              <div className={`text-[10px] font-extrabold text-center uppercase tracking-[.04em] ${i <= step ? "text-[var(--teal)]" : "text-[#8a948e]"}`}>
+                {["Recibido", "Cocina", "En camino", "Entregado"][i]}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-      <div className="px-4 pb-4">
-        <button
-          onClick={() => setStep((prev) => (prev < 3 ? prev + 1 : 0))}
-          className="w-full py-2 rounded-lg text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 transition"
-        >
-          Simular avance
-        </button>
+      <div className="mt-[14px] p-3 rounded-[10px] bg-[rgba(67,146,106,.12)] text-[var(--teal)] text-xs text-center font-bold">
+        {msgs[step]}
       </div>
     </div>
   )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 5. ANALYTICS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const WEEKLY_DATA = [65, 45, 80, 55, 90, 70, 85]
-const MONTHLY_DATA = [40, 55, 70, 45, 85, 60, 75, 90, 50, 65, 80, 95]
-const DAYS = ["L", "M", "X", "J", "V", "S", "D"]
-const MONTHS_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 function AnalyticsDemo() {
-  const [range, setRange] = useState<"week" | "month">("week")
-  const data = range === "week" ? WEEKLY_DATA : MONTHLY_DATA
-  const labels = range === "week" ? DAYS : MONTHS_SHORT
-  const maxVal = Math.max(...data)
-
-  const stats = range === "week"
-    ? { total: "$2.450.000", ticket: "$12.800", orders: 191 }
-    : { total: "$9.800.000", ticket: "$11.200", orders: 875 }
+  const [range, setRange] = useState<"w" | "m">("w")
+  const weekData = { days: ["L", "M", "X", "J", "V", "S", "D"], vals: [65, 45, 80, 55, 90, 70, 85], stats: { ing: "$2,45M", tic: "$12.800", ped: "191" } }
+  const monthData = { days: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], vals: [40, 55, 70, 45, 85, 60, 75, 90, 50, 65, 80, 95], stats: { ing: "$9,8M", tic: "$11.200", ped: "875" } }
+  const data = range === "w" ? weekData : monthData
+  const max = Math.max(...data.vals)
 
   return (
-    <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden w-full max-w-full">
-      <div className="px-3 sm:px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <p className="text-[11px] font-bold text-white">Analytics</p>
-        <div className="flex rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden">
-          <button
-            onClick={() => setRange("week")}
-            className={`px-3 py-1 text-[9px] font-bold transition-colors ${range === "week" ? "bg-primary/20 text-primary" : "text-zinc-500"}`}
-          >
-            Semana
-          </button>
-          <button
-            onClick={() => setRange("month")}
-            className={`px-3 py-1 text-[9px] font-bold transition-colors ${range === "month" ? "bg-primary/20 text-primary" : "text-zinc-500"}`}
-          >
-            Mes
-          </button>
+    <div className="relative bg-[#0e1512] text-[var(--cream)] rounded-3xl border border-white/[.08] p-[22px] shadow-[0_40px_80px_-30px_rgba(0,0,0,.18)] overflow-hidden">
+      <div className="flex justify-between items-center mb-[14px]">
+        <div className="font-black text-[13px]">Analytics · {range === "w" ? "Semana" : "Mes"}</div>
+        <div className="flex border border-white/[.08] rounded-lg overflow-hidden text-[11px]">
+          <button onClick={() => setRange("w")} className={`px-[10px] py-1 font-extrabold ${range === "w" ? "bg-[rgba(67,146,106,.18)] text-[var(--teal)]" : "text-[#8a948e]"}`}>Semana</button>
+          <button onClick={() => setRange("m")} className={`px-[10px] py-1 font-extrabold ${range === "m" ? "bg-[rgba(67,146,106,.18)] text-[var(--teal)]" : "text-[#8a948e]"}`}>Mes</button>
         </div>
       </div>
-      <div className="px-4 py-4 space-y-4">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-lg bg-zinc-900 px-2.5 py-2 text-center">
-            <p className="text-[8px] text-zinc-500 uppercase font-bold">Ingresos</p>
-            <p className="text-[12px] font-black text-emerald-400">{stats.total}</p>
-          </div>
-          <div className="rounded-lg bg-zinc-900 px-2.5 py-2 text-center">
-            <p className="text-[8px] text-zinc-500 uppercase font-bold">Ticket Prom.</p>
-            <p className="text-[12px] font-black text-white">{stats.ticket}</p>
-          </div>
-          <div className="rounded-lg bg-zinc-900 px-2.5 py-2 text-center">
-            <p className="text-[8px] text-zinc-500 uppercase font-bold">Pedidos</p>
-            <p className="text-[12px] font-black text-white">{stats.orders}</p>
-          </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white/[.04] border border-white/[.08] rounded-[10px] p-[10px] text-center">
+          <div className="text-[9px] tracking-[.1em] uppercase text-[#8a948e] font-extrabold">Ingresos</div>
+          <div className="text-lg mt-1 text-[var(--teal)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>{data.stats.ing}</div>
         </div>
-        {/* Chart */}
-        <div>
-          <div className="flex items-end gap-1 h-28">
-            {data.map((val, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t-md bg-emerald-500/80 transition-all duration-700 ease-out"
-                  style={{ height: `${(val / maxVal) * 100}%` }}
-                />
-                <span className="text-[7px] text-zinc-600 font-medium">{labels[i]}</span>
-              </div>
-            ))}
-          </div>
+        <div className="bg-white/[.04] border border-white/[.08] rounded-[10px] p-[10px] text-center">
+          <div className="text-[9px] tracking-[.1em] uppercase text-[#8a948e] font-extrabold">Ticket prom.</div>
+          <div className="text-lg mt-1" style={{ fontFamily: "var(--font-display), sans-serif" }}>{data.stats.tic}</div>
         </div>
-        {/* Trend */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-          <TrendingUp size={14} className="text-emerald-400" />
-          <p className="text-[10px] text-zinc-400">
-            <span className="text-emerald-400 font-bold">+18%</span> vs periodo anterior
-          </p>
+        <div className="bg-white/[.04] border border-white/[.08] rounded-[10px] p-[10px] text-center">
+          <div className="text-[9px] tracking-[.1em] uppercase text-[#8a948e] font-extrabold">Pedidos</div>
+          <div className="text-lg mt-1" style={{ fontFamily: "var(--font-display), sans-serif" }}>{data.stats.ped}</div>
         </div>
+      </div>
+      <div className="flex items-end gap-[6px] h-[130px] mt-[14px] py-1">
+        {data.vals.map((v, i) => (
+          <div key={i} className="flex-1 rounded-t-md min-h-[6px]" style={{ height: `${(v / max) * 100}%`, background: "linear-gradient(180deg, var(--teal), rgba(67,146,106,.4))" }} />
+        ))}
+      </div>
+      <div className="flex gap-[6px] mt-[6px]">
+        {data.days.map(d => (
+          <span key={d} className="flex-1 text-center text-[10px] text-[#8a948e] font-bold">{d}</span>
+        ))}
+      </div>
+      <div className="mt-3 p-[10px] rounded-[10px] bg-[rgba(67,146,106,.08)] border border-[rgba(67,146,106,.2)] text-xs flex items-center gap-2">
+        ↗ <span className="text-[var(--teal)] font-black">+18%</span> <span className="text-[#8a948e]">vs semana anterior</span>
       </div>
     </div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const FEATURES = [
-  {
-    id: "live-orders",
-    badge: "Gestión en Tiempo Real",
-    badgeIcon: Zap,
-    title: "Control total de tus pedidos.",
-    subtitle: "Olvidate de los papeles y los mensajes perdidos.",
-    description: "Cada pedido entra como una tarjeta que avanza de estado automáticamente. Nuevo → Preparando → En camino → Entregado. Tu equipo y tus clientes siempre informados.",
-    Demo: LiveOrdersDemo,
-    reverse: false,
-  },
-  {
-    id: "brand-studio",
-    badge: "Tu Marca, Tu Estilo",
-    badgeIcon: Palette,
-    title: "No sos un local más en una app.",
-    subtitle: "Sos tu propia marca.",
-    description: "Elegí colores, modo oscuro o claro, subí tu logo. Los cambios se reflejan al instante. Tu tienda se ve como un negocio serio desde el primer día.",
-    Demo: BrandStudioDemo,
-    reverse: true,
-  },
-  {
-    id: "checkout",
-    badge: "Checkout Pro",
-    badgeIcon: CreditCard,
-    title: "Pagos flexibles y envíos inteligentes.",
-    subtitle: "Cobrá con MercadoPago o Transferencia.",
-    description: "Calculá el envío según la zona del cliente. Aceptá transferencias con comprobante adjunto. Desglose de costos transparente para que tu cliente confíe y compre.",
-    Demo: CheckoutDemo,
-    reverse: false,
-  },
-  {
-    id: "order-status",
-    badge: "Seguimiento en Vivo",
-    badgeIcon: Truck,
-    title: "Se acabó el '¿por dónde anda mi pedido?'",
-    subtitle: "Tus clientes ven el estado en tiempo real.",
-    description: "Barra de progreso en vivo: Recibido → Preparando → En Camino → Entregado. Bajá la ansiedad y los mensajes a tu WhatsApp.",
-    Demo: OrderStatusDemo,
-    reverse: true,
-  },
-  {
-    id: "analytics",
-    badge: "Datos que Importan",
-    badgeIcon: BarChart3,
-    title: "Decisiones con datos, no con intuición.",
-    subtitle: "Conocé qué productos rinden más.",
-    description: "Ingresos totales, ticket promedio, mejores días. Filtrá por semana o mes y exportá a CSV. Todo lo que necesitás para crecer.",
-    Demo: AnalyticsDemo,
-    reverse: false,
-  },
+const features = [
+  { num: "01", badge: "⚡ Panel de cocina", title: <>Los pedidos<br />entran <span className="text-[var(--teal)]">solos</span>.</>, desc: "Cada pedido aparece como una tarjeta en tu pantalla. Nuevo → Preparando → En camino → Entregado. Tocá, avanzá, listo. Tu cocina nunca más mira el celular.", tags: ["Auto-refresh en vivo", "Sonido de campana nuevo pedido", "Imprime ticket automático"], demo: <LiveOrdersDemo /> },
+  { num: "02", badge: "🎨 Estudio de marca", title: <>Tu tienda, con<br />tu <span className="text-[var(--teal)]">identidad</span>.</>, desc: "No sos \"un local más\" dentro de una app ajena. Elegí el color, subí el logo, modo claro u oscuro — tu cliente ve tu marca, tu carta, tu estilo.", tags: ["5 paletas base + color libre", "Modo claro / oscuro", "Logo + portada propios"], demo: <BrandStudioDemo />, reverse: true },
+  { num: "03", badge: "💳 Checkout pro", title: <>Pagos flexibles,<br />envíos <span className="text-[var(--teal)]">inteligentes</span>.</>, desc: "Cobrá con MercadoPago o transferencia (con comprobante adjunto). Envío calculado por zona. Todo claro para tu cliente — y la plata entra directo a tu cuenta.", tags: ["MercadoPago integrado", "Transferencia + comprobante", "Zonas de envío custom"], demo: <CheckoutDemo /> },
+  { num: "04", badge: "🛵 Seguimiento en vivo", title: <>Se acabó el<br />&quot;<span className="text-[var(--teal)]">¿ya salió mi pedido?</span>&quot;</>, desc: "Tu cliente ve en tiempo real dónde está su pedido. Recibido → Preparando → En camino → Entregado. Menos mensajes, menos ansiedad, más buena onda.", tags: ["Barra de progreso en vivo", "Notificación por WhatsApp / SMS", "Tiempo estimado automático"], demo: <TrackingDemo />, reverse: true },
+  { num: "05", badge: "📊 Datos que importan", title: <>Decidí con<br />datos, no con<br /><span className="text-[var(--teal)]">onda</span>.</>, desc: "Ingresos, ticket promedio, mejores días, productos top. Filtrá por semana o mes, exportá a Excel. Dejá de adivinar si la promo de los miércoles funciona.", tags: ["Dashboard en tiempo real", "Export a CSV / Excel", "Top productos y clientes"], demo: <AnalyticsDemo /> },
 ]
 
 export function FeaturesInteractive() {
   return (
-    <section id="features" className="py-20 relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Section header */}
-        <div className="text-center mb-16">
-          <p className="text-primary text-sm font-medium mb-2">Funcionalidades</p>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">
-            Todo lo que necesitás para
-            <br />
-            <span className="text-gradient">gestionar tu local</span>
-          </h2>
-          <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-            Cada feature fue pensada para resolver problemas reales de gastronómicos como vos. Tocá, explorá, probá.
-          </p>
+    <section className="bg-[var(--cream)] py-[110px] max-sm:py-[80px]" id="features">
+      <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px]">
+        {/* Header */}
+        <div className="flex justify-between items-end flex-wrap gap-[30px]">
+          <div>
+            <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[var(--teal-deep)] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+              <span className="w-6 h-[2px] bg-[var(--teal)]" />
+              Lo que hay adentro
+            </span>
+            <h2 className="text-[clamp(40px,5.2vw,76px)] leading-[.95] tracking-[-0.025em] uppercase mt-[18px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+              Todo lo que necesitás
+              <br />
+              para no volver
+              <br />
+              al <span className="text-[var(--teal)]">WhatsApp</span>.
+            </h2>
+          </div>
+          <div className="max-w-[380px] text-right max-sm:text-left text-[15px] text-[#4a4e4c] leading-relaxed">
+            Cada función fue hecha para un gastronómico que cobra caja, maneja motoqueros y tiene poco tiempo. Probalas acá abajo — son reales, no dibujitos.
+          </div>
         </div>
 
-        {/* Feature blocks */}
-        <div className="space-y-24">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.id}
-              className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center ${feature.reverse ? "lg:grid-flow-dense" : ""}`}
-            >
-              {/* Text */}
-              <div className={`space-y-5 ${feature.reverse ? "lg:col-start-2" : ""}`}>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs font-medium">
-                  <feature.badgeIcon className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-primary">{feature.badge}</span>
-                </div>
-                <div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-1">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm">{feature.subtitle}</p>
-                </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+        {/* Features list */}
+        <div className="mt-[80px] flex flex-col gap-[140px] max-md:gap-[80px]">
+          {features.map((feat) => (
+            <div key={feat.num} className={`grid grid-cols-1 lg:grid-cols-2 gap-[60px] max-md:gap-10 items-center ${feat.reverse ? "lg:direction-rtl" : ""}`} style={feat.reverse ? { direction: "rtl" } : undefined}>
+              <div style={feat.reverse ? { direction: "ltr" } : undefined}>
+                <div className="text-[160px] leading-[.85] tracking-[-0.05em] text-[var(--teal-soft)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>{feat.num}</div>
+                <div className="inline-flex items-center gap-2 px-3 py-[6px] bg-[var(--teal-soft)] text-[var(--teal-deep)] rounded-full text-[11px] font-extrabold tracking-[.08em] uppercase mb-[18px]">{feat.badge}</div>
+                <h3 className="text-[44px] max-md:text-[32px] tracking-[-0.025em] leading-none m-0 uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>{feat.title}</h3>
+                <p className="text-base leading-relaxed text-[#2a2e2c] mt-4 max-w-[420px]">{feat.desc}</p>
+                <ul className="list-none p-0 mt-[18px] flex flex-wrap gap-2">
+                  {feat.tags.map(tag => (
+                    <li key={tag} className="bg-white border border-[var(--line)] px-3 py-[6px] rounded-full text-xs font-semibold">{tag}</li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Demo */}
-              <div className={`w-full max-w-full overflow-hidden ${feature.reverse ? "lg:col-start-1" : ""}`}>
-                <div className="relative group">
-                  {/* Glow */}
-                  <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-full max-w-full overflow-hidden">
-                    <feature.Demo />
-                  </div>
-                </div>
+              <div style={feat.reverse ? { direction: "ltr" } : undefined}>
+                {feat.demo}
               </div>
             </div>
           ))}
