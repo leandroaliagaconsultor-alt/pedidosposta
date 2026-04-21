@@ -50,12 +50,14 @@ const settingsSchema = z.object({
     show_whatsapp_checkout: z.boolean().default(false),
     enable_kitchen_tickets: z.boolean().default(false),
     enable_delivery_tickets: z.boolean().default(false),
+    enable_delivery: z.boolean().default(true),
+    enable_takeaway: z.boolean().default(true),
     store_address: z.string().optional().nullable(),
     custom_domain: z.string().optional().nullable(),
     // Directory fields
     city: z.string().optional().nullable(),
     categories: z.array(z.string()).default([]),
-    is_directory_active: z.boolean().default(true),
+    is_directory_active: z.boolean().default(false),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -125,11 +127,13 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             show_whatsapp_checkout: false,
             enable_kitchen_tickets: false,
             enable_delivery_tickets: false,
+            enable_delivery: true,
+            enable_takeaway: true,
             store_address: "",
             custom_domain: "",
             city: "",
             categories: [] as string[],
-            is_directory_active: true,
+            is_directory_active: false,
         },
     });
 
@@ -199,11 +203,13 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     show_whatsapp_checkout: !!data.show_whatsapp_checkout,
                     enable_kitchen_tickets: !!data.enable_kitchen_tickets,
                     enable_delivery_tickets: !!data.enable_delivery_tickets,
+                    enable_delivery: data.enable_delivery ?? true,
+                    enable_takeaway: data.enable_takeaway ?? true,
                     store_address: data.store_address || "",
                     custom_domain: data.custom_domain || "",
                     city: data.city || "",
                     categories: data.categories || [],
-                    is_directory_active: data.is_directory_active ?? true,
+                    is_directory_active: data.is_directory_active ?? false,
                 });
 
                 if (data.store_address) {
@@ -260,6 +266,8 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     show_whatsapp_checkout: data.show_whatsapp_checkout,
                     enable_kitchen_tickets: data.enable_kitchen_tickets,
                     enable_delivery_tickets: data.enable_delivery_tickets,
+                    enable_delivery: data.enable_delivery,
+                    enable_takeaway: data.enable_takeaway,
                     custom_domain: data.custom_domain,
                     city: data.city || null,
                     categories: data.categories?.length ? data.categories : null,
@@ -713,75 +721,87 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         Aparecé en nuestro directorio gastronómico para que los clientes de tu ciudad te encuentren. Configurá tu ciudad y las categorías donde querés aparecer.
                     </p>
 
-                    {/* Toggle active */}
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 mb-5">
-                        <div>
-                            <h3 className="text-sm font-bold text-white">Visible en el Directorio</h3>
-                            <p className="text-xs text-zinc-500">Si está activo, tu local aparecerá en el directorio de tu ciudad.</p>
+                    {/* City selection first */}
+                    <div className="mb-5">
+                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Tu ciudad</label>
+                        <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                            <select
+                                {...form.register("city", {
+                                    onChange: (e) => {
+                                        if (!e.target.value) form.setValue("is_directory_active", false);
+                                    }
+                                })}
+                                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary appearance-none"
+                            >
+                                <option value="">Seleccioná tu ciudad</option>
+                                {availableCities.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                            </select>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                role="switch"
-                                aria-label="Visible en directorio"
-                                className="sr-only peer"
-                                checked={watchValues.is_directory_active}
-                                onChange={e => form.setValue("is_directory_active", e.target.checked)}
-                            />
-                            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        {!watchValues.city && (
+                            <p className="text-[11px] text-amber-500/80 mt-2 font-medium">
+                                Si tu ciudad no aparece en la lista, estará disponible próximamente. Podés seguir usando tu tienda normalmente.
+                            </p>
+                        )}
+                        {watchValues.city && (
+                            <p className="text-[11px] text-zinc-600 mt-1.5">Los clientes te encontrarán en pedidosposta.com/directorio/{watchValues.city}</p>
+                        )}
                     </div>
 
-                    {watchValues.is_directory_active && (
-                        <div className="space-y-5">
-                            {/* City */}
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Ciudad</label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                                    <select
-                                        {...form.register("city")}
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary appearance-none"
-                                    >
-                                        <option value="">Seleccionar ciudad</option>
-                                        {availableCities.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                                    </select>
+                    {/* Toggle only if city selected */}
+                    {watchValues.city && (
+                        <>
+                            <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 mb-5">
+                                <div>
+                                    <h3 className="text-sm font-bold text-white">Visible en el Directorio</h3>
+                                    <p className="text-xs text-zinc-500">Si está activo, tu local aparecerá en el directorio de {availableCities.find(c => c.slug === watchValues.city)?.name || watchValues.city}.</p>
                                 </div>
-                                <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná tu ciudad. Los clientes te encontrarán en pedidosposta.com/directorio/tu-ciudad</p>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        role="switch"
+                                        aria-label="Visible en directorio"
+                                        className="sr-only peer"
+                                        checked={watchValues.is_directory_active}
+                                        onChange={e => form.setValue("is_directory_active", e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
 
-                            {/* Categories multi-select */}
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Categorías (elegí una o más)</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {CATEGORIES.map(cat => {
-                                        const selected = (watchValues.categories || []).includes(cat.key);
-                                        return (
-                                            <button
-                                                key={cat.key}
-                                                type="button"
-                                                onClick={() => {
-                                                    const current = watchValues.categories || [];
-                                                    form.setValue("categories", selected
-                                                        ? current.filter((k: string) => k !== cat.key)
-                                                        : [...current, cat.key]
-                                                    );
-                                                }}
-                                                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                                                    selected
-                                                        ? "bg-primary/15 text-primary border border-primary/30"
-                                                        : "bg-zinc-950/50 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
-                                                }`}
-                                            >
-                                                <span className="text-lg">{cat.emoji}</span>
-                                                {cat.label}
-                                            </button>
-                                        );
-                                    })}
+                            {watchValues.is_directory_active && (
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Categorías (elegí una o más)</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {CATEGORIES.map(cat => {
+                                            const selected = (watchValues.categories || []).includes(cat.key);
+                                            return (
+                                                <button
+                                                    key={cat.key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = watchValues.categories || [];
+                                                        form.setValue("categories", selected
+                                                            ? current.filter((k: string) => k !== cat.key)
+                                                            : [...current, cat.key]
+                                                        );
+                                                    }}
+                                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                                                        selected
+                                                            ? "bg-primary/15 text-primary border border-primary/30"
+                                                            : "bg-zinc-950/50 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                                                    }`}
+                                                >
+                                                    <span className="text-lg">{cat.emoji}</span>
+                                                    {cat.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná las categorías que mejor describan tu local.</p>
                                 </div>
-                                <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná las categorías que mejor describan tu local. Podés elegir más de una.</p>
-                            </div>
-                        </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -830,6 +850,33 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             <Bike className="text-emerald-500" size={24} /> Logística y Zonas de Entrega
                         </h2>
                     </div>
+
+                    {/* Delivery method toggles */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_delivery ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/30"}`}>
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Delivery</h3>
+                                <p className="text-[10px] text-zinc-500">Envío a domicilio</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={watchValues.enable_delivery} onChange={e => form.setValue("enable_delivery", e.target.checked)} />
+                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_takeaway ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/30"}`}>
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Takeaway</h3>
+                                <p className="text-[10px] text-zinc-500">Retiro en el local (gratis)</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={watchValues.enable_takeaway} onChange={e => form.setValue("enable_takeaway", e.target.checked)} />
+                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                    {!watchValues.enable_delivery && !watchValues.enable_takeaway && (
+                        <p className="text-xs text-red-400 font-semibold mb-4">Necesitás al menos un método de entrega activo.</p>
+                    )}
 
                     <div className="grid gap-8 lg:grid-cols-2">
                         {/* Configuración */}

@@ -115,8 +115,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         minOrder: 0,
         tenantAlias: null as string | null,
         tenantAccountName: null as string | null,
+        enableDelivery: true,
+        enableTakeaway: true,
     });
-    const { isMPActive, minOrder, tenantAlias, tenantAccountName } = tenantConfig;
+    const { isMPActive, minOrder, tenantAlias, tenantAccountName, enableDelivery, enableTakeaway } = tenantConfig;
 
     // Grouped delivery config (1 setState instead of 8)
     const [deliveryConfig, setDeliveryConfig] = useState({
@@ -334,7 +336,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, city, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order")
+                .select("id, city, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order, enable_delivery, enable_takeaway")
                 .eq("slug", tenantSlug)
                 .single();
 
@@ -342,12 +344,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                 setTenantId(tenantData.id);
                 setTenantCity(tenantData.city || null);
                 // Batch tenant config (1 render)
+                const tenantEnableDelivery = tenantData.enable_delivery ?? true;
+                const tenantEnableTakeaway = tenantData.enable_takeaway ?? true;
+
                 setTenantConfig({
                     isMPActive: !!tenantData.is_mp_active,
                     minOrder: tenantData.min_order || 0,
                     tenantAlias: tenantData.transfer_alias || null,
                     tenantAccountName: tenantData.transfer_account_name || null,
+                    enableDelivery: tenantEnableDelivery,
+                    enableTakeaway: tenantEnableTakeaway,
                 });
+
+                // Set default delivery method based on what's enabled
+                if (!tenantEnableDelivery && tenantEnableTakeaway) {
+                    setValue("deliveryMethod", "TAKEAWAY");
+                } else if (tenantEnableDelivery && !tenantEnableTakeaway) {
+                    setValue("deliveryMethod", "DELIVERY");
+                }
 
                 // Batch theme config (1 render)
                 const thObj = tenantData.theme ? (typeof tenantData.theme === 'string' ? JSON.parse(tenantData.theme) : tenantData.theme) : {};
@@ -690,24 +704,33 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     <section className="space-y-3">
                         <SectionHeader number="2" title="Entrega" accentColor={accentColor} isLight={isLight} />
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <MethodButton
-                                active={deliveryMethod === "DELIVERY"}
-                                onClick={() => setValue("deliveryMethod", "DELIVERY")}
-                                icon={<Truck size={18} />}
-                                label="Delivery"
-                                accentColor={accentColor}
-                                isLight={isLight}
-                            />
-                            <MethodButton
-                                active={deliveryMethod === "TAKEAWAY"}
-                                onClick={() => setValue("deliveryMethod", "TAKEAWAY")}
-                                icon={<Package size={18} />}
-                                label="Takeaway"
-                                accentColor={accentColor}
-                                isLight={isLight}
-                            />
-                        </div>
+                        {enableDelivery && enableTakeaway ? (
+                            <div className="grid grid-cols-2 gap-3">
+                                <MethodButton
+                                    active={deliveryMethod === "DELIVERY"}
+                                    onClick={() => setValue("deliveryMethod", "DELIVERY")}
+                                    icon={<Truck size={18} />}
+                                    label="Delivery"
+                                    accentColor={accentColor}
+                                    isLight={isLight}
+                                />
+                                <MethodButton
+                                    active={deliveryMethod === "TAKEAWAY"}
+                                    onClick={() => setValue("deliveryMethod", "TAKEAWAY")}
+                                    icon={<Package size={18} />}
+                                    label="Retiro en el local"
+                                    accentColor={accentColor}
+                                    isLight={isLight}
+                                />
+                            </div>
+                        ) : (
+                            <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"}`}>
+                                {enableDelivery ? <Truck size={18} style={{ color: accentColor }} /> : <Package size={18} style={{ color: accentColor }} />}
+                                <span className={`text-sm font-semibold ${t.text}`}>
+                                    {enableDelivery ? "Envío a domicilio" : "Retiro en el local (gratis)"}
+                                </span>
+                            </div>
+                        )}
 
                         {deliveryMethod === "DELIVERY" && (
                             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
