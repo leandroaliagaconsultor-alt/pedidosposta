@@ -45,18 +45,22 @@ export async function POST(req: Request) {
             },
             {
               type: "text",
-              text: `Extraé el menú de esta imagen. Distinguí PRODUCTOS de MODIFICADORES:
-- PRODUCTO: un plato/item que se pide (ej: "Hamburguesa Clásica", "Pizza Muzzarella")
-- MODIFICADOR: variante de tamaño/tipo que modifica un producto (ej: "Simple/Doble/Triple", "Chica/Grande", "Con queso/Sin queso"). Los modificadores tienen precio extra o reemplazan el precio base.
+              text: `Extraé el menú de esta imagen. Enfocate en PRODUCTOS y CATEGORÍAS.
 
-Respondé SOLO JSON:
-{"categorias":[{"nombre":"Cat","productos":[{"nombre":"Prod","descripcion":"","precio":0,"modificadores":[{"nombre":"Tamaño","opciones":[{"nombre":"Simple","precio_extra":0},{"nombre":"Doble","precio_extra":500}]}]}]}]}
+PRODUCTO = plato/item que se pide (ej: "Hamburguesa Clásica", "Pizza Muzzarella")
+CATEGORÍA = agrupación de productos (ej: "Hamburguesas", "Pizzas", "Bebidas")
+MODIFICADOR = variante que modifica un producto SOLO si está MUY CLARO en el menú (ej: tamaños Simple/Doble/Triple con precios distintos listados juntos)
 
 Reglas:
-- Si un producto tiene variantes (simple/doble/triple, chico/mediano/grande), NO crees productos separados. Creá UN producto con un grupo de modificadores.
-- El precio base del producto es el de la opción más barata. Las otras opciones llevan precio_extra (diferencia con el base).
-- Si no hay modificadores, dejá el array vacío [].
-- Si no es un menú legible: {"error":"descripción"}`,
+- Priorizá extraer productos y categorías correctamente
+- Solo incluí modificadores si son EVIDENTES (variantes de tamaño/tipo listadas bajo un mismo producto con precios)
+- Si no estás seguro de si algo es un modificador, tratalo como producto separado
+- El usuario podrá reorganizar después
+
+JSON (sin markdown):
+{"categorias":[{"nombre":"Cat","productos":[{"nombre":"Prod","descripcion":"","precio":0,"modificadores":[{"nombre":"Grupo","opciones":[{"nombre":"Opción","precio_extra":0}]}]}]}]}
+
+Si no es legible: {"error":"descripción"}`,
             },
           ],
         },
