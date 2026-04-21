@@ -378,173 +378,6 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
             </div>
           </div>
 
-          {/* ── Categories + Products ── */}
-          <div className="space-y-6">
-            {productsByCategory.map(({ catIdx, products }) => (
-              <div key={catIdx} className="bg-zinc-900/40 rounded-3xl border border-white/5 overflow-hidden shadow-lg">
-                {/* Category header */}
-                <div className="p-4 bg-zinc-800/30 flex items-center justify-between border-b border-white/5">
-                  <input
-                    type="text"
-                    value={menu.categorias[catIdx].nombre}
-                    onChange={(e) => update((m) => { m.categorias[catIdx].nombre = e.target.value; })}
-                    className="bg-transparent border-none focus:ring-0 text-lg font-bold text-white flex-1 placeholder-zinc-700 p-0"
-                    placeholder="Nombre de categoría..."
-                  />
-                  <span className="text-xs text-zinc-600 mx-3 shrink-0">{products.length} productos</span>
-                  <button
-                    onClick={() => update((m) => {
-                      m.productos = m.productos.filter((p) => p.categoriaIdx !== catIdx);
-                      m.categorias.splice(catIdx, 1);
-                      // Re-index
-                      m.productos.forEach((p) => { if (p.categoriaIdx > catIdx) p.categoriaIdx--; });
-                    })}
-                    className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-
-                {/* Products */}
-                <div className="divide-y divide-white/5">
-                  {products.map((prod) => {
-                    const pIdx = prod._idx;
-                    const assignedMods = menu.modificadores.filter((m) => prod.modIds.includes(m.id));
-                    const unassignedMods = menu.modificadores.filter((m) => !prod.modIds.includes(m.id));
-
-                    return (
-                      <div key={pIdx} className="p-4 hover:bg-white/[0.02] transition-colors group/row">
-                        {/* Main row */}
-                        <div className="flex items-center gap-3">
-                          {/* Name + description */}
-                          <div className="flex-1 min-w-0 space-y-0.5">
-                            <input
-                              type="text"
-                              value={prod.nombre}
-                              onChange={(e) => update((m) => { m.productos[pIdx].nombre = e.target.value; })}
-                              className="bg-transparent border-none focus:ring-0 text-white font-medium w-full p-0 text-sm"
-                              placeholder="Nombre del producto..."
-                            />
-                            <input
-                              type="text"
-                              value={prod.descripcion}
-                              onChange={(e) => update((m) => { m.productos[pIdx].descripcion = e.target.value; })}
-                              className="bg-transparent border-none focus:ring-0 text-zinc-500 text-xs w-full p-0"
-                              placeholder="Descripción (opcional)..."
-                            />
-                          </div>
-
-                          {/* Price */}
-                          <div className="w-24 shrink-0">
-                            <div className="flex items-center bg-zinc-800/50 rounded-lg px-2 py-1.5">
-                              <span className="text-zinc-500 text-xs mr-1">$</span>
-                              <input
-                                type="number"
-                                value={prod.precio}
-                                onChange={(e) => update((m) => { m.productos[pIdx].precio = Number(e.target.value) || 0; })}
-                                className="bg-transparent border-none focus:ring-0 text-white font-mono text-sm w-full p-0 outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Move to category */}
-                          <div className="w-36 shrink-0 relative">
-                            <select
-                              value={prod.categoriaIdx}
-                              onChange={(e) => update((m) => { m.productos[pIdx].categoriaIdx = Number(e.target.value); })}
-                              className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-2 py-1.5 text-xs text-zinc-300 appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 outline-none pr-6"
-                            >
-                              {menu.categorias.map((c, i) => (
-                                <option key={i} value={i}>{c.nombre}</option>
-                              ))}
-                            </select>
-                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-                          </div>
-
-                          {/* Delete */}
-                          <button
-                            onClick={() => update((m) => { m.productos.splice(pIdx, 1); })}
-                            className="p-1.5 text-zinc-600 hover:text-red-500 opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-
-                        {/* Assigned modifiers */}
-                        <div className="mt-2 ml-1 flex flex-wrap items-center gap-1.5">
-                          {assignedMods.map((mod) => (
-                            <span
-                              key={mod.id}
-                              className="inline-flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-2.5 py-1 text-xs text-zinc-300"
-                            >
-                              <Settings2 size={10} className="text-zinc-500" />
-                              {mod.nombre}
-                              <span className="text-zinc-600">({mod.opciones.length})</span>
-                              <button
-                                onClick={() => update((m) => { m.productos[pIdx].modIds = m.productos[pIdx].modIds.filter((id) => id !== mod.id); })}
-                                className="text-zinc-600 hover:text-red-400 ml-0.5"
-                              >
-                                <X size={10} />
-                              </button>
-                            </span>
-                          ))}
-
-                          {/* Assign modifier dropdown */}
-                          {unassignedMods.length > 0 && (
-                            <div className="relative inline-block">
-                              <select
-                                value=""
-                                onChange={(e) => {
-                                  if (!e.target.value) return;
-                                  update((m) => { m.productos[pIdx].modIds.push(e.target.value); });
-                                }}
-                                className="bg-transparent border border-dashed border-zinc-700 rounded-lg px-2 py-1 text-xs text-zinc-500 appearance-none cursor-pointer hover:border-zinc-500 hover:text-zinc-300 transition-all pr-5 outline-none focus:ring-0"
-                              >
-                                <option value="">+ Modificador</option>
-                                {unassignedMods.map((m) => (
-                                  <option key={m.id} value={m.id}>{m.nombre}</option>
-                                ))}
-                              </select>
-                              <Plus size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
-                            </div>
-                          )}
-
-                          {menu.modificadores.length === 0 && prod.modIds.length === 0 && (
-                            <span className="text-[10px] text-zinc-600 italic">Sin modificadores — crealos abajo</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {products.length === 0 && (
-                    <div className="p-6 text-center text-zinc-600 text-sm">Categoría vacía — agregá productos o eliminala</div>
-                  )}
-                </div>
-
-                {/* Add product */}
-                <div className="p-3 border-t border-white/5">
-                  <button
-                    onClick={() => update((m) => { m.productos.push({ nombre: "", descripcion: "", precio: 0, categoriaIdx: catIdx, modIds: [] }); })}
-                    className="w-full py-2 hover:bg-white/[0.03] rounded-xl text-zinc-500 hover:text-white text-sm flex items-center justify-center gap-2 transition-all border border-dashed border-white/5"
-                  >
-                    <Plus size={14} />
-                    Agregar Producto
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* Add category */}
-            <button
-              onClick={() => update((m) => { m.categorias.push({ nombre: "Nueva Categoría" }); })}
-              className="w-full py-4 bg-zinc-900/40 border-2 border-dashed border-white/5 rounded-2xl text-zinc-500 hover:text-white hover:border-white/10 transition-all flex items-center justify-center gap-2 text-sm"
-            >
-              <Plus size={18} />
-              Agregar Categoría
-            </button>
-          </div>
-
           {/* ── Global Modifiers Panel ── */}
           <div className="bg-zinc-900/40 rounded-3xl border border-white/5 overflow-hidden shadow-lg">
             <div className="p-4 bg-zinc-800/30 border-b border-white/5 flex items-center justify-between">
@@ -658,6 +491,160 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                 })}
               </div>
             )}
+          </div>
+
+          {/* ── Categories + Products ── */}
+          <div className="space-y-6">
+            {productsByCategory.map(({ catIdx, products }) => (
+              <div key={catIdx} className="bg-zinc-900/40 rounded-3xl border border-white/5 overflow-hidden shadow-lg">
+                {/* Category header */}
+                <div className="p-4 bg-zinc-800/30 flex items-center justify-between border-b border-white/5">
+                  <input
+                    type="text"
+                    value={menu.categorias[catIdx].nombre}
+                    onChange={(e) => update((m) => { m.categorias[catIdx].nombre = e.target.value; })}
+                    className="bg-transparent border-none focus:ring-0 text-lg font-bold text-white flex-1 placeholder-zinc-700 p-0"
+                    placeholder="Nombre de categoría..."
+                  />
+                  <span className="text-xs text-zinc-600 mx-3 shrink-0">{products.length} productos</span>
+                  <button
+                    onClick={() => update((m) => {
+                      m.productos = m.productos.filter((p) => p.categoriaIdx !== catIdx);
+                      m.categorias.splice(catIdx, 1);
+                      m.productos.forEach((p) => { if (p.categoriaIdx > catIdx) p.categoriaIdx--; });
+                    })}
+                    className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {/* Products */}
+                <div className="divide-y divide-white/5">
+                  {products.map((prod) => {
+                    const pIdx = prod._idx;
+                    const assignedMods = menu.modificadores.filter((m) => prod.modIds.includes(m.id));
+                    const unassignedMods = menu.modificadores.filter((m) => !prod.modIds.includes(m.id));
+
+                    return (
+                      <div key={pIdx} className="p-4 hover:bg-white/[0.02] transition-colors group/row">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0 space-y-0.5">
+                            <input
+                              type="text"
+                              value={prod.nombre}
+                              onChange={(e) => update((m) => { m.productos[pIdx].nombre = e.target.value; })}
+                              className="bg-transparent border-none focus:ring-0 text-white font-medium w-full p-0 text-sm"
+                              placeholder="Nombre del producto..."
+                            />
+                            <input
+                              type="text"
+                              value={prod.descripcion}
+                              onChange={(e) => update((m) => { m.productos[pIdx].descripcion = e.target.value; })}
+                              className="bg-transparent border-none focus:ring-0 text-zinc-500 text-xs w-full p-0"
+                              placeholder="Descripción (opcional)..."
+                            />
+                          </div>
+
+                          <div className="w-24 shrink-0">
+                            <div className="flex items-center bg-zinc-800/50 rounded-lg px-2 py-1.5">
+                              <span className="text-zinc-500 text-xs mr-1">$</span>
+                              <input
+                                type="number"
+                                value={prod.precio}
+                                onChange={(e) => update((m) => { m.productos[pIdx].precio = Number(e.target.value) || 0; })}
+                                className="bg-transparent border-none focus:ring-0 text-white font-mono text-sm w-full p-0 outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="w-36 shrink-0 relative">
+                            <select
+                              value={prod.categoriaIdx}
+                              onChange={(e) => update((m) => { m.productos[pIdx].categoriaIdx = Number(e.target.value); })}
+                              className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-2 py-1.5 text-xs text-zinc-300 appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 outline-none pr-6"
+                            >
+                              {menu.categorias.map((c, i) => (
+                                <option key={i} value={i}>{c.nombre}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                          </div>
+
+                          <button
+                            onClick={() => update((m) => { m.productos.splice(pIdx, 1); })}
+                            className="p-1.5 text-zinc-600 hover:text-red-500 opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <div className="mt-2 ml-1 flex flex-wrap items-center gap-1.5">
+                          {assignedMods.map((mod) => (
+                            <span key={mod.id} className="inline-flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-2.5 py-1 text-xs text-zinc-300">
+                              <Settings2 size={10} className="text-zinc-500" />
+                              {mod.nombre}
+                              <span className="text-zinc-600">({mod.opciones.length})</span>
+                              <button
+                                onClick={() => update((m) => { m.productos[pIdx].modIds = m.productos[pIdx].modIds.filter((id) => id !== mod.id); })}
+                                className="text-zinc-600 hover:text-red-400 ml-0.5"
+                              >
+                                <X size={10} />
+                              </button>
+                            </span>
+                          ))}
+
+                          {unassignedMods.length > 0 && (
+                            <div className="relative inline-block">
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if (!e.target.value) return;
+                                  update((m) => { m.productos[pIdx].modIds.push(e.target.value); });
+                                }}
+                                className="bg-transparent border border-dashed border-zinc-700 rounded-lg px-2 py-1 text-xs text-zinc-500 appearance-none cursor-pointer hover:border-zinc-500 hover:text-zinc-300 transition-all pr-5 outline-none focus:ring-0"
+                              >
+                                <option value="">+ Modificador</option>
+                                {unassignedMods.map((m) => (
+                                  <option key={m.id} value={m.id}>{m.nombre}</option>
+                                ))}
+                              </select>
+                              <Plus size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
+                            </div>
+                          )}
+
+                          {menu.modificadores.length === 0 && prod.modIds.length === 0 && (
+                            <span className="text-[10px] text-zinc-600 italic">Sin modificadores — crealos arriba</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {products.length === 0 && (
+                    <div className="p-6 text-center text-zinc-600 text-sm">Categoría vacía — agregá productos o eliminala</div>
+                  )}
+                </div>
+
+                <div className="p-3 border-t border-white/5">
+                  <button
+                    onClick={() => update((m) => { m.productos.push({ nombre: "", descripcion: "", precio: 0, categoriaIdx: catIdx, modIds: [] }); })}
+                    className="w-full py-2 hover:bg-white/[0.03] rounded-xl text-zinc-500 hover:text-white text-sm flex items-center justify-center gap-2 transition-all border border-dashed border-white/5"
+                  >
+                    <Plus size={14} />
+                    Agregar Producto
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={() => update((m) => { m.categorias.push({ nombre: "Nueva Categoría" }); })}
+              className="w-full py-4 bg-zinc-900/40 border-2 border-dashed border-white/5 rounded-2xl text-zinc-500 hover:text-white hover:border-white/10 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Plus size={18} />
+              Agregar Categoría
+            </button>
           </div>
         </div>
       )}
