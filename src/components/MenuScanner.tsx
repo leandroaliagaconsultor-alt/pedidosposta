@@ -156,9 +156,9 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
         const productsToInsert = cat.productos.map((prod) => ({
           tenant_id: tenantId,
           category_id: catData.id,
-          name: prod.nombre,
-          description: prod.descripcion,
-          price: prod.precio,
+          name: prod.nombre || "Sin nombre",
+          description: prod.descripcion || "",
+          price: prod.precio ?? 0,
           is_available: true,
           sort_order: 0,
         }));
