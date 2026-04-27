@@ -625,14 +625,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             }
 
             try { localStorage.setItem(`active_order_${tenantSlug}`, order.id); } catch { }
-            clearCart();
+            try { localStorage.setItem(`clear_cart_${tenantSlug}`, "1"); } catch { }
             router.push(`/${tenantSlug}/order/${order.id}`);
 
         } catch (err: unknown) {
             console.error(err);
             const message = err instanceof Error ? err.message : "Error al confirmar el pedido. Reintente por favor.";
             toast.error(message);
-        } finally {
             setIsSubmitting(false);
         }
     };

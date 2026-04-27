@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck, MessageCircle, BellRing } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCartStore } from "@/lib/store/cartStore";
 import { toast, Toaster } from "sonner";
 
 
@@ -25,10 +26,21 @@ function getSteps(deliveryMethod: string) {
 export default function OrderTrackingPage({ params }: { params: Promise<{ tenant: string; id: string }> }) {
     const { tenant, id: orderId } = use(params);
     const supabase = createClient();
+    const { clearCart } = useCartStore();
 
     const [order, setOrder] = useState<any>(null);
     const [tenantData, setTenantData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    // ── Clear cart if redirected from checkout ──
+    useEffect(() => {
+        try {
+            if (localStorage.getItem(`clear_cart_${tenant}`) === "1") {
+                clearCart();
+                localStorage.removeItem(`clear_cart_${tenant}`);
+            }
+        } catch {}
+    }, [tenant, clearCart]);
 
     // ── Initial Fetch ────────────────────────────────────────────────────
     useEffect(() => {
