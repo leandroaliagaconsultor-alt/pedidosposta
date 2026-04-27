@@ -67,7 +67,7 @@ function TimeAgo({ createdAt }: { createdAt: string }) {
         const interval = setInterval(calc, 30000);
         return () => clearInterval(interval);
     }, [createdAt]);
-    return <span className="text-[10px] font-medium text-zinc-600">{ago}</span>;
+    return <span className="text-[10px] font-medium text-[#575757]/70">{ago}</span>;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -403,10 +403,11 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
-                        Live Orders
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#575757]">En vivo</p>
+                    <h1 className="font-['Archivo_Black',sans-serif] text-4xl tracking-tight mt-1">
+                        Live <span className="text-[#43926A]">Orders</span>
                     </h1>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1.5 text-sm text-[#575757]">
                         Monitor de estado de operaciones en tiempo real.
                     </p>
                 </div>
@@ -424,16 +425,16 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             onClick={() => setActiveTab(tab.key)}
                             className={`group relative flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95
                                 ${isActive
-                                    ? `bg-zinc-800/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
-                                    : "bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                                    ? `bg-[#E9E7E2]/80 ${tab.color} ring-1 ${tab.ringColor} shadow-lg`
+                                    : "bg-[#FBF8F1]/40 text-[#575757] hover:bg-[#E9E7E2]/50 hover:text-[#0F1210]"
                                 }`}
                         >
-                            <Icon size={15} className={isActive ? tab.color : "text-zinc-600"} />
+                            <Icon size={15} className={isActive ? tab.color : "text-[#575757]/70"} />
                             {tab.label}
                             {count > 0 && (
                                 <span className={`ml-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${isActive
-                                    ? "bg-white/10 text-white"
-                                    : "bg-zinc-800 text-zinc-500"
+                                    ? "bg-white/10 text-[#0F1210]"
+                                    : "bg-[#E9E7E2] text-[#575757]"
                                     }`}>
                                     {count}
                                 </span>
@@ -446,38 +447,38 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
             {/* ── Cards Grid ─────────────────────────────────────── */}
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredOrders.length === 0 ? (
-                    <div className="col-span-full flex h-[35vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 backdrop-blur-sm">
-                        <currentTabConfig.icon size={48} className="mb-4 text-zinc-700 opacity-40" />
-                        <p className="text-base font-bold text-zinc-500">Sin pedidos {currentTabConfig.label.toLowerCase()}</p>
-                        <p className="mt-1 max-w-xs text-center text-sm text-zinc-600">
+                    <div className="col-span-full flex h-[35vh] flex-col items-center justify-center rounded-3xl border border-dashed border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/20 backdrop-blur-sm">
+                        <currentTabConfig.icon size={48} className="mb-4 text-[#575757]/50 opacity-40" />
+                        <p className="text-base font-bold text-[#575757]">Sin pedidos {currentTabConfig.label.toLowerCase()}</p>
+                        <p className="mt-1 max-w-xs text-center text-sm text-[#575757]/70">
                             Los pedidos aparecerán aquí cuando cambien a este estado.
                         </p>
                     </div>
                 ) : (
                     filteredOrders.map((order) => {
                         const statusTab = TABS.find(t => t.statuses.includes(order.status));
-                        const borderClass = statusTab?.borderColor || "border-t-zinc-700";
+                        const borderClass = statusTab?.borderColor || "border-t-[rgba(15,18,16,.15)]";
                         return (
                         <div
                             key={order.id}
-                            className={`flex h-full flex-col overflow-hidden rounded-2xl border-t-[3px] border border-zinc-800/60 bg-gradient-to-b from-zinc-900/60 to-zinc-950/80 shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${borderClass} ${
+                            className={`flex h-full flex-col overflow-hidden rounded-2xl border-t-[3px] border border-[rgba(15,18,16,.12)]/60 bg-gradient-to-b from-white to-[#FBF8F1] shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/5 ${borderClass} ${
                                 order.is_asap && order.status === "pending"
                                     ? "shadow-[0_0_25px_-5px] shadow-red-500/15"
                                     : ""
                             }`}
                         >
                             {/* Card Header */}
-                            <div className="flex items-center justify-between border-b border-zinc-800/50 bg-zinc-900/60 px-5 py-4">
+                            <div className="flex items-center justify-between border-b border-[rgba(15,18,16,.12)]/50 bg-white px-5 py-4">
                                 <div className="flex items-center gap-3">
                                     <span className={`flex items-center justify-center rounded-lg px-3 py-1.5 font-mono text-lg font-black tracking-tight ring-1 ring-inset ${
                                         order.status === "pending"
                                             ? "bg-primary/10 text-primary ring-primary/20"
-                                            : "bg-zinc-800/80 text-zinc-200 ring-zinc-700/50"
+                                            : "bg-[#E9E7E2]/80 text-[#0F1210] ring-[rgba(15,18,16,.12)]"
                                     }`}>
                                         #{order.order_number}
                                     </span>
                                     <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#575757]">
                                             {order.is_asap ? (
                                             <>
                                                 <span className="relative flex h-2 w-2">
@@ -513,7 +514,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         {tenantSettings?.enable_kitchen_tickets && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handlePrint(order, 'kitchen'); }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:bg-amber-500/10 hover:text-amber-500 transition-colors"
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-amber-500/10 hover:text-amber-500 transition-colors"
                                                 title="Imprimir Comanda Cocina"
                                             >
                                                 <ChefHat size={14} />
@@ -522,7 +523,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         {tenantSettings?.enable_delivery_tickets && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handlePrint(order, 'delivery'); }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:bg-sky-500/10 hover:text-sky-500 transition-colors"
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-sky-500/10 hover:text-sky-500 transition-colors"
                                                 title="Imprimir Ticket Repartidor"
                                             >
                                                 <Bike size={14} />
@@ -534,7 +535,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                     e.stopPropagation();
                                                     setAdjustingOrder(order);
                                                 }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition-colors"
                                                 title="Ajustar Pedido"
                                             >
                                                 <Edit3 size={14} />
@@ -546,26 +547,26 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
                             {/* Card Body */}
                             <div className="flex flex-1 flex-col px-5 py-4">
-                                <h3 className="text-xl font-extrabold tracking-tight text-white mb-1">
+                                <h3 className="text-xl font-extrabold tracking-tight text-[#0F1210] mb-1">
                                     {order.first_name} {order.last_name || ""}
                                 </h3>
-                                <div className="mt-2 space-y-2.5 text-sm text-zinc-400">
+                                <div className="mt-2 space-y-2.5 text-sm text-[#575757]">
                                     {order.customer_phone && (
                                         <div className="flex items-center gap-2">
-                                            <Phone size={14} className="text-zinc-500" />
-                                            <span className="font-mono text-zinc-300">{order.customer_phone}</span>
+                                            <Phone size={14} className="text-[#575757]" />
+                                            <span className="font-mono text-[#0F1210]">{order.customer_phone}</span>
                                         </div>
                                     )}
                                     {order.delivery_method === "DELIVERY" && order.customer_address && (
                                         <div className="flex items-start gap-2">
-                                            <MapPin size={14} className="mt-0.5 flex-shrink-0 text-zinc-500" />
-                                            <span className="font-medium text-zinc-300 line-clamp-2">{order.customer_address}</span>
+                                            <MapPin size={14} className="mt-0.5 flex-shrink-0 text-[#575757]" />
+                                            <span className="font-medium text-[#0F1210] line-clamp-2">{order.customer_address}</span>
                                         </div>
                                     )}
                                     {/* Payment method */}
                                     {order.payment_method && (
                                         <div className="flex items-center gap-2">
-                                            <CreditCard size={14} className="text-zinc-500" />
+                                            <CreditCard size={14} className="text-[#575757]" />
                                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                                 order.payment_method === "MERCADOPAGO" ? "bg-sky-500/10 text-sky-400" :
                                                 order.payment_method === "TRANSFER" ? "bg-amber-500/10 text-amber-400" :
@@ -581,16 +582,16 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
 
                                 {/* Items */}
                                 {order.order_items && order.order_items.length > 0 && (
-                                    <div className="mt-4 rounded-xl bg-zinc-900/50 p-3 ring-1 ring-zinc-800/50">
+                                    <div className="mt-4 rounded-xl bg-[#FBF8F1]/50 p-3 ring-1 ring-[rgba(15,18,16,.12)]/50">
                                         <ul className="space-y-2">
                                             {order.order_items.map((item, index) => (
                                                 <li key={index} className="text-sm font-medium">
-                                                    <div className="flex items-start text-zinc-200">
+                                                    <div className="flex items-start text-[#0F1210]">
                                                         <span className="mr-2 font-bold text-primary">{item.quantity}x</span>
                                                         <span>{item.product?.name || "Producto"}</span>
                                                     </div>
                                                     {item.notes && (
-                                                        <p className="ml-6 mt-0.5 text-xs font-normal text-zinc-500">
+                                                        <p className="ml-6 mt-0.5 text-xs font-normal text-[#575757]">
                                                             Nota: {item.notes}
                                                         </p>
                                                     )}
@@ -601,15 +602,15 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 )}
 
                                 <div className="mt-auto pt-4">
-                                    <div className="flex items-center justify-between rounded-xl bg-zinc-800/40 px-4 py-3 font-bold">
+                                    <div className="flex items-center justify-between rounded-xl bg-[#E9E7E2]/50 px-4 py-3 font-bold">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Total</span>
+                                            <span className="text-[10px] uppercase tracking-widest text-[#575757]">Total</span>
                                             {order.extra_charge != null && order.extra_charge > 0 && (
                                                 <div className="flex items-center gap-1 text-[10px] text-amber-500/80 group/note relative cursor-help">
                                                     <AlertCircle size={10} />
                                                     <span>+${order.extra_charge} ajuste</span>
                                                     {order.internal_notes && (
-                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover/note:block w-48 rounded-lg bg-zinc-950 p-2 text-[10px] font-normal text-zinc-300 ring-1 ring-zinc-800 shadow-xl z-50">
+                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover/note:block w-48 rounded-lg bg-white p-2 text-[10px] font-normal text-[#0F1210] ring-1 ring-[rgba(15,18,16,.12)] shadow-xl z-50">
                                                             {order.internal_notes}
                                                         </div>
                                                     )}
@@ -635,10 +636,10 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             </div>
 
                             {/* ── Card Actions (Bi-directional) ──── */}
-                            <div className="border-t border-zinc-800/80 bg-zinc-950 p-4">
+                            <div className="border-t border-[rgba(15,18,16,.12)]/80 bg-white p-4">
                                 {order.status === "loading" && (
                                     <div className="flex w-full justify-center py-3.5">
-                                        <Loader2 size={18} className="animate-spin text-zinc-500" />
+                                        <Loader2 size={18} className="animate-spin text-[#575757]" />
                                     </div>
                                 )}
 
@@ -646,14 +647,14 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                 {order.status === "pending" && (
                                     <>
                                         {confirmingOrderId === order.id ? (
-                                            <div className="flex flex-col gap-2 rounded-xl bg-zinc-900/60 p-3 ring-1 ring-zinc-700/50">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                            <div className="flex flex-col gap-2 rounded-xl bg-white p-3 ring-1 ring-[rgba(15,18,16,.12)]">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#575757]">
                                                     Tiempo estimado de entrega:
                                                 </span>
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "20-30 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition">Rápido (20-30m)</button>
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "40-45 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition">Normal (40-45m)</button>
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "60-80 min")} className="rounded-lg bg-zinc-800 p-2 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition col-span-2">Demorado (60-80m)</button>
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "20-30 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition">Rápido (20-30m)</button>
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "40-45 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition">Normal (40-45m)</button>
+                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "60-80 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition col-span-2">Demorado (60-80m)</button>
                                                 </div>
                                                 <div className="flex gap-2 mt-1">
                                                     <input
@@ -663,7 +664,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                         placeholder="Minutos (ej: 45)"
                                                         value={customTime}
                                                         onChange={(e) => setCustomTime(e.target.value)}
-                                                        className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs text-white outline-none focus:border-primary"
+                                                        className="flex-1 rounded-lg border border-[rgba(15,18,16,.15)] bg-white px-2 py-1 text-xs text-[#0F1210] outline-none focus:border-primary"
                                                     />
                                                     <button
                                                         onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", `${customTime} min`)}
@@ -673,7 +674,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                                         OK
                                                     </button>
                                                 </div>
-                                                <button onClick={() => { setConfirmingOrderId(null); setCustomTime(""); }} className="mt-1 text-center text-[10px] uppercase font-bold tracking-widest text-zinc-500 hover:text-white">
+                                                <button onClick={() => { setConfirmingOrderId(null); setCustomTime(""); }} className="mt-1 text-center text-[10px] uppercase font-bold tracking-widest text-[#575757] hover:text-[#0F1210]">
                                                     Cancelar
                                                 </button>
                                             </div>
@@ -709,7 +710,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         </button>
                                         <button
                                             onClick={() => updateOrderStatus(order.id, "preparing", "pending")}
-                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#E9E7E2]/50 py-3.5 text-xs font-bold tracking-wider text-[#575757] ring-1 ring-inset ring-[rgba(15,18,16,.12)] transition-all hover:bg-[#E9E7E2]/30 hover:text-[#0F1210] active:scale-95"
                                         >
                                             <Undo2 size={14} />
                                             RECIBIDO
@@ -734,7 +735,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                         </button>
                                         <button
                                             onClick={() => updateOrderStatus(order.id, "on_the_way", "preparing")}
-                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#E9E7E2]/50 py-3.5 text-xs font-bold tracking-wider text-[#575757] ring-1 ring-inset ring-[rgba(15,18,16,.12)] transition-all hover:bg-[#E9E7E2]/30 hover:text-[#0F1210] active:scale-95"
                                         >
                                             <Undo2 size={14} />
                                             CONFIRMAR
@@ -752,7 +753,7 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => updateOrderStatus(order.id, "delivered", "on_the_way")}
-                                            className="flex-[3] flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800/50 py-3.5 text-xs font-bold tracking-wider text-zinc-400 ring-1 ring-inset ring-zinc-700/50 transition-all hover:bg-zinc-700/30 hover:text-zinc-300 active:scale-95"
+                                            className="flex-[3] flex items-center justify-center gap-1.5 rounded-xl bg-[#E9E7E2]/50 py-3.5 text-xs font-bold tracking-wider text-[#575757] ring-1 ring-inset ring-[rgba(15,18,16,.12)] transition-all hover:bg-[#E9E7E2]/30 hover:text-[#0F1210] active:scale-95"
                                         >
                                             <Undo2 size={14} />
                                             VOLVER A DESPACHADO
