@@ -329,23 +329,24 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
         <div className="h-full w-full max-w-7xl mx-auto overflow-x-hidden">
             <header className="mb-6 sm:mb-10">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">Configuración del <span className="text-primary italic">Local</span></h1>
-                    <p className="text-sm sm:text-base text-zinc-400">Gestiona horarios, zonas y detalles de operativa general.</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#575757]">Configuración</p>
+                    <h1 className="font-['Archivo_Black',sans-serif] text-3xl sm:text-4xl tracking-tight mt-1">Configuración del <span className="text-[#43926A]">Local</span></h1>
+                    <p className="text-sm text-[#575757] mt-1.5">Gestiona horarios, zonas y detalles de operativa general.</p>
                 </div>
             </header>
 
             <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8 pb-28 max-w-4xl mx-auto">
-                <div className="rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/20 p-4 sm:p-6 xl:p-8">
-                    <h2 className="mb-6 flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-2xl sm:rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-4 sm:p-6 xl:p-8">
+                    <h2 className="mb-6 flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                         <MapPin className="text-primary" size={24} /> Información Operativa
                     </h2>
 
                     <div className="space-y-6">
                         {/* ── Motor de Horarios y Override ── */}
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-6 space-y-6">
-                            <div className="border-b border-zinc-800 pb-4">
-                                <h3 className="font-bold text-lg text-white mb-1">Estado de la Tienda</h3>
-                                <p className="text-sm text-zinc-500 mb-4">Cierre de emergencia: Si lo desactivas, los clientes podran ver tu menu pero no podran realizar pedidos hasta que vuelvas a abrir.</p>
+                        <div className="rounded-2xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] p-6 space-y-6">
+                            <div className="border-b border-[rgba(15,18,16,.1)] pb-4">
+                                <h3 className="font-bold text-lg text-[#0F1210] mb-1">Estado de la Tienda</h3>
+                                <p className="text-sm text-[#575757] mb-4">Cierre de emergencia: Si lo desactivas, los clientes podran ver tu menu pero no podran realizar pedidos hasta que vuelvas a abrir.</p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     {(['none', 'force_open', 'force_close'] as const).map(status => (
@@ -354,10 +355,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                             type="button"
                                             onClick={() => form.setValue('override_status', status, { shouldDirty: true })}
                                             className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-widest uppercase transition-all flex flex-col items-center justify-center gap-1 ${watchValues.override_status === status
-                                                ? (status === 'force_open' ? 'bg-primary text-primary-foreground shadow-[0_0_15px_var(--brand-color)] shadow-primary/30'
-                                                    : status === 'force_close' ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                        : 'bg-zinc-700 text-white ring-2 ring-zinc-500')
-                                                : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800'
+                                                ? (status === 'force_open' ? 'bg-[#43926A] text-white shadow-[0_6px_16px_-8px_rgba(67,146,106,.6)]'
+                                                    : status === 'force_close' ? 'bg-[#E25A2B] text-white shadow-[0_6px_16px_-8px_rgba(226,90,43,.4)]'
+                                                        : 'bg-[#0F1210] text-[#F6F2EA]')
+                                                : 'bg-[#FBF8F1] text-[#575757] border border-[rgba(15,18,16,.12)] hover:bg-[#E9E7E2]'
                                                 }`}
                                         >
                                             {status === 'none' && 'Automático'}
@@ -366,7 +367,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         </button>
                                     ))}
                                 </div>
-                                <p className="text-[11px] text-zinc-600 mt-2">
+                                <p className="text-[11px] text-[#575757]/70 mt-2">
                                     {watchValues.override_status === 'none' && 'Usa los horarios semanales de abajo para abrir y cerrar automaticamente.'}
                                     {watchValues.override_status === 'force_open' && 'Tu tienda esta abierta ahora, sin importar los horarios de abajo.'}
                                     {watchValues.override_status === 'force_close' && 'Tu tienda esta cerrada. Los clientes ven el menu pero no pueden pedir.'}
@@ -376,23 +377,23 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             <div className={watchValues.override_status !== 'none' ? 'opacity-40 pointer-events-none transition-opacity' : 'transition-opacity'}>
                                 <div className="flex items-center gap-2 mb-1">
                                     <Calendar className="text-primary" size={20} />
-                                    <h3 className="font-bold text-white">Horarios Semanales</h3>
+                                    <h3 className="font-bold text-[#0F1210]">Horarios Semanales</h3>
                                 </div>
-                                <p className="text-sm text-zinc-500 mb-4">Define tus franjas horarias. Fuera de estos horarios, el sistema se cerrara automaticamente.</p>
+                                <p className="text-sm text-[#575757] mb-4">Define tus franjas horarias. Fuera de estos horarios, el sistema se cerrara automaticamente.</p>
                                 <div className="space-y-3">
                                     {DAYS.map(day => {
                                         const ranges = watchValues.schedule?.[day.id] || [];
                                         const isEnabled = ranges.length > 0;
                                         return (
-                                            <div key={day.id} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-colors ${isEnabled ? 'bg-zinc-900 border-zinc-700' : 'bg-transparent border-zinc-800/60'}`}>
+                                            <div key={day.id} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-colors ${isEnabled ? 'bg-white border-[rgba(15,18,16,.15)]' : 'bg-transparent border-zinc-800/60'}`}>
                                                 <div className="w-28 flex items-center justify-between">
-                                                    <span className={`font-semibold ${isEnabled ? 'text-white' : 'text-zinc-500'}`}>{day.label}</span>
+                                                    <span className={`font-semibold ${isEnabled ? 'text-[#0F1210]' : 'text-[#575757]'}`}>{day.label}</span>
                                                     <label className="relative inline-flex cursor-pointer items-center sm:hidden">
                                                         <input type="checkbox" role="switch" aria-label={`Toggle horario ${day.label}`} checked={isEnabled} onChange={(e) => {
                                                             if (e.target.checked) addTimeRange(day.id);
                                                             else form.setValue(`schedule.${day.id}` as any, []);
                                                         }} className="sr-only peer" />
-                                                        <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                                        <div className="w-9 h-5 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                                     </label>
                                                 </div>
 
@@ -403,14 +404,14 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                                 type="time"
                                                                 value={range.start}
                                                                 onChange={(e) => updateTimeRange(day.id, idx, 'start', e.target.value)}
-                                                                className="bg-zinc-950 border border-zinc-700 text-white text-sm rounded-lg p-2 flex-1 focus:ring-1 focus:ring-primary outline-none"
+                                                                className="bg-[#FBF8F1] border border-[rgba(15,18,16,.18)] text-[#0F1210] text-sm rounded-lg p-2 flex-1 focus:ring-1 focus:ring-[#43926A] focus:border-[#43926A] outline-none"
                                                             />
-                                                            <span className="text-zinc-500 font-bold">-</span>
+                                                            <span className="text-[#575757] font-bold">-</span>
                                                             <input
                                                                 type="time"
                                                                 value={range.end}
                                                                 onChange={(e) => updateTimeRange(day.id, idx, 'end', e.target.value)}
-                                                                className="bg-zinc-950 border border-zinc-700 text-white text-sm rounded-lg p-2 flex-1 focus:ring-1 focus:ring-primary outline-none"
+                                                                className="bg-[#FBF8F1] border border-[rgba(15,18,16,.18)] text-[#0F1210] text-sm rounded-lg p-2 flex-1 focus:ring-1 focus:ring-[#43926A] focus:border-[#43926A] outline-none"
                                                             />
                                                             <button
                                                                 type="button"
@@ -422,7 +423,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                         </div>
                                                     ))}
                                                     {ranges.length === 0 && (
-                                                        <p className="text-xs text-zinc-600 font-medium hidden sm:block">Cerrado este día</p>
+                                                        <p className="text-xs text-[#575757]/70 font-medium hidden sm:block">Cerrado este día</p>
                                                     )}
                                                 </div>
 
@@ -430,7 +431,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                     <button
                                                         type="button"
                                                         onClick={() => addTimeRange(day.id)}
-                                                        className={`p-1.5 rounded-lg border flex items-center justify-center transition-colors ${isEnabled ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700' : 'bg-transparent border-zinc-800 text-primary hover:bg-primary/10 hover:border-primary/50'}`}
+                                                        className={`p-1.5 rounded-lg border flex items-center justify-center transition-colors ${isEnabled ? 'bg-[#E9E7E2] border-[rgba(15,18,16,.15)] text-[#0F1210] hover:text-[#0F1210] hover:bg-[#E9E7E2]' : 'bg-transparent border-zinc-800 text-primary hover:bg-primary/10 hover:border-primary/50'}`}
                                                     >
                                                         <Plus size={16} />
                                                     </button>
@@ -444,124 +445,124 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
 
                         <div className="grid gap-6 md:grid-cols-2">
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Direccion del Local</label>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Direccion del Local</label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                     <input
                                         {...form.register("address")}
                                         placeholder="Ej: Av. Siempreviva 742"
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
+                                        className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A]"
                                     />
                                 </div>
-                                <p className="mt-1 text-xs text-zinc-500">Aparecera como etiqueta en el menu para que tus clientes sepan donde estas.</p>
+                                <p className="mt-1 text-xs text-[#575757]">Aparecera como etiqueta en el menu para que tus clientes sepan donde estas.</p>
                             </div>
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Texto de Horarios (Informativo)</label>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Texto de Horarios (Informativo)</label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                     <input
                                         {...form.register("business_hours")}
                                         placeholder="Ej: Mar a Dom 19:00 a 24:00"
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
+                                        className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A]"
                                     />
                                 </div>
                                 <p className="mt-1 text-xs text-amber-500/80">Solo decorativo: se muestra como etiqueta en tu tienda. La apertura/cierre real se controla en "Horarios Semanales" de arriba.</p>
                             </div>
                             {/* delivery_fee removed — use Zonas de Entrega section instead */}
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Compra Minima</label>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Compra Minima</label>
                                 <div className="relative">
-                                    <ShoppingCart className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <ShoppingCart className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                     <input
                                         type="number"
                                         min="0"
                                         {...form.register("min_order")}
                                         placeholder="Ej: 3000"
-                                        className={`w-full rounded-xl border bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${form.formState.errors.min_order ? "border-red-500/50" : "border-zinc-800"}`}
+                                        className={`w-full rounded-xl border bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A] ${form.formState.errors.min_order ? "border-red-500/50" : "border-zinc-800"}`}
                                     />
                                 </div>
-                                <p className="mt-1 text-xs text-zinc-500">Monto minimo para aceptar un pedido. Si el cliente no llega, le avisamos antes de pagar.</p>
+                                <p className="mt-1 text-xs text-[#575757]">Monto minimo para aceptar un pedido. Si el cliente no llega, le avisamos antes de pagar.</p>
                             </div>
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Capacidad (Pedidos cada 30 min)</label>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Capacidad (Pedidos cada 30 min)</label>
                                 <div className="relative">
-                                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                     <input
                                         type="number"
                                         min="0"
                                         {...form.register("max_orders_per_slot")}
                                         placeholder="Ej: 15"
-                                        className={`w-full rounded-xl border bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${form.formState.errors.max_orders_per_slot ? "border-red-500/50" : "border-zinc-800"}`}
+                                        className={`w-full rounded-xl border bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A] ${form.formState.errors.max_orders_per_slot ? "border-red-500/50" : "border-zinc-800"}`}
                                     />
                                 </div>
-                                <p className="mt-1 text-xs text-zinc-500">Evita la saturacion de tu cocina. Si se llena un horario, el cliente elige otro automaticamente.</p>
+                                <p className="mt-1 text-xs text-[#575757]">Evita la saturacion de tu cocina. Si se llena un horario, el cliente elige otro automaticamente.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* ── Marketing & Contacto ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <Megaphone className="text-pink-500" size={24} /> Contacto y Marketing
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Agrega tus redes sociales para que los clientes te encuentren y usa el banner para promociones activas.</p>
+                    <p className="text-sm text-[#575757] -mt-2 mb-6">Agrega tus redes sociales para que los clientes te encuentren y usa el banner para promociones activas.</p>
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Instagram</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Instagram</label>
                             <div className="relative">
-                                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("instagram_url")}
                                     placeholder="Ej: https://instagram.com/mimark o @mimark"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-pink-500"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Facebook</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Facebook</label>
                             <div className="relative">
-                                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("facebook_url")}
                                     placeholder="Ej: https://facebook.com/mimark"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-pink-500"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">WhatsApp de Pedidos</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">WhatsApp de Pedidos</label>
                             <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("public_phone")}
                                     placeholder="Ej: +54 9 11 1234-5678"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-pink-500"
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500">El numero donde recibiras las notificaciones y donde tus clientes pueden escribirte ante dudas.</p>
+                            <p className="mt-1 text-xs text-[#575757]">El numero donde recibiras las notificaciones y donde tus clientes pueden escribirte ante dudas.</p>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Banner Promocional Superior</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Banner Promocional Superior</label>
                             <div className="relative">
-                                <Megaphone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <Megaphone className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("announcement_text")}
                                     placeholder="Ej: ¡Hoy 15% OFF abonando en efectivo!"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-pink-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-pink-500"
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500">Aparecerá fijado en la parte más alta de tu tienda. Dejar en blanco para ocultar.</p>
+                            <p className="mt-1 text-xs text-[#575757]">Aparecerá fijado en la parte más alta de tu tienda. Dejar en blanco para ocultar.</p>
                         </div>
-                        <div className="md:col-span-2 mt-4 pt-4 border-t border-zinc-800/80">
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-[rgba(15,18,16,.1)]/80">
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
@@ -570,18 +571,18 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     className="sr-only peer"
                                     {...form.register('show_whatsapp_checkout')}
                                 />
-                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                <span className="ml-3 text-sm font-semibold text-zinc-300">Mostrar boton de WhatsApp en el Checkout</span>
+                                <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <span className="ml-3 text-sm font-semibold text-[#0F1210]">Mostrar boton de WhatsApp en el Checkout</span>
                             </label>
-                            <p className="text-xs text-zinc-500 mt-1 ml-14">Si lo activas, el cliente podra escribirte por WhatsApp mientras esta completando su pedido, ideal para resolver dudas antes de pagar.</p>
+                            <p className="text-xs text-[#575757] mt-1 ml-14">Si lo activas, el cliente podra escribirte por WhatsApp mientras esta completando su pedido, ideal para resolver dudas antes de pagar.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* ── MP Integration ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <CreditCard className="text-sky-500" size={24} />
                             <span>Pasarela de Pagos <span className="text-sky-400">(Mercado Pago)</span></span>
                         </h2>
@@ -593,44 +594,44 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                 className="sr-only peer"
                                 {...form.register('is_mp_active')}
                             />
-                            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                            <span className="ml-3 text-sm font-bold text-zinc-300 uppercase tracking-wider">Activar</span>
+                            <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                            <span className="ml-3 text-sm font-bold text-[#0F1210] uppercase tracking-wider">Activar</span>
                         </label>
                     </div>
 
                     <div className={`space-y-6 transition-opacity duration-300 ${watchValues.is_mp_active ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                        <p className="text-sm text-zinc-500 -mt-2">Conecta tu cuenta de Mercado Pago y recibiras el dinero de cada venta directo en tu cuenta, al instante. Nosotros nunca tocamos tu plata.</p>
+                        <p className="text-sm text-[#575757] -mt-2">Conecta tu cuenta de Mercado Pago y recibiras el dinero de cada venta directo en tu cuenta, al instante. Nosotros nunca tocamos tu plata.</p>
 
                         <div className="grid gap-8 lg:grid-cols-2">
                             {/* Left — Credentials form */}
                             <div className="space-y-5">
-                                <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider">Tus credenciales</h3>
+                                <h3 className="text-sm font-bold text-[#0F1210] uppercase tracking-wider">Tus credenciales</h3>
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Public Key (Clave Publica)</label>
+                                    <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Public Key (Clave Publica)</label>
                                     <div className="relative">
-                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                         <input
                                             type={showMPPublicKey ? "text" : "password"}
                                             {...form.register("mp_public_key")}
                                             placeholder="APP_USR-..."
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-12 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-12 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
                                         />
-                                        <button type="button" onClick={() => setShowMPPublicKey(!showMPPublicKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                        <button type="button" onClick={() => setShowMPPublicKey(!showMPPublicKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#575757] hover:text-[#0F1210] transition-colors">
                                             {showMPPublicKey ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Access Token (Token de Acceso)</label>
+                                    <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Access Token (Token de Acceso)</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                         <input
                                             type={showMPAccessToken ? "text" : "password"}
                                             {...form.register("mp_access_token")}
                                             placeholder="APP_USR-..."
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-12 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-12 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-sky-500 font-mono text-sm"
                                         />
-                                        <button type="button" onClick={() => setShowMPAccessToken(!showMPAccessToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                        <button type="button" onClick={() => setShowMPAccessToken(!showMPAccessToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#575757] hover:text-[#0F1210] transition-colors">
                                             {showMPAccessToken ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
@@ -638,22 +639,22 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </div>
 
                             {/* Right — Step by step guide */}
-                            <div className="rounded-2xl border border-sky-500/10 bg-sky-950/10 p-5">
+                            <div className="rounded-2xl border border-sky-500/10 bg-sky-50 p-5">
                                 <h3 className="text-sm font-bold text-sky-400 mb-4">¿Como obtener mis credenciales?</h3>
                                 <ol className="space-y-3.5">
                                     {[
-                                        <>Ingresa a <span className="font-semibold text-zinc-200">Mercado Pago Developers</span> (Tus integraciones) con tu cuenta de siempre.</>,
-                                        <>Hace clic en el boton azul <span className="font-semibold text-zinc-200">&quot;Crear aplicacion&quot;</span>.</>,
-                                        <>Pone el nombre de tu local y selecciona que vas a usar el <span className="font-semibold text-zinc-200">&quot;Checkout Pro&quot;</span>.</>,
-                                        <>Una vez creada, en el menu izquierdo anda a <span className="font-semibold text-zinc-200">&quot;Credenciales de Produccion&quot;</span>. <span className="text-amber-400 font-medium">¡Asegurate de que sean las de produccion y no las de prueba!</span></>,
-                                        <>Copia la <span className="font-semibold text-zinc-200">Public Key</span> y el <span className="font-semibold text-zinc-200">Access Token</span> y pegalos en los campos de la izquierda.</>,
+                                        <>Ingresa a <span className="font-semibold text-[#0F1210]">Mercado Pago Developers</span> (Tus integraciones) con tu cuenta de siempre.</>,
+                                        <>Hace clic en el boton azul <span className="font-semibold text-[#0F1210]">&quot;Crear aplicacion&quot;</span>.</>,
+                                        <>Pone el nombre de tu local y selecciona que vas a usar el <span className="font-semibold text-[#0F1210]">&quot;Checkout Pro&quot;</span>.</>,
+                                        <>Una vez creada, en el menu izquierdo anda a <span className="font-semibold text-[#0F1210]">&quot;Credenciales de Produccion&quot;</span>. <span className="text-amber-400 font-medium">¡Asegurate de que sean las de produccion y no las de prueba!</span></>,
+                                        <>Copia la <span className="font-semibold text-[#0F1210]">Public Key</span> y el <span className="font-semibold text-[#0F1210]">Access Token</span> y pegalos en los campos de la izquierda.</>,
                                         <>¡Listo! La plata de tus ventas va directo a tu cuenta al instante.</>,
                                     ].map((step, i) => (
                                         <li key={i} className="flex items-start gap-3">
                                             <span className="shrink-0 w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 text-xs font-bold flex items-center justify-center mt-0.5">
                                                 {i + 1}
                                             </span>
-                                            <span className="text-sm text-zinc-400 leading-relaxed">{step}</span>
+                                            <span className="text-sm text-[#575757] leading-relaxed">{step}</span>
                                         </li>
                                     ))}
                                 </ol>
@@ -663,20 +664,20 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Comandas y Operación ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <ShoppingCart className="text-amber-500" size={24} /> Operación y Comandas
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Activa la impresion de tickets para que tu cocina y repartidores tengan toda la info del pedido en papel.</p>
+                    <p className="text-sm text-[#575757] -mt-2 mb-6">Activa la impresion de tickets para que tu cocina y repartidores tengan toda la info del pedido en papel.</p>
 
                     <div className="grid gap-6 md:grid-cols-2">
-                        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30">
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-[rgba(15,18,16,.1)] bg-[#FBF8F1]">
                             <div>
-                                <h3 className="text-sm font-bold text-white">Comandas de Cocina</h3>
-                                <p className="text-xs text-zinc-500">Tickets sin precios para la preparación.</p>
+                                <h3 className="text-sm font-bold text-[#0F1210]">Comandas de Cocina</h3>
+                                <p className="text-xs text-[#575757]">Tickets sin precios para la preparación.</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -686,14 +687,14 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     className="sr-only peer"
                                     {...form.register('enable_kitchen_tickets')}
                                 />
-                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30">
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-[rgba(15,18,16,.1)] bg-[#FBF8F1]">
                             <div>
-                                <h3 className="text-sm font-bold text-white">Tickets de Repartidor</h3>
-                                <p className="text-xs text-zinc-500">Tickets con precios y datos de cliente.</p>
+                                <h3 className="text-sm font-bold text-[#0F1210]">Tickets de Repartidor</h3>
+                                <p className="text-xs text-[#575757]">Tickets con precios y datos de cliente.</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -703,36 +704,36 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     className="sr-only peer"
                                     {...form.register('enable_delivery_tickets')}
                                 />
-                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 {/* ── Visibilidad en el Directorio ── */}
-                <div className="rounded-3xl border border-primary/20 bg-zinc-900/40 p-6 xl:p-8 mt-6">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(67,146,106,.2)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <Map className="text-primary" size={24} /> Visibilidad en el Directorio Público
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">
+                    <p className="text-sm text-[#575757] -mt-2 mb-6">
                         Aparecé en nuestro directorio gastronómico para que los clientes de tu ciudad te encuentren. Configurá tu ciudad y las categorías donde querés aparecer.
                     </p>
 
                     {/* City selection first */}
                     <div className="mb-5">
-                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Tu ciudad</label>
+                        <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Tu ciudad</label>
                         <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                             <select
                                 {...form.register("city", {
                                     onChange: (e) => {
                                         if (!e.target.value) form.setValue("is_directory_active", false);
                                     }
                                 })}
-                                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary appearance-none"
+                                className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A] appearance-none"
                             >
                                 <option value="">Seleccioná tu ciudad</option>
                                 {availableCities.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -744,17 +745,17 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </p>
                         )}
                         {watchValues.city && (
-                            <p className="text-[11px] text-zinc-600 mt-1.5">Los clientes te encontrarán en pedidosposta.com/directorio/{watchValues.city}</p>
+                            <p className="text-[11px] text-[#575757]/70 mt-1.5">Los clientes te encontrarán en pedidosposta.com/directorio/{watchValues.city}</p>
                         )}
                     </div>
 
                     {/* Toggle only if city selected */}
                     {watchValues.city && (
                         <>
-                            <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 mb-5">
+                            <div className="flex items-center justify-between p-4 rounded-xl border border-[rgba(15,18,16,.1)] bg-[#FBF8F1] mb-5">
                                 <div>
-                                    <h3 className="text-sm font-bold text-white">Visible en el Directorio</h3>
-                                    <p className="text-xs text-zinc-500">Si está activo, tu local aparecerá en el directorio de {availableCities.find(c => c.slug === watchValues.city)?.name || watchValues.city}.</p>
+                                    <h3 className="text-sm font-bold text-[#0F1210]">Visible en el Directorio</h3>
+                                    <p className="text-xs text-[#575757]">Si está activo, tu local aparecerá en el directorio de {availableCities.find(c => c.slug === watchValues.city)?.name || watchValues.city}.</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -765,13 +766,13 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         checked={watchValues.is_directory_active}
                                         onChange={e => form.setValue("is_directory_active", e.target.checked)}
                                     />
-                                    <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                 </label>
                             </div>
 
                             {watchValues.is_directory_active && (
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Categorías (elegí una o más)</label>
+                                    <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Categorías (elegí una o más)</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {CATEGORIES.map(cat => {
                                             const selected = (watchValues.categories || []).includes(cat.key);
@@ -789,7 +790,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                                                         selected
                                                             ? "bg-primary/15 text-primary border border-primary/30"
-                                                            : "bg-zinc-950/50 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                                                            : "bg-[#FBF8F1] text-[#575757] border border-[rgba(15,18,16,.12)] hover:border-[rgba(15,18,16,.15)]"
                                                     }`}
                                                 >
                                                     <span className="text-lg">{cat.emoji}</span>
@@ -798,7 +799,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                             );
                                         })}
                                     </div>
-                                    <p className="text-[11px] text-zinc-600 mt-1.5">Seleccioná las categorías que mejor describan tu local.</p>
+                                    <p className="text-[11px] text-[#575757]/70 mt-1.5">Seleccioná las categorías que mejor describan tu local.</p>
                                 </div>
                             )}
                         </>
@@ -806,37 +807,37 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Transfer Integration ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <ArrowRightLeft className="text-amber-500" size={24} /> Transferencia Bancaria
                         </h2>
                     </div>
 
-                    <p className="text-sm text-zinc-500 -mt-2 mb-6">Configurá el Alias, CBU o CVU donde los clientes deben realizar las transferencias.</p>
+                    <p className="text-sm text-[#575757] -mt-2 mb-6">Configurá el Alias, CBU o CVU donde los clientes deben realizar las transferencias.</p>
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Alias / CBU / CVU</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Alias / CBU / CVU</label>
                             <div className="relative">
-                                <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("transfer_alias")}
                                     placeholder="Ej: PEDIDO.POSTA.MP o 00000031000..."
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-amber-500"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-300">Nombre del Titular de la Cuenta</label>
+                            <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Nombre del Titular de la Cuenta</label>
                             <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                 <input
                                     type="text"
                                     {...form.register("transfer_account_name")}
                                     placeholder="Ej: Juan Pérez"
-                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-amber-500"
+                                    className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-amber-500"
                                 />
                             </div>
                         </div>
@@ -844,33 +845,33 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                 </div>
 
                 {/* ── Logistics & Zones ── */}
-                <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-6 xl:p-8 mt-6 overflow-hidden">
-                    <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
-                        <h2 className="flex items-center gap-3 text-xl font-bold text-white">
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6 overflow-hidden">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
                             <Bike className="text-emerald-500" size={24} /> Logística y Zonas de Entrega
                         </h2>
                     </div>
 
                     {/* Delivery method toggles */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_delivery ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/30"}`}>
+                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_delivery ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-[#FBF8F1]/30"}`}>
                             <div>
-                                <h3 className="text-sm font-bold text-white">Delivery</h3>
-                                <p className="text-[10px] text-zinc-500">Envío a domicilio</p>
+                                <h3 className="text-sm font-bold text-[#0F1210]">Delivery</h3>
+                                <p className="text-[10px] text-[#575757]">Envío a domicilio</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" checked={watchValues.enable_delivery} onChange={e => form.setValue("enable_delivery", e.target.checked)} />
-                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
-                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_takeaway ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/30"}`}>
+                        <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${watchValues.enable_takeaway ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-[#FBF8F1]/30"}`}>
                             <div>
-                                <h3 className="text-sm font-bold text-white">Takeaway</h3>
-                                <p className="text-[10px] text-zinc-500">Retiro en el local (gratis)</p>
+                                <h3 className="text-sm font-bold text-[#0F1210]">Takeaway</h3>
+                                <p className="text-[10px] text-[#575757]">Retiro en el local (gratis)</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" checked={watchValues.enable_takeaway} onChange={e => form.setValue("enable_takeaway", e.target.checked)} />
-                                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
                     </div>
@@ -882,12 +883,12 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                         {/* Configuración */}
                         <div className="space-y-6">
                             <div>
-                                <label className="mb-3 block text-sm font-semibold text-zinc-300">Tipo de Cobro</label>
+                                <label className="mb-3 block text-sm font-semibold text-[#0F1210]">Tipo de Cobro</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => form.setValue("delivery_pricing_type", "fixed", { shouldDirty: true })}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "fixed" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50"}`}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "fixed" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-[#FBF8F1]/30 text-[#575757] hover:bg-white/50"}`}
                                     >
                                         Costo Fijo
                                         <span className="text-[10px] font-normal opacity-60">Precio único</span>
@@ -895,7 +896,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     <button
                                         type="button"
                                         onClick={() => form.setValue("delivery_pricing_type", "distance", { shouldDirty: true })}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "distance" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-zinc-950/30 text-zinc-500 hover:bg-zinc-900/50"}`}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 text-sm font-bold transition-all ${watchValues.delivery_pricing_type === "distance" ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" : "border-zinc-800 bg-[#FBF8F1]/30 text-[#575757] hover:bg-white/50"}`}
                                     >
                                         Por Distancia
                                         <span className="text-[10px] font-normal opacity-60">Base + extra x KM</span>
@@ -904,9 +905,9 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </div>
 
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-zinc-300">Direccion del Local (Google Maps)</label>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Direccion del Local (Google Maps)</label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
                                     <input
                                         type="text"
                                         value={addressValue}
@@ -916,10 +917,10 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                         }}
                                         disabled={!ready || !isLoaded}
                                         placeholder={!isLoaded ? "Cargando Google Maps..." : "Buscá la dirección del local..."}
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-10 pr-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-70 disabled:text-zinc-500"
+                                        className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500 disabled:opacity-70 disabled:text-[#575757]"
                                     />
                                     {status === "OK" && (
-                                        <ul className="absolute z-50 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
+                                        <ul className="absolute z-50 w-full mt-2 bg-white border border-[rgba(15,18,16,.12)] rounded-xl overflow-hidden shadow-xl">
                                             {data.map(({ place_id, description }) => (
                                                 <li
                                                     key={place_id}
@@ -932,7 +933,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                                             setMapSessionToken(new window.google.maps.places.AutocompleteSessionToken());
                                                         }
                                                     }}
-                                                    className="px-4 py-3 text-sm text-zinc-300 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-zinc-800/50 last:border-0"
+                                                    className="px-4 py-3 text-sm text-[#0F1210] hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer border-b border-[rgba(15,18,16,.1)]/50 last:border-0"
                                                 >
                                                     {description}
                                                 </li>
@@ -944,34 +945,34 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-zinc-300">Radio de Entrega (KM)</label>
+                                    <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Radio de Entrega (KM)</label>
                                     <input
                                         type="number"
                                         {...form.register("delivery_radius_km")}
-                                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                        className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500"
                                     />
-                                    <p className="text-xs text-zinc-500 mt-1">Define el area de cobertura desde tu local. Los clientes fuera de este radio no podran pedir delivery.</p>
+                                    <p className="text-xs text-[#575757] mt-1">Define el area de cobertura desde tu local. Los clientes fuera de este radio no podran pedir delivery.</p>
                                 </div>
 
                                 {watchValues.delivery_pricing_type === "fixed" ? (
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Fijo Envio ($)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Precio Fijo Envio ($)</label>
                                         <input
                                             type="number"
                                             {...form.register("fixed_delivery_price")}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">Este monto se suma automaticamente al total del pedido. Pone $0 para envios gratis.</p>
+                                        <p className="text-xs text-[#575757] mt-1">Este monto se suma automaticamente al total del pedido. Pone $0 para envios gratis.</p>
                                     </div>
                                 ) : (
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Base ($)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Precio Base ($)</label>
                                         <input
                                             type="number"
                                             {...form.register("base_delivery_price")}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">El costo minimo del envio. Se cobra hasta los KMs base incluidos.</p>
+                                        <p className="text-xs text-[#575757] mt-1">El costo minimo del envio. Se cobra hasta los KMs base incluidos.</p>
                                     </div>
                                 )}
                             </div>
@@ -979,32 +980,32 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             {watchValues.delivery_pricing_type === "distance" && (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">KMs Base incluidos</label>
+                                        <label className="mb-2 block text-sm font-semibold text-[#0F1210]">KMs Base incluidos</label>
                                         <input
                                             type="number"
                                             {...form.register("base_delivery_km")}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">Ej: 2 (Hasta cuántos kilómetros se cobra solo el precio base. Debe ser MENOR al Radio de Entrega).</p>
+                                        <p className="text-xs text-[#575757] mt-1">Ej: 2 (Hasta cuántos kilómetros se cobra solo el precio base. Debe ser MENOR al Radio de Entrega).</p>
                                         {Number(watchValues.base_delivery_km) > Number(watchValues.delivery_radius_km) && (
                                             <p className="text-xs text-red-500 mt-1 font-medium">Los KMs base no pueden ser mayores al Radio de Entrega máximo.</p>
                                         )}
                                     </div>
                                     <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-300">Precio Extra x KM ($)</label>
+                                        <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Precio Extra x KM ($)</label>
                                         <input
                                             type="number"
                                             {...form.register("extra_price_per_km")}
-                                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-zinc-100 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                                            className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-emerald-500"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">Ej: 500 (Cuánto se suma por cada kilómetro adicional que supere los KMs Base).</p>
+                                        <p className="text-xs text-[#575757] mt-1">Ej: 500 (Cuánto se suma por cada kilómetro adicional que supere los KMs Base).</p>
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Mapa Visual */}
-                        <div className="h-[400px] w-full rounded-2xl border border-zinc-800 overflow-hidden relative group">
+                        <div className="h-[400px] w-full rounded-2xl border border-[rgba(15,18,16,.12)] overflow-hidden relative group">
                             {isLoaded ? (
                                 <GoogleMap
                                     mapContainerStyle={{ width: '100%', height: '100%', minHeight: '400px', borderRadius: '0.5rem' }}
@@ -1026,14 +1027,14 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                     ) : null}
                                 </GoogleMap>
                             ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-zinc-950 text-zinc-500 text-sm italic">
+                                <div className="h-full w-full flex items-center justify-center bg-[#FBF8F1] text-[#575757] text-sm italic">
                                     Cargando mapa de cobertura...
                                 </div>
                             )}
-                            <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-widest pointer-events-none">
+                            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg border border-[rgba(15,18,16,.12)] text-[10px] font-bold text-[#575757] uppercase tracking-widest pointer-events-none">
                                 Area de Delivery
                             </div>
-                            <div className="absolute bottom-4 left-4 bg-zinc-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-zinc-800 text-[10px] text-zinc-500 pointer-events-none">
+                            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg border border-[rgba(15,18,16,.12)] text-[10px] text-[#575757] pointer-events-none">
                                 El circulo rojo marca hasta donde llegan tus envios
                             </div>
                         </div>
@@ -1042,7 +1043,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
 
                 {/* Dominio Propio removido — v2.0 */}
 
-                <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center sm:justify-end border-t border-zinc-800/80 bg-zinc-950/80 px-4 sm:px-6 py-4 backdrop-blur-xl md:left-64">
+                <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center sm:justify-end border-t border-[rgba(15,18,16,.1)]/80 bg-[#FBF8F1]/80 px-4 sm:px-6 py-4 backdrop-blur-xl md:left-64">
                     <button
                         type="submit"
                         disabled={saving}
