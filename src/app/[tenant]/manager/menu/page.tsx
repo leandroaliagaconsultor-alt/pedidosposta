@@ -8,7 +8,13 @@ import * as z from "zod";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Edit2, Image as ImageIcon, Loader2, Plus, Trash2, X, Upload, ChevronUp, ChevronDown, Sparkles } from "lucide-react";
-import MenuScanner from "@/components/MenuScanner";
+import NextImage from "next/image";
+import dynamic from "next/dynamic";
+
+const MenuScanner = dynamic(() => import("@/components/MenuScanner"), {
+    loading: () => <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#43926A]" /></div>,
+    ssr: false,
+});
 
 // ─── Types & Schemas ─────────────────────────────────────────────────────────
 
@@ -611,7 +617,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <div key={prod.id} className="flex overflow-hidden rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/60 transition-all hover:border-[rgba(15,18,16,.15)] items-stretch">
                                             <div className="flex relative shrink-0 h-24 items-center justify-center p-2 border-b border-[rgba(15,18,16,.12)]/50 bg-[#E9E7E2]/20 mix-blend-multiply sm:mix-blend-normal overflow-hidden w-24">
                                                 {prod.image_url ? (
-                                                    <img src={prod.image_url} alt={prod.name} className="absolute inset-0 h-full w-full object-cover" />
+                                                    <NextImage src={prod.image_url} alt={prod.name} fill className="object-cover" sizes="96px" />
                                                 ) : (
                                                     <ImageIcon size={32} className="text-[#575757]/50 opacity-50 absolute z-10" />
                                                 )}

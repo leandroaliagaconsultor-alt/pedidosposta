@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCircle2, Clock, ChefHat, Bike, PartyPopper, XCircle, ChevronLeft, PackageCheck, MessageCircle, BellRing } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/lib/store/cartStore";
@@ -195,7 +196,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ tenant
                 }}
             >
                 {tenantData?.logo_url ? (
-                    <img src={tenantData.logo_url} alt={tenantData.name} className="h-16 w-16 rounded-full object-cover animate-pulse" />
+                    <Image src={tenantData.logo_url} alt={tenantData.name} width={64} height={64} className="h-16 w-16 rounded-full object-cover animate-pulse" />
                 ) : (
                     <ActiveIcon className={`h-12 w-12 ${activeColor} drop-shadow-md`} />
                 )}

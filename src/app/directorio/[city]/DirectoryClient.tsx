@@ -103,7 +103,7 @@ function StoreModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void }
                     {/* Logo + Name + Status */}
                     <div className="flex items-center gap-4 mb-4">
                         {tenant.logo_url ? (
-                            <img src={tenant.logo_url} alt="" className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 shadow-md" />
+                            <Image src={tenant.logo_url} alt="" width={80} height={80} className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 shadow-md" />
                         ) : (
                             <div className={`w-20 h-20 rounded-2xl border-2 border-gray-100 shadow-md bg-gradient-to-br ${primaryCat.from} ${primaryCat.to} flex items-center justify-center text-3xl font-black text-white`}>
                                 {tenant.name.charAt(0)}
@@ -364,7 +364,7 @@ export function DirectoryClient({ tenants, city }: { tenants: Tenant[]; city: st
                                     className={`group text-left rounded-2xl bg-white p-3 sm:p-4 transition-all duration-200 hover:shadow-lg active:scale-[0.98] ${isSaas ? "border-2 border-emerald-200 hover:border-emerald-300 shadow-sm" : "border border-gray-200 hover:border-gray-300 shadow-sm"}`}>
                                     <div className="flex justify-center mb-3">
                                         {tenant.logo_url ? (
-                                            <img src={tenant.logo_url} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-gray-100 shadow" />
+                                            <Image src={tenant.logo_url} alt="" width={80} height={80} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-gray-100 shadow" />
                                         ) : (
                                             <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-gray-100 shadow bg-gradient-to-br ${primaryCat.from} ${primaryCat.to} flex items-center justify-center text-xl sm:text-2xl font-black text-white`}>{tenant.name.charAt(0)}</div>
                                         )}

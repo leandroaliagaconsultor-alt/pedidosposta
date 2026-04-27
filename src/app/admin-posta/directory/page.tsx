@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 import {
@@ -274,7 +275,7 @@ export default function DirectoryAdminPage() {
                                 <tr key={l.id} className="hover:bg-zinc-900/40 transition-colors">
                                     <td className="px-4 py-3 font-bold text-white flex items-center gap-2.5">
                                         {l.logo_url ? (
-                                            <img src={l.logo_url} className="w-8 h-8 rounded-lg object-cover" alt="" />
+                                            <Image src={l.logo_url} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" alt="" />
                                         ) : (
                                             <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-500">{l.name?.charAt(0)}</div>
                                         )}

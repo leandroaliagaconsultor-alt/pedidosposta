@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 import {
@@ -174,7 +175,7 @@ export default function AdminDashboardPage() {
                                     <tr key={t.id} className="hover:bg-zinc-900/40 transition-colors">
                                         <td className="px-6 py-4 font-bold text-white flex items-center gap-3">
                                             {t.logo_url ? (
-                                                <img src={t.logo_url} className="w-8 h-8 rounded-full object-cover" alt="" />
+                                                <Image src={t.logo_url} width={32} height={32} className="w-8 h-8 rounded-full object-cover" alt="" />
                                             ) : (
                                                 <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">{t.name?.charAt(0)}</div>
                                             )}

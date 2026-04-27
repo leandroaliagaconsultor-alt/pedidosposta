@@ -195,9 +195,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     const subtotal = React.useMemo(() => items.reduce((acc, i) => acc + i.price * i.quantity, 0), [items]);
 
+    // Solo cargar Google Maps si delivery está habilitado
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+        googleMapsApiKey: enableDelivery ? (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string) : "",
         libraries,
     });
 
