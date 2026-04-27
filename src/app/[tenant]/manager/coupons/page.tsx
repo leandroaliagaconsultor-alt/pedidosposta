@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, use } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { toast, Toaster } from "sonner";
-import { Plus, X, Save, Trash2, Tag, Percent, DollarSign, Copy, Calendar } from "lucide-react";
+import { toast } from "sonner";
+import { Plus, X, Save, Trash2, Tag, Percent, DollarSign, Copy } from "lucide-react";
 import { format } from "date-fns";
 
 interface Coupon {
@@ -88,60 +88,62 @@ export default function CouponsPage({ params }: { params: Promise<{ tenant: stri
 
     const copyCode = (c: string) => { navigator.clipboard.writeText(c); toast.success("Código copiado"); };
 
-    if (loading) return <div className="flex h-[50vh] items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-t-2 border-primary" /></div>;
+    if (loading) return <div className="flex h-[50vh] items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-t-2 border-[#43926A]" /></div>;
 
     return (
         <div>
-            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-7">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-white">Cupones <span className="text-primary">& Descuentos</span></h1>
-                    <p className="mt-1 text-sm text-zinc-400">Creá códigos de descuento para tus clientes.</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#575757]">Gestión</p>
+                    <h1 className="font-['Archivo_Black',sans-serif] text-4xl tracking-tight mt-1">
+                        Cupones <span className="text-[#43926A]">& Descuentos</span>
+                    </h1>
+                    <p className="mt-1.5 text-sm text-[#575757]">Creá códigos de descuento para tus clientes.</p>
                 </div>
-                <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-primary text-black font-bold px-5 py-2.5 rounded-xl hover:brightness-110 transition shrink-0">
-                    <Plus size={16} /> Nuevo Cupón
+                <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 rounded-full bg-[#43926A] px-5 py-2.5 font-['Archivo_Black',sans-serif] text-xs uppercase tracking-[.04em] text-white shadow-[0_6px_16px_-8px_rgba(67,146,106,.6)] transition-all hover:-translate-y-px hover:bg-[#2F6E4F] shrink-0">
+                    <Plus size={14} /> Nuevo Cupón
                 </button>
             </div>
 
-            {/* Coupons list */}
+            {/* Empty state */}
             {coupons.length === 0 ? (
-                <div className="text-center py-20 rounded-2xl border border-zinc-800 bg-zinc-900/30">
-                    <Tag size={40} className="mx-auto mb-3 text-zinc-700" />
-                    <p className="text-zinc-500 text-sm font-medium">No tenés cupones creados todavía.</p>
-                    <p className="text-zinc-600 text-xs mt-1">Creá tu primer código de descuento para atraer clientes.</p>
+                <div className="rounded-[18px] border border-dashed border-[rgba(15,18,16,.18)] bg-white py-16 text-center">
+                    <div className="mx-auto mb-4 flex h-[54px] w-[54px] items-center justify-center rounded-[14px] bg-[#EFE8D8]">
+                        <Tag size={24} className="text-[#575757]" />
+                    </div>
+                    <h3 className="font-['Archivo_Black',sans-serif] text-lg tracking-tight">No tenés cupones</h3>
+                    <p className="text-[13px] text-[#575757] mt-1 max-w-[380px] mx-auto">Creá tu primer código de descuento para atraer clientes.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     {coupons.map(c => {
                         const expired = c.expires_at && new Date(c.expires_at) < new Date();
                         const exhausted = c.max_uses && c.used_count >= c.max_uses;
                         const active = c.is_active && !expired && !exhausted;
 
                         return (
-                            <div key={c.id} className={`rounded-2xl border p-5 transition ${active ? "border-primary/30 bg-zinc-900/40" : "border-zinc-800 bg-zinc-900/20 opacity-60"}`}>
+                            <div key={c.id} className={`rounded-[14px] border bg-white p-5 transition ${active ? "border-[rgba(67,146,106,.25)]" : "border-[rgba(15,18,16,.1)] opacity-60"}`}>
                                 <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => copyCode(c.code)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition" title="Copiar código">
-                                            <Tag size={13} className="text-primary" />
-                                            <span className="text-sm font-mono font-bold text-white tracking-wider">{c.code}</span>
-                                            <Copy size={11} className="text-zinc-500" />
-                                        </button>
-                                    </div>
-                                    <button onClick={() => deleteCoupon(c.id)} className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition">
+                                    <button onClick={() => copyCode(c.code)} className="flex items-center gap-1.5 rounded-lg bg-[#0F1210] px-3 py-1.5 transition hover:opacity-80" title="Copiar código">
+                                        <Tag size={12} className="text-[#43926A]" />
+                                        <span className="font-['Archivo_Black',sans-serif] text-sm tracking-wider text-[#F6F2EA]">{c.code}</span>
+                                        <Copy size={10} className="text-[#F6F2EA]/50" />
+                                    </button>
+                                    <button onClick={() => deleteCoupon(c.id)} className="p-1.5 rounded-lg text-[#575757] hover:text-[#E25A2B] hover:bg-[#E25A2B]/10 transition">
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
 
                                 <div className="flex items-baseline gap-1 mb-2">
                                     {c.discount_type === "percentage" ? (
-                                        <><span className="text-3xl font-black text-primary">{c.discount_value}</span><span className="text-lg font-bold text-primary">%</span><span className="text-xs text-zinc-500 ml-1">OFF</span></>
+                                        <><span className="font-['Archivo_Black',sans-serif] text-3xl text-[#43926A]">{c.discount_value}</span><span className="font-['Archivo_Black',sans-serif] text-lg text-[#43926A]">%</span><span className="ml-1 text-xs font-bold text-[#575757]">OFF</span></>
                                     ) : (
-                                        <><span className="text-lg font-bold text-primary">$</span><span className="text-3xl font-black text-primary">{c.discount_value.toLocaleString("es-AR")}</span><span className="text-xs text-zinc-500 ml-1">OFF</span></>
+                                        <><span className="font-['Archivo_Black',sans-serif] text-lg text-[#43926A]">$</span><span className="font-['Archivo_Black',sans-serif] text-3xl text-[#43926A]">{c.discount_value.toLocaleString("es-AR")}</span><span className="ml-1 text-xs font-bold text-[#575757]">OFF</span></>
                                     )}
                                 </div>
 
-                                <div className="space-y-1 text-xs text-zinc-500">
+                                <div className="space-y-1 text-xs text-[#575757]">
                                     {c.min_order > 0 && <p>Mínimo: ${c.min_order.toLocaleString("es-AR")}</p>}
                                     <p>Usos: {c.used_count}{c.max_uses ? ` / ${c.max_uses}` : " (ilimitado)"}</p>
                                     {c.expires_at && <p>Vence: {format(new Date(c.expires_at), "dd/MM/yyyy")}</p>}
@@ -149,7 +151,7 @@ export default function CouponsPage({ params }: { params: Promise<{ tenant: stri
 
                                 <button
                                     onClick={() => toggleActive(c.id, c.is_active)}
-                                    className={`mt-3 w-full py-2 rounded-lg text-xs font-bold transition ${active ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}
+                                    className={`mt-3 w-full rounded-[10px] py-2 text-xs font-bold transition ${active ? "bg-[#D7E9DE] text-[#2F6E4F] hover:bg-[#c5dcd0]" : "bg-[#E9E7E2] text-[#575757] hover:bg-[#ddd9d0]"}`}
                                 >
                                     {active ? "Activo — Desactivar" : "Inactivo — Activar"}
                                 </button>
@@ -161,42 +163,42 @@ export default function CouponsPage({ params }: { params: Promise<{ tenant: stri
 
             {/* ── Create modal ── */}
             {showForm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" onClick={() => resetForm()}>
-                    <div className="w-full max-w-md rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-                            <h3 className="font-extrabold text-lg text-white">Nuevo Cupón</h3>
-                            <button onClick={resetForm} className="text-zinc-500 hover:text-white"><X size={18} /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => resetForm()}>
+                    <div className="w-full max-w-md rounded-[18px] bg-white border border-[rgba(15,18,16,.1)] shadow-[0_30px_60px_-30px_rgba(0,0,0,.2)]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(15,18,16,.1)]">
+                            <h3 className="font-['Archivo_Black',sans-serif] text-lg uppercase tracking-tight">Nuevo Cupón</h3>
+                            <button onClick={resetForm} className="text-[#575757] hover:text-[#0F1210]"><X size={18} /></button>
                         </div>
                         <div className="px-6 py-5 space-y-4">
                             {/* Code */}
                             <div>
-                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Código</label>
+                                <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">Código</label>
                                 <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-                                    className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white font-mono tracking-wider focus:border-primary outline-none uppercase"
+                                    className="w-full rounded-[10px] border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-3.5 py-2.5 text-sm font-mono tracking-wider text-[#0F1210] outline-none transition focus:border-[#43926A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(67,146,106,.15)] uppercase"
                                     placeholder="PRIMERAVEZ" />
                             </div>
 
                             {/* Type + Value */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Tipo</label>
-                                    <div className="flex gap-2 mt-1">
+                                    <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">Tipo</label>
+                                    <div className="flex gap-2">
                                         <button type="button" onClick={() => setDiscountType("percentage")}
-                                            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold transition ${discountType === "percentage" ? "bg-primary/15 text-primary border border-primary/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}>
-                                            <Percent size={13} /> Porcentaje
+                                            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[10px] text-xs font-bold transition border ${discountType === "percentage" ? "border-[#43926A] bg-[rgba(67,146,106,.06)] text-[#2F6E4F]" : "border-[rgba(15,18,16,.18)] bg-[#FBF8F1] text-[#575757]"}`}>
+                                            <Percent size={12} /> %
                                         </button>
                                         <button type="button" onClick={() => setDiscountType("fixed")}
-                                            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold transition ${discountType === "fixed" ? "bg-primary/15 text-primary border border-primary/30" : "bg-zinc-900 text-zinc-500 border border-zinc-800"}`}>
-                                            <DollarSign size={13} /> Fijo
+                                            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[10px] text-xs font-bold transition border ${discountType === "fixed" ? "border-[#43926A] bg-[rgba(67,146,106,.06)] text-[#2F6E4F]" : "border-[rgba(15,18,16,.18)] bg-[#FBF8F1] text-[#575757]"}`}>
+                                            <DollarSign size={12} /> $
                                         </button>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                    <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">
                                         {discountType === "percentage" ? "Descuento (%)" : "Descuento ($)"}
                                     </label>
                                     <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
-                                        className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full rounded-[10px] border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-3.5 py-2.5 text-sm text-[#0F1210] outline-none transition focus:border-[#43926A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(67,146,106,.15)]"
                                         placeholder={discountType === "percentage" ? "15" : "500"} />
                                 </div>
                             </div>
@@ -204,31 +206,31 @@ export default function CouponsPage({ params }: { params: Promise<{ tenant: stri
                             {/* Min order + Max uses */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Pedido mínimo ($)</label>
+                                    <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">Pedido mínimo ($)</label>
                                     <input type="number" value={minOrder} onChange={e => setMinOrder(e.target.value)}
-                                        className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full rounded-[10px] border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-3.5 py-2.5 text-sm text-[#0F1210] outline-none transition focus:border-[#43926A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(67,146,106,.15)]"
                                         placeholder="0 (sin mínimo)" />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Usos máximos</label>
+                                    <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">Usos máximos</label>
                                     <input type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)}
-                                        className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full rounded-[10px] border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-3.5 py-2.5 text-sm text-[#0F1210] outline-none transition focus:border-[#43926A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(67,146,106,.15)]"
                                         placeholder="Ilimitado" />
                                 </div>
                             </div>
 
                             {/* Expiration */}
                             <div>
-                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Vencimiento (opcional)</label>
+                                <label className="block text-[11px] font-bold uppercase tracking-[.06em] text-[#575757] mb-1.5">Vencimiento (opcional)</label>
                                 <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
-                                    className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:border-primary outline-none [color-scheme:dark]" />
+                                    className="w-full rounded-[10px] border border-[rgba(15,18,16,.18)] bg-[#FBF8F1] px-3.5 py-2.5 text-sm text-[#0F1210] outline-none transition focus:border-[#43926A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(67,146,106,.15)]" />
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
-                            <button onClick={resetForm} className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-400 text-sm font-bold hover:bg-zinc-700 transition">Cancelar</button>
-                            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-black text-sm font-bold hover:brightness-110 transition disabled:opacity-50">
-                                <Save size={14} /> {saving ? "Creando..." : "Crear Cupón"}
+                        <div className="px-6 py-4 border-t border-[rgba(15,18,16,.1)] flex justify-end gap-3">
+                            <button onClick={resetForm} className="rounded-full border border-[rgba(15,18,16,.18)] bg-white px-4 py-2 text-sm font-bold text-[#575757] hover:border-[#0F1210] transition">Cancelar</button>
+                            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-[#43926A] px-5 py-2 font-['Archivo_Black',sans-serif] text-xs uppercase tracking-[.04em] text-white shadow-[0_6px_16px_-8px_rgba(67,146,106,.6)] hover:-translate-y-px hover:bg-[#2F6E4F] transition disabled:opacity-50">
+                                <Save size={13} /> {saving ? "Creando..." : "Crear Cupón"}
                             </button>
                         </div>
                     </div>
