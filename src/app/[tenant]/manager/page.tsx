@@ -144,15 +144,20 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                     const newOrderRow = payload.new as Order;
                     if (newOrderRow.status === "awaiting_payment") return;
 
-                    // Fetch con items en un solo viaje (JOIN profundo)
-                    const { data: fullOrder, error: fetchErr } = await supabase
-                        .from("orders")
-                        .select("*, order_items(*, product:products(name))")
-                        .eq("id", newOrderRow.id)
-                        .eq("tenant_id", tenantId)
-                        .single();
+                    // Fetch con items — retry si 406 (sesión refrescándose)
+                    let fullOrder: any = null;
+                    for (let attempt = 0; attempt < 2; attempt++) {
+                        const { data, error: fetchErr } = await supabase
+                            .from("orders")
+                            .select("*, order_items(*, product:products(name))")
+                            .eq("id", newOrderRow.id)
+                            .eq("tenant_id", tenantId)
+                            .maybeSingle();
 
-                    if (fetchErr || !fullOrder) return;
+                        if (!fetchErr && data) { fullOrder = data; break; }
+                        if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+                    }
+                    if (!fullOrder) return;
                     const newOrder = fullOrder as unknown as Order;
 
                     // Evitar duplicados si el realtime dispara dos veces
@@ -208,14 +213,18 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                         return prev;
                     });
                     if (needsFetch) {
-                        const { data: fullOrder, error: fetchErr2 } = await supabase
-                            .from("orders")
-                            .select("*, order_items(*, product:products(name))")
-                            .eq("id", updated.id)
-                            .eq("tenant_id", tenantId)
-                            .single();
-
-                        if (!fetchErr2 && fullOrder) {
+                        let fullOrder: any = null;
+                        for (let attempt = 0; attempt < 2; attempt++) {
+                            const { data, error: fetchErr2 } = await supabase
+                                .from("orders")
+                                .select("*, order_items(*, product:products(name))")
+                                .eq("id", updated.id)
+                                .eq("tenant_id", tenantId)
+                                .maybeSingle();
+                            if (!fetchErr2 && data) { fullOrder = data; break; }
+                            if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+                        }
+                        if (fullOrder) {
                             setOrders((p) => {
                                 if (p.some((o) => o.id === updated.id)) return p;
                                 return [fullOrder as unknown as Order, ...p];
