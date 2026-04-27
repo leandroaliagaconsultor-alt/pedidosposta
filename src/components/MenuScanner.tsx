@@ -270,40 +270,40 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
   /* ── Render ────────────────────────────────────────────── */
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 text-white p-4">
+    <div className="w-full max-w-5xl mx-auto space-y-6 text-[#0F1210] p-4">
       {/* ═══ UPLOAD ═══ */}
       {!menu && !loading && (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/80 hover:border-zinc-500 transition-all rounded-3xl p-12 flex flex-col items-center justify-center cursor-pointer group"
+          className="border-2 border-dashed border-[rgba(15,18,16,.15)] bg-[#FBF8F1] hover:bg-[#E9E7E2]/80 hover:border-[#43926A] transition-all rounded-3xl p-12 flex flex-col items-center justify-center cursor-pointer group"
         >
           <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
           {preview ? (
-            <div className="relative w-full max-w-md aspect-[3/4] rounded-2xl overflow-hidden mb-6 shadow-2xl ring-1 ring-white/10">
+            <div className="relative w-full max-w-md aspect-[3/4] rounded-2xl overflow-hidden mb-6 shadow-2xl ring-1 ring-[rgba(15,18,16,.1)]">
               <img src={preview} alt="Menu preview" className="w-full h-full object-cover" />
               <button
                 onClick={(e) => { e.stopPropagation(); clearAll(); }}
-                className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full hover:bg-red-500/80 transition-colors"
+                className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full hover:bg-red-500/80 transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
           ) : (
-            <div className="bg-zinc-800 p-6 rounded-3xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-xl ring-1 ring-white/5">
-              <Camera size={48} className="text-zinc-400 group-hover:text-white" />
+            <div className="bg-[#E9E7E2] p-6 rounded-3xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-xl ring-1 ring-[rgba(15,18,16,.08)]">
+              <Camera size={48} className="text-[#575757] group-hover:text-[#0F1210]" />
             </div>
           )}
 
           <h3 className="text-2xl font-bold mb-2">{preview ? "Escanear esta imagen" : "Escáner Mágico de Menús"}</h3>
-          <p className="text-zinc-500 text-center max-w-sm mb-8 leading-relaxed">
+          <p className="text-[#575757] text-center max-w-sm mb-8 leading-relaxed">
             Subí una foto de tu menú físico. La IA extraerá productos, categorías y modificadores.
           </p>
 
           {preview && (
             <button
               onClick={(e) => { e.stopPropagation(); handleScan(); }}
-              className="px-8 py-4 bg-white text-black font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg shadow-white/5"
+              className="px-8 py-4 bg-[#43926A] text-white font-['Archivo_Black',sans-serif] uppercase tracking-[.04em] rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg shadow-[rgba(67,146,106,.15)]"
             >
               <FileSearch size={22} />
               Escanear Menú con IA
@@ -314,14 +314,14 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
 
       {/* ═══ LOADING ═══ */}
       {loading && (
-        <div className="py-24 flex flex-col items-center justify-center space-y-6 bg-zinc-900/40 rounded-3xl border border-white/5 backdrop-blur-sm">
+        <div className="py-24 flex flex-col items-center justify-center space-y-6 bg-white rounded-3xl border border-[rgba(15,18,16,.08)] backdrop-blur-sm">
           <div className="relative">
-            <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full" />
-            <Loader2 size={64} className="animate-spin text-white relative z-10" />
+            <div className="absolute inset-0 bg-[#43926A]/20 blur-2xl rounded-full" />
+            <Loader2 size={64} className="animate-spin text-[#0F1210] relative z-10" />
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-xl font-medium text-white/90">La IA está leyendo tu menú...</h3>
-            <p className="text-zinc-500 animate-pulse">Analizando productos, categorías y precios...</p>
+            <h3 className="text-xl font-medium text-[#0F1210]/90">La IA está leyendo tu menú...</h3>
+            <p className="text-[#575757] animate-pulse">Analizando productos, categorías y precios...</p>
           </div>
         </div>
       )}
@@ -331,23 +331,23 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
         <div className="space-y-6 pb-12">
           {/* ── Guide banner ── */}
           {showGuide && (
-            <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-2xl p-5 relative">
-              <button onClick={() => setShowGuide(false)} className="absolute top-3 right-3 text-zinc-600 hover:text-zinc-300"><X size={16} /></button>
+            <div className="bg-white border border-[rgba(15,18,16,.15)]/50 rounded-2xl p-5 relative">
+              <button onClick={() => setShowGuide(false)} className="absolute top-3 right-3 text-[#575757]/70 hover:text-[#0F1210]"><X size={16} /></button>
               <div className="flex items-start gap-3 mb-3">
                 <Info size={20} className="text-blue-400 mt-0.5 shrink-0" />
-                <h3 className="font-bold text-sm text-zinc-200">Cómo organizar tu menú</h3>
+                <h3 className="font-bold text-sm text-[#0F1210]">Cómo organizar tu menú</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-zinc-400 leading-relaxed">
-                <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/30">
-                  <span className="text-white font-semibold block mb-1">Categorías</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#575757] leading-relaxed">
+                <div className="bg-[#E9E7E2]/50 rounded-xl p-3 border border-[rgba(15,18,16,.15)]/30">
+                  <span className="text-[#0F1210] font-semibold block mb-1">Categorías</span>
                   Agrupan tus productos. Ej: &quot;Hamburguesas&quot;, &quot;Pizzas&quot;, &quot;Bebidas&quot;. Podés mover productos entre categorías con el selector.
                 </div>
-                <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/30">
-                  <span className="text-white font-semibold block mb-1">Productos</span>
+                <div className="bg-[#E9E7E2]/50 rounded-xl p-3 border border-[rgba(15,18,16,.15)]/30">
+                  <span className="text-[#0F1210] font-semibold block mb-1">Productos</span>
                   Cada plato o item que el cliente puede pedir. Tiene nombre, descripción y precio base.
                 </div>
-                <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/30">
-                  <span className="text-white font-semibold block mb-1">Modificadores</span>
+                <div className="bg-[#E9E7E2]/50 rounded-xl p-3 border border-[rgba(15,18,16,.15)]/30">
+                  <span className="text-[#0F1210] font-semibold block mb-1">Modificadores</span>
                   Variantes de un producto: tamaño (Simple/Doble), extras (con queso, sin cebolla). Se crean una vez y se asignan a varios productos.
                 </div>
               </div>
@@ -355,22 +355,22 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
           )}
 
           {/* ── Sticky toolbar ── */}
-          <div className="flex items-center justify-between sticky top-4 z-30 bg-black/60 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between sticky top-4 z-30 bg-white/90 backdrop-blur-xl shadow-sm p-4 rounded-3xl border border-[rgba(15,18,16,.12)] shadow-2xl">
             <div className="flex items-center gap-3 px-2">
               <div className="bg-green-500/10 p-2 rounded-xl border border-green-500/20">
                 <CheckCircle2 size={24} className="text-green-500" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Revisá tu menú</h2>
-                <p className="text-xs text-zinc-500">Editá, mové productos y asigná modificadores antes de guardar</p>
+                <p className="text-xs text-[#575757]">Editá, mové productos y asigná modificadores antes de guardar</p>
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={clearAll} className="px-5 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all font-medium text-sm">Cancelar</button>
+              <button onClick={clearAll} className="px-5 py-2.5 text-[#575757] hover:text-[#0F1210] hover:bg-[#E9E7E2] rounded-xl transition-all font-medium text-sm">Cancelar</button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2.5 bg-white text-black font-bold rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+                className="px-6 py-2.5 bg-[#43926A] text-white font-['Archivo_Black',sans-serif] uppercase tracking-[.04em] rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
               >
                 {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                 Confirmar y Subir
@@ -379,12 +379,12 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
           </div>
 
           {/* ── Global Modifiers Panel ── */}
-          <div className="bg-zinc-900/40 rounded-3xl border border-white/5 overflow-hidden shadow-lg">
-            <div className="p-4 bg-zinc-800/30 border-b border-white/5 flex items-center justify-between">
+          <div className="bg-white rounded-3xl border border-[rgba(15,18,16,.08)] overflow-hidden shadow-lg">
+            <div className="p-4 bg-[#E9E7E2]/30 border-b border-[rgba(15,18,16,.08)] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Settings2 size={18} className="text-zinc-400" />
-                <h3 className="font-bold text-sm text-zinc-200">Modificadores</h3>
-                <span className="text-[10px] text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">
+                <Settings2 size={18} className="text-[#575757]" />
+                <h3 className="font-bold text-sm text-[#0F1210]">Modificadores</h3>
+                <span className="text-[10px] text-[#575757]/70 bg-[#E9E7E2] px-2 py-0.5 rounded-full">
                   Se comparten entre productos
                 </span>
               </div>
@@ -394,7 +394,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                     m.modificadores.push({ id: localId(), nombre: "Nuevo modificador", opciones: [{ nombre: "Opción 1", precio_extra: 0 }] });
                   })
                 }
-                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-all"
+                className="flex items-center gap-1.5 text-xs text-[#575757] hover:text-[#0F1210] bg-[#E9E7E2] hover:bg-[#E9E7E2] px-3 py-1.5 rounded-lg transition-all"
               >
                 <Plus size={12} />
                 Crear Modificador
@@ -403,13 +403,13 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
 
             {menu.modificadores.length === 0 ? (
               <div className="p-8 text-center space-y-2">
-                <p className="text-zinc-500 text-sm">No hay modificadores todavía</p>
-                <p className="text-zinc-600 text-xs">
+                <p className="text-[#575757] text-sm">No hay modificadores todavía</p>
+                <p className="text-[#575757]/70 text-xs">
                   Ej: &quot;Tamaño&quot; con opciones Simple (+$0), Doble (+$500), Triple (+$1000)
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-[rgba(15,18,16,.08)]">
                 {menu.modificadores.map((mod, modIdx) => {
                   const usedBy = menu.productos.filter((p) => p.modIds.includes(mod.id));
 
@@ -420,10 +420,10 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                           type="text"
                           value={mod.nombre}
                           onChange={(e) => update((m) => { m.modificadores[modIdx].nombre = e.target.value; })}
-                          className="bg-transparent border-none focus:ring-0 text-zinc-200 text-sm font-semibold p-0 flex-1"
+                          className="bg-transparent border-none focus:ring-0 text-[#0F1210] text-sm font-semibold p-0 flex-1"
                           placeholder="Nombre del modificador..."
                         />
-                        <span className="text-[10px] text-zinc-600 shrink-0">
+                        <span className="text-[10px] text-[#575757]/70 shrink-0">
                           <Link2 size={10} className="inline mr-1" />
                           {usedBy.length} {usedBy.length === 1 ? "producto" : "productos"}
                         </span>
@@ -433,7 +433,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                             m.modificadores.splice(modIdx, 1);
                             m.productos.forEach((p) => { p.modIds = p.modIds.filter((mid) => mid !== id); });
                           })}
-                          className="p-1 text-zinc-600 hover:text-red-500 transition-all"
+                          className="p-1 text-[#575757]/70 hover:text-red-500 transition-all"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -442,24 +442,24 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                       {/* Options */}
                       <div className="flex flex-wrap gap-2 ml-1">
                         {mod.opciones.map((opt, optIdx) => (
-                          <div key={optIdx} className="flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/30 rounded-lg px-2.5 py-1.5">
+                          <div key={optIdx} className="flex items-center gap-1.5 bg-[#E9E7E2]/60 border border-[rgba(15,18,16,.15)]/30 rounded-lg px-2.5 py-1.5">
                             <input
                               type="text"
                               value={opt.nombre}
                               onChange={(e) => update((m) => { m.modificadores[modIdx].opciones[optIdx].nombre = e.target.value; })}
-                              className="bg-transparent border-none focus:ring-0 text-zinc-300 text-xs p-0 w-20"
+                              className="bg-transparent border-none focus:ring-0 text-[#0F1210] text-xs p-0 w-20"
                               placeholder="Opción..."
                             />
-                            <span className="text-zinc-600 text-xs">+$</span>
+                            <span className="text-[#575757]/70 text-xs">+$</span>
                             <input
                               type="number"
                               value={opt.precio_extra}
                               onChange={(e) => update((m) => { m.modificadores[modIdx].opciones[optIdx].precio_extra = Number(e.target.value) || 0; })}
-                              className="bg-transparent border-none focus:ring-0 text-zinc-300 text-xs p-0 w-12 font-mono"
+                              className="bg-transparent border-none focus:ring-0 text-[#0F1210] text-xs p-0 w-12 font-mono"
                             />
                             <button
                               onClick={() => update((m) => { m.modificadores[modIdx].opciones.splice(optIdx, 1); })}
-                              className="text-zinc-700 hover:text-red-500"
+                              className="text-[#575757]/50 hover:text-red-500"
                             >
                               <X size={10} />
                             </button>
@@ -467,7 +467,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                         ))}
                         <button
                           onClick={() => update((m) => { m.modificadores[modIdx].opciones.push({ nombre: "", precio_extra: 0 }); })}
-                          className="flex items-center gap-1 text-zinc-600 hover:text-zinc-300 text-xs px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-700 hover:border-zinc-500 transition-all"
+                          className="flex items-center gap-1 text-[#575757]/70 hover:text-[#0F1210] text-xs px-2.5 py-1.5 rounded-lg border border-dashed border-[rgba(15,18,16,.15)] hover:border-[#43926A] transition-all"
                         >
                           <Plus size={10} />
                           Opción
@@ -480,7 +480,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                           onClick={() => update((m) => {
                             m.productos.forEach((p) => { if (!p.modIds.includes(mod.id)) p.modIds.push(mod.id); });
                           })}
-                          className="mt-2 ml-1 text-[10px] text-zinc-600 hover:text-zinc-400 flex items-center gap-1 transition-all"
+                          className="mt-2 ml-1 text-[10px] text-[#575757]/70 hover:text-[#575757] flex items-center gap-1 transition-all"
                         >
                           <ArrowRight size={10} />
                           Asignar a todos los productos
@@ -496,64 +496,64 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
           {/* ── Categories + Products ── */}
           <div className="space-y-6">
             {productsByCategory.map(({ catIdx, products }) => (
-              <div key={catIdx} className="bg-zinc-900/40 rounded-3xl border border-white/5 overflow-hidden shadow-lg">
+              <div key={catIdx} className="bg-white rounded-3xl border border-[rgba(15,18,16,.08)] overflow-hidden shadow-lg">
                 {/* Category header */}
-                <div className="p-4 bg-zinc-800/30 flex items-center justify-between border-b border-white/5">
+                <div className="p-4 bg-[#E9E7E2]/30 flex items-center justify-between border-b border-[rgba(15,18,16,.08)]">
                   <input
                     type="text"
                     value={menu.categorias[catIdx].nombre}
                     onChange={(e) => update((m) => { m.categorias[catIdx].nombre = e.target.value; })}
-                    className="bg-transparent border-none focus:ring-0 text-lg font-bold text-white flex-1 placeholder-zinc-700 p-0"
+                    className="bg-transparent border-none focus:ring-0 text-lg font-bold text-[#0F1210] flex-1 placeholder-[#575757]/50 p-0"
                     placeholder="Nombre de categoría..."
                   />
-                  <span className="text-xs text-zinc-600 mx-3 shrink-0">{products.length} productos</span>
+                  <span className="text-xs text-[#575757]/70 mx-3 shrink-0">{products.length} productos</span>
                   <button
                     onClick={() => update((m) => {
                       m.productos = m.productos.filter((p) => p.categoriaIdx !== catIdx);
                       m.categorias.splice(catIdx, 1);
                       m.productos.forEach((p) => { if (p.categoriaIdx > catIdx) p.categoriaIdx--; });
                     })}
-                    className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    className="p-2 text-[#575757] hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
 
                 {/* Products */}
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-[rgba(15,18,16,.08)]">
                   {products.map((prod) => {
                     const pIdx = prod._idx;
                     const assignedMods = menu.modificadores.filter((m) => prod.modIds.includes(m.id));
                     const unassignedMods = menu.modificadores.filter((m) => !prod.modIds.includes(m.id));
 
                     return (
-                      <div key={pIdx} className="p-4 hover:bg-white/[0.02] transition-colors group/row">
+                      <div key={pIdx} className="p-4 hover:bg-[rgba(15,18,16,.02)] transition-colors group/row">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0 space-y-0.5">
                             <input
                               type="text"
                               value={prod.nombre}
                               onChange={(e) => update((m) => { m.productos[pIdx].nombre = e.target.value; })}
-                              className="bg-transparent border-none focus:ring-0 text-white font-medium w-full p-0 text-sm"
+                              className="bg-transparent border-none focus:ring-0 text-[#0F1210] font-medium w-full p-0 text-sm"
                               placeholder="Nombre del producto..."
                             />
                             <input
                               type="text"
                               value={prod.descripcion}
                               onChange={(e) => update((m) => { m.productos[pIdx].descripcion = e.target.value; })}
-                              className="bg-transparent border-none focus:ring-0 text-zinc-500 text-xs w-full p-0"
+                              className="bg-transparent border-none focus:ring-0 text-[#575757] text-xs w-full p-0"
                               placeholder="Descripción (opcional)..."
                             />
                           </div>
 
                           <div className="w-24 shrink-0">
-                            <div className="flex items-center bg-zinc-800/50 rounded-lg px-2 py-1.5">
-                              <span className="text-zinc-500 text-xs mr-1">$</span>
+                            <div className="flex items-center bg-[#E9E7E2]/50 rounded-lg px-2 py-1.5">
+                              <span className="text-[#575757] text-xs mr-1">$</span>
                               <input
                                 type="number"
                                 value={prod.precio}
                                 onChange={(e) => update((m) => { m.productos[pIdx].precio = Number(e.target.value) || 0; })}
-                                className="bg-transparent border-none focus:ring-0 text-white font-mono text-sm w-full p-0 outline-none"
+                                className="bg-transparent border-none focus:ring-0 text-[#0F1210] font-mono text-sm w-full p-0 outline-none"
                               />
                             </div>
                           </div>
@@ -562,18 +562,18 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                             <select
                               value={prod.categoriaIdx}
                               onChange={(e) => update((m) => { m.productos[pIdx].categoriaIdx = Number(e.target.value); })}
-                              className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-2 py-1.5 text-xs text-zinc-300 appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 outline-none pr-6"
+                              className="w-full bg-[#E9E7E2]/50 border border-[rgba(15,18,16,.15)]/50 rounded-lg px-2 py-1.5 text-xs text-[#0F1210] appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 outline-none pr-6"
                             >
                               {menu.categorias.map((c, i) => (
                                 <option key={i} value={i}>{c.nombre}</option>
                               ))}
                             </select>
-                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#575757] pointer-events-none" />
                           </div>
 
                           <button
                             onClick={() => update((m) => { m.productos.splice(pIdx, 1); })}
-                            className="p-1.5 text-zinc-600 hover:text-red-500 opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
+                            className="p-1.5 text-[#575757]/70 hover:text-red-500 opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
                           >
                             <X size={16} />
                           </button>
@@ -581,13 +581,13 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
 
                         <div className="mt-2 ml-1 flex flex-wrap items-center gap-1.5">
                           {assignedMods.map((mod) => (
-                            <span key={mod.id} className="inline-flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-2.5 py-1 text-xs text-zinc-300">
-                              <Settings2 size={10} className="text-zinc-500" />
+                            <span key={mod.id} className="inline-flex items-center gap-1.5 bg-[#E9E7E2]/60 border border-[rgba(15,18,16,.15)]/40 rounded-lg px-2.5 py-1 text-xs text-[#0F1210]">
+                              <Settings2 size={10} className="text-[#575757]" />
                               {mod.nombre}
-                              <span className="text-zinc-600">({mod.opciones.length})</span>
+                              <span className="text-[#575757]/70">({mod.opciones.length})</span>
                               <button
                                 onClick={() => update((m) => { m.productos[pIdx].modIds = m.productos[pIdx].modIds.filter((id) => id !== mod.id); })}
-                                className="text-zinc-600 hover:text-red-400 ml-0.5"
+                                className="text-[#575757]/70 hover:text-red-400 ml-0.5"
                               >
                                 <X size={10} />
                               </button>
@@ -602,19 +602,19 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                                   if (!e.target.value) return;
                                   update((m) => { m.productos[pIdx].modIds.push(e.target.value); });
                                 }}
-                                className="bg-transparent border border-dashed border-zinc-700 rounded-lg px-2 py-1 text-xs text-zinc-500 appearance-none cursor-pointer hover:border-zinc-500 hover:text-zinc-300 transition-all pr-5 outline-none focus:ring-0"
+                                className="bg-transparent border border-dashed border-[rgba(15,18,16,.15)] rounded-lg px-2 py-1 text-xs text-[#575757] appearance-none cursor-pointer hover:border-[#43926A] hover:text-[#0F1210] transition-all pr-5 outline-none focus:ring-0"
                               >
                                 <option value="">+ Modificador</option>
                                 {unassignedMods.map((m) => (
                                   <option key={m.id} value={m.id}>{m.nombre}</option>
                                 ))}
                               </select>
-                              <Plus size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
+                              <Plus size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#575757]/70 pointer-events-none" />
                             </div>
                           )}
 
                           {menu.modificadores.length === 0 && prod.modIds.length === 0 && (
-                            <span className="text-[10px] text-zinc-600 italic">Sin modificadores — crealos arriba</span>
+                            <span className="text-[10px] text-[#575757]/70 italic">Sin modificadores — crealos arriba</span>
                           )}
                         </div>
                       </div>
@@ -622,14 +622,14 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
                   })}
 
                   {products.length === 0 && (
-                    <div className="p-6 text-center text-zinc-600 text-sm">Categoría vacía — agregá productos o eliminala</div>
+                    <div className="p-6 text-center text-[#575757]/70 text-sm">Categoría vacía — agregá productos o eliminala</div>
                   )}
                 </div>
 
-                <div className="p-3 border-t border-white/5">
+                <div className="p-3 border-t border-[rgba(15,18,16,.08)]">
                   <button
                     onClick={() => update((m) => { m.productos.push({ nombre: "", descripcion: "", precio: 0, categoriaIdx: catIdx, modIds: [] }); })}
-                    className="w-full py-2 hover:bg-white/[0.03] rounded-xl text-zinc-500 hover:text-white text-sm flex items-center justify-center gap-2 transition-all border border-dashed border-white/5"
+                    className="w-full py-2 hover:bg-[rgba(15,18,16,.03)] rounded-xl text-[#575757] hover:text-[#0F1210] text-sm flex items-center justify-center gap-2 transition-all border border-dashed border-[rgba(15,18,16,.08)]"
                   >
                     <Plus size={14} />
                     Agregar Producto
@@ -640,7 +640,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
 
             <button
               onClick={() => update((m) => { m.categorias.push({ nombre: "Nueva Categoría" }); })}
-              className="w-full py-4 bg-zinc-900/40 border-2 border-dashed border-white/5 rounded-2xl text-zinc-500 hover:text-white hover:border-white/10 transition-all flex items-center justify-center gap-2 text-sm"
+              className="w-full py-4 bg-white border-2 border-dashed border-[rgba(15,18,16,.08)] rounded-2xl text-[#575757] hover:text-[#0F1210] hover:border-[rgba(15,18,16,.12)] transition-all flex items-center justify-center gap-2 text-sm"
             >
               <Plus size={18} />
               Agregar Categoría
@@ -651,7 +651,7 @@ const MenuScanner: React.FC<MenuScannerProps> = ({ tenantId, onComplete }) => {
 
       {/* ═══ ERROR HINT ═══ */}
       {!loading && !menu && preview && (
-        <div className="flex items-center gap-3 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-zinc-500 text-sm">
+        <div className="flex items-center gap-3 p-4 bg-[#FBF8F1] border border-[rgba(15,18,16,.12)] rounded-2xl text-[#575757] text-sm">
           <AlertCircle size={18} />
           <p>Asegurate de que el menú sea legible y esté bien iluminado para mejores resultados.</p>
         </div>
