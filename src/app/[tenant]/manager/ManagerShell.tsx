@@ -67,7 +67,6 @@ export default function ManagerShell({
         { name: "Suscripción", href: `/${tenant}/manager/subscription`, icon: CreditCard },
     ];
 
-    // Shared nav items renderer
     const renderNavLinks = (onClickExtra?: () => void) =>
         navLinks.map((item) => {
             const isActive = pathname === item.href;
@@ -77,12 +76,15 @@ export default function ManagerShell({
                     key={item.href}
                     href={item.href}
                     onClick={onClickExtra}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
-                        ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner"
-                        : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100"
+                    className={`relative flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[13px] font-medium transition-all ${isActive
+                        ? "bg-white font-bold text-[#0F1210] border border-[rgba(15,18,16,.18)] shadow-sm"
+                        : "text-[#0F1210]/70 hover:bg-[rgba(15,18,16,.04)] hover:text-[#0F1210] border border-transparent"
                         }`}
                 >
-                    <Icon size={18} className={isActive ? "text-primary" : "text-zinc-500"} />
+                    {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r bg-[#43926A]" />
+                    )}
+                    <Icon size={16} className={isActive ? "text-[#43926A]" : "opacity-60"} />
                     {item.name}
                 </Link>
             );
@@ -92,166 +94,137 @@ export default function ManagerShell({
         <button
             onClick={handleSignOut}
             disabled={isLoggingOut}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-semibold text-zinc-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-[9px] border border-[rgba(15,18,16,.1)] py-2.5 text-xs font-medium text-[#575757] transition-all hover:border-[#E25A2B] hover:text-[#E25A2B] disabled:opacity-50"
         >
-            {isLoggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+            {isLoggingOut ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
             Cerrar Sesión
         </button>
     );
 
     return (
-        <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100">
-            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
+        <div className="flex h-screen overflow-hidden text-[#0F1210]" style={{ background: "#F6F2EA" }}>
+            <Toaster position="top-center" toastOptions={{ style: { background: "#fff", border: "1px solid rgba(15,18,16,.1)", color: "#0F1210" } }} />
 
-            {/* ═══════════════════════════════════════════════════════════
-                DESKTOP SIDEBAR — Unchanged, hidden on mobile
-               ═══════════════════════════════════════════════════════════ */}
-            <aside className="hidden md:flex w-64 flex-col border-r border-zinc-800 bg-zinc-900/40 backdrop-blur-xl">
-                <div className="p-6">
+            {/* ═══ DESKTOP SIDEBAR ═══ */}
+            <aside className="hidden md:flex w-[260px] flex-col border-r border-[rgba(15,18,16,.1)]" style={{ background: "#FBF8F1" }}>
+                <div className="p-6 pb-4">
                     <Link href={`/${tenant}/manager`} className="flex items-center">
-                        <img
-                            src="/brand/logo-color.png"
-                            alt="PedidosPosta"
-                            className="h-10 w-auto object-contain cursor-pointer"
-                        />
+                        <span className="font-['Archivo_Black',sans-serif] text-[18px] text-[#575757]">Pedidos</span>
+                        <span className="font-['Archivo_Black',sans-serif] text-[18px] text-[#0F1210]">Posta</span>
+                        <span className="ml-0.5 inline-block h-[7px] w-[7px] rounded-full bg-[#43926A]" />
                     </Link>
-                    <div className="mt-3 flex flex-col">
-                        <span className="text-xs font-bold text-white leading-tight">{tenantData?.name || tenant}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mt-0.5">Panel Administrador</span>
+
+                    {/* Store ID card */}
+                    <div className="mt-4 rounded-[10px] bg-[#0F1210] px-3 py-2.5 text-[#F6F2EA]">
+                        <div className="font-['Archivo_Black',sans-serif] text-sm tracking-tight">
+                            {(tenantData?.name || tenant).toUpperCase()}
+                        </div>
+                        <div className="font-mono text-[9px] uppercase tracking-[.12em] text-[#F6F2EA]/55 mt-0.5">
+                            Panel administrador
+                        </div>
                     </div>
 
+                    {/* View shop button */}
                     <Link
                         href={`/${tenant}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[11px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                        className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#43926A] px-4 py-2.5 font-['Archivo_Black',sans-serif] text-[11px] uppercase tracking-[.06em] text-white shadow-[0_6px_18px_-8px_rgba(67,146,106,.6)] transition-all hover:-translate-y-px hover:shadow-[0_10px_22px_-8px_rgba(67,146,106,.7)]"
                     >
-                        {tenantData?.logo_url ? (
-                            <img src={tenantData.logo_url} alt="Store" className="h-4 w-4 rounded-md object-cover" />
-                        ) : (
-                            <ExternalLink size={16} />
-                        )}
-                        VER MI TIENDA
+                        <ExternalLink size={14} />
+                        Ver mi tienda
                     </Link>
                 </div>
 
-                <nav className="flex-1 space-y-2 px-4 py-4">
+                <nav className="flex-1 space-y-0.5 px-[18px] py-2">
                     {renderNavLinks()}
                 </nav>
 
-                <div className="border-t border-zinc-800 p-4 space-y-3">
-                    <div className="flex items-center gap-3 rounded-xl bg-zinc-900/60 px-3 py-2.5">
-                        <div className="h-8 w-8 shrink-0 rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
-                            {tenantData?.logo_url ? (
-                                <img src={tenantData.logo_url} alt={tenantData.name} className="h-full w-full object-cover" />
-                            ) : (
-                                <span className="font-black text-primary text-sm">
-                                    {(tenantData?.name || tenant).charAt(0).toUpperCase()}
-                                </span>
-                            )}
+                <div className="border-t border-[rgba(15,18,16,.1)] p-[18px] space-y-2.5">
+                    <div className="flex items-center gap-2.5 px-1.5 py-1">
+                        <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#43926A] text-white font-['Archivo_Black',sans-serif] text-xs">
+                            {(tenantData?.name || tenant).charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-sm font-bold text-zinc-200 truncate">{tenantData?.name || tenant}</p>
-                            <p className="text-[10px] text-zinc-500 font-mono truncate">/{tenant}</p>
+                            <p className="text-[13px] font-bold truncate">{tenantData?.name || tenant}</p>
+                            <p className="text-[10px] font-mono text-[#575757] truncate">{tenant}</p>
                         </div>
                     </div>
                     {renderLogoutButton()}
                 </div>
             </aside>
 
-            {/* ═══════════════════════════════════════════════════════════
-                MOBILE HEADER + DRAWER — Only visible on mobile
-               ═══════════════════════════════════════════════════════════ */}
-
-            {/* Mobile Header Bar (fixed at top) */}
-            <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-lg px-4 py-3 md:hidden">
+            {/* ═══ MOBILE HEADER ═══ */}
+            <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-[rgba(15,18,16,.1)] px-4 py-3 md:hidden" style={{ background: "#FBF8F1" }}>
                 <div>
                     <Link href={`/${tenant}/manager`} className="flex items-center">
-                        <img
-                            src="/brand/logo-color.png"
-                            alt="PedidosPosta"
-                            className="h-8 w-auto object-contain cursor-pointer"
-                        />
+                        <span className="font-['Archivo_Black',sans-serif] text-[15px] text-[#575757]">Pedidos</span>
+                        <span className="font-['Archivo_Black',sans-serif] text-[15px] text-[#0F1210]">Posta</span>
+                        <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-[#43926A]" />
                     </Link>
-                    <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">{tenantData?.name || tenant}</p>
+                    <p className="text-[9px] uppercase font-bold text-[#575757] tracking-widest">{tenantData?.name || tenant}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link
                         href={`/${tenant}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-[10px] font-black tracking-widest text-[#09090b] shadow-[0_4px_15px_var(--brand-color)] shadow-primary/20 transition-all active:scale-95"
+                        className="flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#43926A] px-3 font-['Archivo_Black',sans-serif] text-[10px] uppercase tracking-[.06em] text-white shadow-[0_6px_18px_-8px_rgba(67,146,106,.6)]"
                     >
-                        {tenantData?.logo_url ? (
-                            <img src={tenantData.logo_url} alt="Store" className="h-3.5 w-3.5 rounded-md object-cover" />
-                        ) : (
-                            <ExternalLink size={14} />
-                        )}
-                        TIENDA
+                        <ExternalLink size={12} />
+                        Tienda
                     </Link>
                     <button
                         onClick={() => setMobileMenuOpen(true)}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white active:scale-95"
+                        className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#0F1210] text-[#F6F2EA]"
                     >
-                        <Menu size={20} />
+                        <Menu size={18} />
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Drawer Overlay */}
+            {/* ═══ MOBILE DRAWER ═══ */}
             {mobileMenuOpen && (
                 <div className="fixed inset-0 z-[60] md:hidden">
-                    {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
                         onClick={() => setMobileMenuOpen(false)}
                     />
-
-                    {/* Drawer Panel (slides in from right) */}
-                    <div className="absolute right-0 top-0 bottom-0 w-72 bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                        {/* Drawer Header */}
-                        <div className="flex items-center justify-between border-b border-zinc-800 p-5">
+                    <div className="absolute right-0 top-0 bottom-0 w-[260px] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300" style={{ background: "#FBF8F1" }}>
+                        <div className="flex items-center justify-between border-b border-[rgba(15,18,16,.1)] p-5">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Navegación</h3>
-                                <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{tenant}.pedidoposta</p>
+                                <h3 className="font-['Archivo_Black',sans-serif] text-base">Navegación</h3>
+                                <p className="text-[10px] font-mono text-[#575757] mt-0.5">{tenant}.pedidoposta</p>
                             </div>
                             <button
                                 onClick={() => setMobileMenuOpen(false)}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white active:scale-95"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(15,18,16,.06)] text-[#575757] hover:text-[#0F1210]"
                             >
-                                <X size={18} />
+                                <X size={16} />
                             </button>
                         </div>
-
-                        {/* Nav Links */}
-                        <nav className="flex-1 space-y-2 px-4 py-5 overflow-y-auto">
+                        <nav className="flex-1 space-y-0.5 px-[18px] py-5 overflow-y-auto">
                             {renderNavLinks(() => setMobileMenuOpen(false))}
                         </nav>
-
-                        {/* Logout */}
-                        <div className="border-t border-zinc-800 p-4">
+                        <div className="border-t border-[rgba(15,18,16,.1)] p-[18px]">
                             {renderLogoutButton()}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ═══════════════════════════════════════════════════════════
-                MAIN CONTENT — responsive padding
-               ═══════════════════════════════════════════════════════════ */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950/50 p-4 pt-20 md:p-8 md:pt-8 shadow-inner relative">
-                {/* Glow accent */}
-                <div className="pointer-events-none absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
+            {/* ═══ MAIN CONTENT ═══ */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-20 md:p-8 md:pt-8 relative" style={{ background: "#F6F2EA" }}>
 
-                {/* ── Subscription Banner ─── */}
+                {/* ── Subscription Banners ── */}
                 {isExpired && (
-                    <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 flex items-center gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
-                            <AlertTriangle size={20} className="text-red-400" />
+                    <div className="mb-6 rounded-2xl border border-[#E25A2B]/30 bg-[#E25A2B]/8 px-5 py-4 flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E25A2B]/15">
+                            <AlertTriangle size={20} className="text-[#E25A2B]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-red-300">Tu tienda está pausada</p>
-                            <p className="text-xs text-red-400/80 mt-0.5">
+                            <p className="text-sm font-bold text-[#B9431C]">Tu tienda está pausada</p>
+                            <p className="text-xs text-[#B9431C]/70 mt-0.5">
                                 {isTrialing
                                     ? "Tu periodo de prueba gratuita ha finalizado. Suscribite para reactivar tu tienda."
                                     : "Tu suscripción está vencida. Renová tu plan para que tus clientes puedan seguir comprando."}
@@ -259,7 +232,7 @@ export default function ManagerShell({
                         </div>
                         <Link
                             href={`/${tenant}/manager/subscription`}
-                            className="shrink-0 rounded-xl bg-red-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-600 transition-colors"
+                            className="shrink-0 rounded-xl bg-[#E25A2B] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#B9431C] transition-colors"
                         >
                             Ver planes
                         </Link>
@@ -267,21 +240,21 @@ export default function ManagerShell({
                 )}
 
                 {isTrialing && !isExpired && trialDaysLeft <= 3 && (
-                    <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 flex items-center gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
-                            <AlertTriangle size={20} className="text-amber-400" />
+                    <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/8 px-5 py-4 flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15">
+                            <AlertTriangle size={20} className="text-amber-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-amber-300">
+                            <p className="text-sm font-bold text-amber-700">
                                 Te {trialDaysLeft === 1 ? "queda 1 día" : `quedan ${trialDaysLeft} días`} de prueba gratuita
                             </p>
-                            <p className="text-xs text-amber-400/80 mt-0.5">
+                            <p className="text-xs text-amber-600/80 mt-0.5">
                                 Suscribite antes de que termine para que tu tienda siga activa.
                             </p>
                         </div>
                         <Link
                             href={`/${tenant}/manager/subscription`}
-                            className="shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-zinc-950 hover:bg-amber-400 transition-colors"
+                            className="shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors"
                         >
                             Suscribirme
                         </Link>
