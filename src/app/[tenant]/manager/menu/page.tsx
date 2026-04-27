@@ -497,8 +497,9 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Header ── */}
             <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">Menu Builder</h1>
-                    <p className="mt-1 text-sm text-zinc-400">Gestioná las categorías y productos de tu restaurante.</p>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#575757]">Gestión</p>
+                    <h1 className="font-['Archivo_Black',sans-serif] text-4xl tracking-tight mt-1">Menu <span className="text-[#43926A]">Builder</span></h1>
+                    <p className="mt-1 text-sm text-[#575757]">Gestioná las categorías y productos de tu restaurante.</p>
                 </div>
                 <button
                     onClick={() => openProdModal()}
@@ -509,25 +510,26 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             </div>
 
             {/* ── MAGIC SCANNER ACCORDION ── */}
-            <div className="mb-8 rounded-2xl border border-dashed border-purple-500/50 bg-black shadow-[0_0_30px_-5px_var(--tw-shadow-color)] shadow-purple-500/20 overflow-hidden transition-all duration-500">
-                <button 
+            <div className="mb-8 rounded-[18px] border border-[rgba(15,18,16,.1)] bg-gradient-to-r from-[#0F1210] to-[#1d2622] overflow-hidden transition-all duration-500 relative">
+                <div className="absolute right-[-40px] top-[-40px] w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(67,146,106,.4),transparent_70%)] pointer-events-none" />
+                <button
                     onClick={() => setShowScanner(!showScanner)}
-                    className="w-full flex items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-purple-900/20 to-transparent hover:from-purple-900/40 transition-colors"
+                    className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-white/5 transition-colors relative z-10"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="bg-purple-500/20 p-2 rounded-xl border border-purple-500/30">
-                            <Sparkles className="text-purple-400" size={20} />
+                        <div className="bg-[#43926A] p-2.5 rounded-xl">
+                            <Sparkles className="text-white" size={20} />
                         </div>
                         <div className="text-left">
-                            <h3 className="text-white font-bold text-lg leading-tight">✨ Carga Automática con IA</h3>
-                            <p className="text-purple-300/70 text-sm hidden sm:block">Sube una foto de tu carta y logramos armar el menú por vos</p>
+                            <h3 className="text-[#F6F2EA] font-['Archivo_Black',sans-serif] text-base uppercase tracking-tight">Carga Automática con <span className="text-[#43926A]">IA</span></h3>
+                            <p className="text-[#F6F2EA]/60 text-sm hidden sm:block">Subí una foto de tu carta y armamos el menú por vos</p>
                         </div>
                     </div>
-                    {showScanner ? <ChevronUp className="text-purple-400" /> : <ChevronDown className="text-purple-400" />}
+                    {showScanner ? <ChevronUp className="text-[#43926A]" /> : <ChevronDown className="text-[#43926A]" />}
                 </button>
-                
+
                 {showScanner && (
-                    <div className="p-4 sm:p-6 border-t border-purple-500/20 bg-zinc-950/50 backdrop-blur-md">
+                    <div className="p-4 sm:p-6 border-t border-white/10 bg-[#F6F2EA]">
                         {tenantId && (
                             <MenuScanner 
                                 tenantId={tenantId} 
@@ -542,12 +544,12 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             </div>
 
             {/* ── Tabs Navigation ── */}
-            <div className="mb-6 flex space-x-2 border-b border-zinc-800 pb-px">
+            <div className="mb-6 flex space-x-2 border-b border-[rgba(15,18,16,.12)] pb-px">
                 {(["categorias", "productos", "modificadores"] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`relative px-4 py-2 text-sm font-semibold capitalize transition-colors ${activeTab === tab ? "text-primary" : "text-zinc-400 hover:text-zinc-200"
+                        className={`relative px-4 py-2 text-sm font-semibold capitalize transition-colors ${activeTab === tab ? "text-primary" : "text-[#575757] hover:text-[#0F1210]"
                             }`}
                     >
                         {tab}
@@ -561,21 +563,21 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Tab Content: Categorías ── */}
             {activeTab === "categorias" && (
                 <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-4 sm:p-6">
-                        <p className="text-sm text-zinc-400">Las categorías agrupan tu menú. Ej: "Burgers", "Papas Fritas", "Bebidas".</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/40 p-4 sm:p-6">
+                        <p className="text-sm text-[#575757]">Las categorías agrupan tu menú. Ej: "Burgers", "Papas Fritas", "Bebidas".</p>
                         <button
                             onClick={() => openCatModal()}
-                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 w-full sm:w-auto text-center"
+                            className="rounded-lg border border-[rgba(15,18,16,.15)] bg-[#E9E7E2] px-4 py-2 text-sm font-semibold text-[#0F1210] transition hover:bg-[#E9E7E2] w-full sm:w-auto text-center"
                         >
                             + Nueva Categoría
                         </button>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                         {categories.map((cat) => (
-                            <div key={cat.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 transition-all hover:bg-zinc-800/80">
-                                <span className="font-semibold text-white">{cat.name}</span>
+                            <div key={cat.id} className="flex items-center justify-between rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/60 p-4 transition-all hover:bg-[#E9E7E2]/80">
+                                <span className="font-semibold text-[#0F1210]">{cat.name}</span>
                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => openCatModal(cat)} className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white">
+                                    <button onClick={() => openCatModal(cat)} className="rounded-md p-1.5 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                         <Edit2 size={16} />
                                     </button>
                                     <button onClick={() => deleteCat(cat.id)} className="rounded-md p-1.5 text-red-500/70 hover:bg-red-500/20 hover:text-red-400">
@@ -603,34 +605,34 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                         if (catProds.length === 0) return null;
                         return (
                             <div key={cat.id} className="space-y-3">
-                                <h3 className="text-lg font-bold text-white border-b border-zinc-800 pb-2">{cat.name}</h3>
+                                <h3 className="text-lg font-bold text-[#0F1210] border-b border-[rgba(15,18,16,.12)] pb-2">{cat.name}</h3>
                                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                     {catProds.map((prod) => (
-                                        <div key={prod.id} className="flex overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-all hover:border-zinc-700 items-stretch">
-                                            <div className="flex relative shrink-0 h-24 items-center justify-center p-2 border-b border-zinc-800/50 bg-zinc-800/20 mix-blend-multiply sm:mix-blend-normal overflow-hidden w-24">
+                                        <div key={prod.id} className="flex overflow-hidden rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/60 transition-all hover:border-[rgba(15,18,16,.15)] items-stretch">
+                                            <div className="flex relative shrink-0 h-24 items-center justify-center p-2 border-b border-[rgba(15,18,16,.12)]/50 bg-[#E9E7E2]/20 mix-blend-multiply sm:mix-blend-normal overflow-hidden w-24">
                                                 {prod.image_url ? (
                                                     <img src={prod.image_url} alt={prod.name} className="absolute inset-0 h-full w-full object-cover" />
                                                 ) : (
-                                                    <ImageIcon size={32} className="text-zinc-700 opacity-50 absolute z-10" />
+                                                    <ImageIcon size={32} className="text-[#575757]/50 opacity-50 absolute z-10" />
                                                 )}
                                             </div>
                                             <div className="flex flex-1 flex-col p-4">
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="font-bold text-white leading-tight">{prod.name}</h4>
+                                                    <h4 className="font-bold text-[#0F1210] leading-tight">{prod.name}</h4>
                                                     <span className="text-sm font-semibold text-primary font-mono">${prod.price}</span>
                                                 </div>
-                                                <p className="text-xs text-zinc-500 line-clamp-2 mb-4 flex-1">{prod.description || "Sin descripción"}</p>
+                                                <p className="text-xs text-[#575757] line-clamp-2 mb-4 flex-1">{prod.description || "Sin descripción"}</p>
 
-                                                <div className="flex items-center justify-between border-t border-zinc-800/50 pt-3">
-                                                    <label className="flex items-center cursor-pointer gap-2 text-xs font-semibold text-zinc-300 select-none">
-                                                        <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${prod.is_available ? 'bg-primary' : 'bg-zinc-700'}`}>
+                                                <div className="flex items-center justify-between border-t border-[rgba(15,18,16,.12)]/50 pt-3">
+                                                    <label className="flex items-center cursor-pointer gap-2 text-xs font-semibold text-[#0F1210] select-none">
+                                                        <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${prod.is_available ? 'bg-primary' : 'bg-[#E9E7E2]'}`}>
                                                             <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${prod.is_available ? 'translate-x-5' : 'translate-x-1'}`} />
                                                         </div>
                                                         <input type="checkbox" className="sr-only" checked={prod.is_available} onChange={() => toggleProdAvailability(prod)} />
                                                         {prod.is_available ? "Activo" : "Pausado"}
                                                     </label>
                                                     <div className="flex gap-1">
-                                                        <button onClick={() => openProdModal(prod)} className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white">
+                                                        <button onClick={() => openProdModal(prod)} className="rounded-md p-1.5 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                                             <Edit2 size={16} />
                                                         </button>
                                                         <button onClick={() => deleteProd(prod.id)} className="rounded-md p-1.5 text-red-500/70 hover:bg-red-500/20 hover:text-red-400">
@@ -651,11 +653,11 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Tab Content: Modificadores  ── */}
             {activeTab === "modificadores" && (
                 <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-4 sm:p-6">
-                        <p className="text-sm text-zinc-400">Los modificadores son agregados u opciones (ej: "Salsas", "Punto de carne", "Extra Queso").</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/40 p-4 sm:p-6">
+                        <p className="text-sm text-[#575757]">Los modificadores son agregados u opciones (ej: "Salsas", "Punto de carne", "Extra Queso").</p>
                         <button
                             onClick={() => openModModal()}
-                            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 w-full sm:w-auto text-center"
+                            className="rounded-lg border border-[rgba(15,18,16,.15)] bg-[#E9E7E2] px-4 py-2 text-sm font-semibold text-[#0F1210] transition hover:bg-[#E9E7E2] w-full sm:w-auto text-center"
                         >
                             + Nuevo Modificador
                         </button>
@@ -663,10 +665,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {modifiers.map((mod) => (
-                            <div key={mod.id} className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 transition-all hover:bg-zinc-800/80">
+                            <div key={mod.id} className="flex flex-col rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/60 p-5 transition-all hover:bg-[#E9E7E2]/80">
                                 <div className="mb-3 flex items-start justify-between">
                                     <div>
-                                        <h3 className="font-bold text-white">{mod.name}</h3>
+                                        <h3 className="font-bold text-[#0F1210]">{mod.name}</h3>
                                         <div className="mt-1 flex gap-2 text-[10px] font-bold uppercase tracking-wider">
                                             {mod.is_required && <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-red-400">Requerido</span>}
                                             {mod.is_multiple ? (
@@ -677,7 +679,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         </div>
                                     </div>
                                     <div className="flex gap-1">
-                                        <button onClick={() => openModModal(mod)} className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white">
+                                        <button onClick={() => openModModal(mod)} className="rounded-md p-1.5 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                             <Edit2 size={14} />
                                         </button>
                                         <button onClick={() => deleteMod(mod.id)} className="rounded-md p-1.5 text-red-500/70 hover:bg-red-500/20 hover:text-red-400">
@@ -685,8 +687,8 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         </button>
                                     </div>
                                 </div>
-                                <div className="mt-auto border-t border-zinc-800/50 pt-3">
-                                    <p className="text-xs text-zinc-500 font-mono">{mod.options?.length || 0} opciones configuradas</p>
+                                <div className="mt-auto border-t border-[rgba(15,18,16,.12)]/50 pt-3">
+                                    <p className="text-xs text-[#575757] font-mono">{mod.options?.length || 0} opciones configuradas</p>
                                 </div>
                             </div>
                         ))}
@@ -697,29 +699,29 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Modal: Formulario Categoría ── */}
             <DialogPrimitive.Root open={catModalOpen} onOpenChange={setCatModalOpen}>
                 <DialogPrimitive.Portal>
-                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[rgba(15,18,16,.12)] bg-white p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
                         <div className="mb-5 flex items-center justify-between">
-                            <DialogPrimitive.Title className="text-xl font-bold text-white">
+                            <DialogPrimitive.Title className="text-xl font-bold text-[#0F1210]">
                                 {editingCat ? "Editar Categoría" : "Nueva Categoría"}
                             </DialogPrimitive.Title>
-                            <DialogPrimitive.Close className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+                            <DialogPrimitive.Close className="rounded-full p-1.5 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                 <X size={18} />
                             </DialogPrimitive.Close>
                         </div>
 
                         <form onSubmit={catForm.handleSubmit(onSaveCat as any)} className="space-y-4">
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-zinc-300">Nombre de la categoría</label>
+                                <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Nombre de la categoría</label>
                                 <input
                                     {...catForm.register("name")}
-                                    className={`w-full rounded-xl border bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${catForm.formState.errors.name ? "border-red-500/50" : "border-zinc-800"}`}
+                                    className={`w-full rounded-xl border bg-[#FBF8F1] px-4 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary ${catForm.formState.errors.name ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                     placeholder="Ej: Combos Burgers"
                                 />
                                 {catForm.formState.errors.name && <p className="mt-1 text-xs text-red-400">{catForm.formState.errors.name.message}</p>}
                             </div>
                             <div className="flex justify-end gap-3 pt-4">
-                                <DialogPrimitive.Close type="button" className="rounded-lg px-4 py-2 text-sm font-bold text-zinc-400 hover:bg-zinc-800 hover:text-white">
+                                <DialogPrimitive.Close type="button" className="rounded-lg px-4 py-2 text-sm font-bold text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                     Cancelar
                                 </DialogPrimitive.Close>
                                 <button type="submit" disabled={saving} className="rounded-lg bg-primary px-5 py-2 text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:opacity-50 flex items-center gap-2">
@@ -735,14 +737,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Modal: Formulario Producto ── */}
             <DialogPrimitive.Root open={prodModalOpen} onOpenChange={setProdModalOpen}>
                 <DialogPrimitive.Portal>
-                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <DialogPrimitive.Content className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md overflow-y-auto border-l border-zinc-800 bg-zinc-950 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-md rounded-l-2xl sm:rounded-none">
+                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <DialogPrimitive.Content className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md overflow-y-auto border-l border-[rgba(15,18,16,.12)] bg-white p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-md rounded-l-2xl sm:rounded-none">
 
                         <div className="mb-6 flex items-center justify-between">
-                            <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-white">
+                            <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-[#0F1210]">
                                 {editingProd ? "Editar Producto" : "Nuevo Producto"}
                             </DialogPrimitive.Title>
-                            <DialogPrimitive.Close className="rounded-full bg-zinc-900 p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+                            <DialogPrimitive.Close className="rounded-full bg-[#FBF8F1] p-2 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                 <X size={18} />
                             </DialogPrimitive.Close>
                         </div>
@@ -751,7 +753,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                             {/* Product Image Upload */}
                             <div className="flex justify-center mb-6">
-                                <div className="relative flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/50 transition-colors hover:border-zinc-700 hover:bg-zinc-900 overflow-hidden">
+                                <div className="relative flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgba(15,18,16,.12)] bg-white/50 transition-colors hover:border-[rgba(15,18,16,.15)] hover:bg-[#FBF8F1] overflow-hidden">
                                     <input
                                         type="file"
                                         onChange={(e) => { handleFileSelect(e); (e.target as HTMLInputElement).value = ''; }}
@@ -762,7 +764,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                     {prodForm.watch("image_url") ? (
                                         <img src={prodForm.watch("image_url") || undefined} alt="Product" className="h-full w-full object-cover" />
                                     ) : (
-                                        <div className="flex flex-col items-center text-zinc-500">
+                                        <div className="flex flex-col items-center text-[#575757]">
                                             <Upload size={24} className="mb-2 opacity-50" />
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-center px-2">Subir Foto</span>
                                         </div>
@@ -772,10 +774,10 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Categoría</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Categoría</label>
                                     <select
                                         {...prodForm.register("category_id")}
-                                        className={`w-full rounded-xl border bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary appearance-none ${prodForm.formState.errors.category_id ? "border-red-500/50" : "border-zinc-800"}`}
+                                        className={`w-full rounded-xl border bg-[#FBF8F1] px-4 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary appearance-none ${prodForm.formState.errors.category_id ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                     >
                                         <option value="" disabled>Elegir categoría...</option>
                                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -784,16 +786,16 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Margen de Gan. (%)</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Margen de Gan. (%)</label>
                                     <div className="relative">
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">%</span>
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#575757] font-bold">%</span>
                                         <input
                                             type="number"
                                             inputMode="decimal"
                                             value={(prodForm.watch("profit_margin") as any) ?? ''}
                                             onChange={(e) => handleCostOrMarginChange('profit_margin', e.target.value)}
                                             onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
-                                            className={`w-full rounded-xl border bg-zinc-900 pl-4 pr-10 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.profit_margin ? "border-red-500/50" : "border-zinc-800"}`}
+                                            className={`w-full rounded-xl border bg-[#FBF8F1] pl-4 pr-10 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.profit_margin ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                             placeholder="Ej: 50"
                                         />
                                     </div>
@@ -803,16 +805,16 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Precio de Costo ($)</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Precio de Costo ($)</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#575757] font-bold">$</span>
                                         <input
                                             type="number"
                                             inputMode="decimal"
                                             value={(prodForm.watch("cost_price") as any) ?? ''}
                                             onChange={(e) => handleCostOrMarginChange('cost_price', e.target.value)}
                                             onFocus={(e) => { if (e.target.value === '0') e.target.select(); }}
-                                            className={`w-full rounded-xl border bg-zinc-900 pl-8 pr-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.cost_price ? "border-red-500/50" : "border-zinc-800"}`}
+                                            className={`w-full rounded-xl border bg-[#FBF8F1] pl-8 pr-4 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.cost_price ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                             placeholder="Ej: 3000"
                                         />
                                     </div>
@@ -820,7 +822,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Precio Final al Público</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Precio Final al Público</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-green-500 font-bold">$</span>
                                         <input
@@ -839,22 +841,22 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Precio Promocional (Opcional)</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Precio Promocional (Opcional)</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">$</span>
                                         <input
                                             type="number"
                                             inputMode="decimal"
                                             {...prodForm.register("promotional_price")}
-                                            className={`w-full rounded-xl border bg-zinc-900 pl-8 pr-4 py-3 text-sm text-primary font-bold outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.promotional_price ? "border-red-500/50" : "border-zinc-800"}`}
+                                            className={`w-full rounded-xl border bg-[#FBF8F1] pl-8 pr-4 py-3 text-sm text-primary font-bold outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.promotional_price ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                             placeholder="Ej: 4500 (Oferta)"
                                         />
                                     </div>
-                                    <p className="mt-1 text-xs text-zinc-500">Dejar vacío o en 0 si no hay oferta.</p>
+                                    <p className="mt-1 text-xs text-[#575757]">Dejar vacío o en 0 si no hay oferta.</p>
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-300">Etiquetas Destacadas</label>
+                                    <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Etiquetas Destacadas</label>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {[
                                             { id: 'nuevo', label: 'Nuevo' },
@@ -863,14 +865,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             { id: 'sintacc', label: 'Sin TACC 🌾' },
                                             { id: 'picante', label: 'Picante 🌶️' }
                                         ].map(badge => (
-                                            <label key={badge.id} className="cursor-pointer flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5 hover:bg-zinc-800 transition">
+                                            <label key={badge.id} className="cursor-pointer flex items-center gap-1.5 bg-[#FBF8F1] border border-[rgba(15,18,16,.12)] rounded-md px-2.5 py-1.5 hover:bg-[#E9E7E2] transition">
                                                 <input
                                                     type="checkbox"
                                                     value={badge.id}
                                                     {...prodForm.register("badges")}
-                                                    className="w-3.5 h-3.5 bg-zinc-950 border-zinc-700 text-primary rounded-sm focus:ring-primary/50"
+                                                    className="w-3.5 h-3.5 bg-white border-[rgba(15,18,16,.15)] text-primary rounded-sm focus:ring-primary/50"
                                                 />
-                                                <span className="text-xs font-semibold text-zinc-300">{badge.label}</span>
+                                                <span className="text-xs font-semibold text-[#0F1210]">{badge.label}</span>
                                             </label>
                                         ))}
                                     </div>
@@ -878,29 +880,29 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-zinc-300">Nombre del producto</label>
+                                <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Nombre del producto</label>
                                 <input
                                     {...prodForm.register("name")}
-                                    className={`w-full rounded-xl border bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.name ? "border-red-500/50" : "border-zinc-800"}`}
+                                    className={`w-full rounded-xl border bg-[#FBF8F1] px-4 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary ${prodForm.formState.errors.name ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                     placeholder="Ej: Classic Burger"
                                 />
                                 {prodForm.formState.errors.name && <p className="mt-1 text-xs text-red-400">{prodForm.formState.errors.name.message}</p>}
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-zinc-300">Descripción</label>
+                                <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Descripción</label>
                                 <textarea
                                     {...prodForm.register("description")}
                                     rows={3}
-                                    className={`w-full rounded-xl border bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition resize-none focus:ring-2 focus:ring-primary ${prodForm.formState.errors.description ? "border-red-500/50" : "border-zinc-800"}`}
+                                    className={`w-full rounded-xl border bg-[#FBF8F1] px-4 py-3 text-sm text-[#0F1210] outline-none transition resize-none focus:ring-2 focus:ring-primary ${prodForm.formState.errors.description ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                     placeholder="Ej: Medallón smash 100gr, cheddar, pan de papa..."
                                 />
                             </div>
 
                             {/* Modificadores Section */}
                             <div className="pt-2">
-                                <label className="mb-3 block text-sm font-semibold text-zinc-300">Modificadores Aplicables</label>
-                                <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                                <label className="mb-3 block text-sm font-semibold text-[#0F1210]">Modificadores Aplicables</label>
+                                <div className="space-y-2 rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/40 p-4">
                                     {modifiers.length > 0 ? (
                                         (() => {
                                             const selectedIds = prodForm.watch("modifier_ids") || [];
@@ -912,16 +914,16 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                         const mod = modifiers.find(m => m.id === id);
                                                         if (!mod) return null;
                                                         return (
-                                                            <div key={mod.id} className="flex items-center gap-3 group bg-zinc-800/40 p-2.5 rounded-lg border border-zinc-800">
+                                                            <div key={mod.id} className="flex items-center gap-3 group bg-[#E9E7E2]/40 p-2.5 rounded-lg border border-[rgba(15,18,16,.12)]">
                                                                 <input
                                                                     type="checkbox"
                                                                     value={mod.id}
                                                                     {...prodForm.register("modifier_ids")}
-                                                                    className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-primary accent-primary cursor-pointer shrink-0 mt-0.5"
+                                                                    className="h-4 w-4 rounded border-[rgba(15,18,16,.15)] bg-white text-primary accent-primary cursor-pointer shrink-0 mt-0.5"
                                                                 />
-                                                                <div className="flex-1 text-sm text-zinc-200 font-medium">
+                                                                <div className="flex-1 text-sm text-[#0F1210] font-medium">
                                                                     {mod.name}
-                                                                    <span className="ml-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                                                                    <span className="ml-2 text-[10px] text-[#575757] font-bold uppercase tracking-widest bg-[#FBF8F1] px-1.5 py-0.5 rounded border border-[rgba(15,18,16,.12)]">
                                                                         {mod.options?.length} opciones
                                                                     </span>
                                                                 </div>
@@ -938,7 +940,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                                             prodForm.setValue("modifier_ids", newIds, { shouldDirty: true });
                                                                         }}
                                                                         disabled={index === 0}
-                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                                        className="p-1.5 text-[#575757] hover:text-[#0F1210] hover:bg-[#E9E7E2] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                                                     >
                                                                         <ChevronUp size={16} />
                                                                     </button>
@@ -954,7 +956,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                                             prodForm.setValue("modifier_ids", newIds, { shouldDirty: true });
                                                                         }}
                                                                         disabled={index === selectedIds.length - 1}
-                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                                        className="p-1.5 text-[#575757] hover:text-[#0F1210] hover:bg-[#E9E7E2] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                                                     >
                                                                         <ChevronDown size={16} />
                                                                     </button>
@@ -962,18 +964,18 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                             </div>
                                                         );
                                                     })}
-                                                    {unselectedMods.length > 0 && selectedIds.length > 0 && <div className="h-px w-full bg-zinc-800 my-2" />}
+                                                    {unselectedMods.length > 0 && selectedIds.length > 0 && <div className="h-px w-full bg-[#E9E7E2] my-2" />}
                                                     {unselectedMods.map(mod => (
-                                                        <label key={mod.id} className="flex items-start gap-3 cursor-pointer group p-2.5 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                                                        <label key={mod.id} className="flex items-start gap-3 cursor-pointer group p-2.5 rounded-lg hover:bg-[#E9E7E2]/30 transition-colors">
                                                             <input
                                                                 type="checkbox"
                                                                 value={mod.id}
                                                                 {...prodForm.register("modifier_ids")}
-                                                                className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-primary accent-primary mt-0.5 cursor-pointer shrink-0"
+                                                                className="h-4 w-4 rounded border-[rgba(15,18,16,.15)] bg-white text-primary accent-primary mt-0.5 cursor-pointer shrink-0"
                                                             />
-                                                            <span className="text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors flex-1 font-medium">
+                                                            <span className="text-sm text-[#575757] group-hover:text-[#0F1210] transition-colors flex-1 font-medium">
                                                                 {mod.name}
-                                                                <span className="ml-2 text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                                                                <span className="ml-2 text-[10px] text-[#575757]/70 font-bold uppercase tracking-widest bg-[#FBF8F1] px-1.5 py-0.5 rounded border border-[rgba(15,18,16,.12)]">
                                                                     {mod.options?.length} opciones
                                                                 </span>
                                                             </span>
@@ -983,12 +985,12 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             );
                                         })()
                                     ) : (
-                                        <p className="text-xs text-zinc-500 italic">No hay modificadores creados aún.</p>
+                                        <p className="text-xs text-[#575757] italic">No hay modificadores creados aún.</p>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="border-t border-zinc-800 pb-20 pt-6">
+                            <div className="border-t border-[rgba(15,18,16,.12)] pb-20 pt-6">
                                 <button
                                     type="submit"
                                     disabled={saving}
@@ -1007,14 +1009,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
             {/* ── Modal: Formulario Modificadores ── */}
             <DialogPrimitive.Root open={modModalOpen} onOpenChange={setModModalOpen}>
                 <DialogPrimitive.Portal>
-                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <DialogPrimitive.Content className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-xl overflow-y-auto border-l border-zinc-800 bg-zinc-950 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-2xl sm:rounded-none">
+                    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <DialogPrimitive.Content className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-xl overflow-y-auto border-l border-[rgba(15,18,16,.12)] bg-white p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-2xl sm:rounded-none">
 
                         <div className="mb-6 flex items-center justify-between">
-                            <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-white">
+                            <DialogPrimitive.Title className="text-2xl font-extrabold tracking-tight text-[#0F1210]">
                                 {editingMod ? "Editar Grupo Modificador" : "Nuevo Grupo Modificador"}
                             </DialogPrimitive.Title>
-                            <DialogPrimitive.Close className="rounded-full bg-zinc-900 p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+                            <DialogPrimitive.Close className="rounded-full bg-[#FBF8F1] p-2 text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210]">
                                 <X size={18} />
                             </DialogPrimitive.Close>
                         </div>
@@ -1022,43 +1024,43 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                         <form onSubmit={modForm.handleSubmit(onSaveMod as any)} className="space-y-6">
 
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-zinc-300">Nombre del Grupo</label>
+                                <label className="mb-1 block text-sm font-semibold text-[#0F1210]">Nombre del Grupo</label>
                                 <input
                                     {...modForm.register("name")}
-                                    className={`w-full rounded-xl border bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary ${modForm.formState.errors.name ? "border-red-500/50" : "border-zinc-800"}`}
+                                    className={`w-full rounded-xl border bg-[#FBF8F1] px-4 py-3 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary ${modForm.formState.errors.name ? "border-red-500/50" : "border-[rgba(15,18,16,.12)]"}`}
                                     placeholder="Ej: Punto de Carne, Salsas Extra..."
                                 />
                                 {modForm.formState.errors.name && <p className="mt-1 text-xs text-red-400">{modForm.formState.errors.name.message}</p>}
                             </div>
 
-                            <div className="flex gap-6 rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+                            <div className="flex gap-6 rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1]/40 p-5">
                                 <label className="flex flex-1 items-start gap-3 cursor-pointer">
                                     <div className="flex h-5 items-center mt-0.5">
-                                        <input type="checkbox" {...modForm.register("is_required")} className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-primary accent-primary" />
+                                        <input type="checkbox" {...modForm.register("is_required")} className="h-4 w-4 rounded border-[rgba(15,18,16,.15)] bg-[#FBF8F1] text-primary accent-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-bold text-sm text-white">Es Obligatorio</p>
-                                        <p className="text-xs text-zinc-500">¿El cliente DEBE elegir algo de aquí obligatoriamente?</p>
+                                        <p className="font-bold text-sm text-[#0F1210]">Es Obligatorio</p>
+                                        <p className="text-xs text-[#575757]">¿El cliente DEBE elegir algo de aquí obligatoriamente?</p>
                                     </div>
                                 </label>
                                 <label className="flex flex-1 items-start gap-3 cursor-pointer">
                                     <div className="flex h-5 items-center mt-0.5">
-                                        <input type="checkbox" {...modForm.register("is_multiple")} className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-primary accent-primary" />
+                                        <input type="checkbox" {...modForm.register("is_multiple")} className="h-4 w-4 rounded border-[rgba(15,18,16,.15)] bg-[#FBF8F1] text-primary accent-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-bold text-sm text-white">Opción Múltiple</p>
-                                        <p className="text-xs text-zinc-500">Pueden elegir más de una opción (Checkbox vs Radio).</p>
+                                        <p className="font-bold text-sm text-[#0F1210]">Opción Múltiple</p>
+                                        <p className="text-xs text-[#575757]">Pueden elegir más de una opción (Checkbox vs Radio).</p>
                                     </div>
                                 </label>
                             </div>
 
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <label className="block text-sm font-semibold text-zinc-300">Opciones</label>
+                                    <label className="block text-sm font-semibold text-[#0F1210]">Opciones</label>
                                     <button
                                         type="button"
                                         onClick={() => optionAppend({ name: "", additional_price: 0, is_default: false, is_available: true })}
-                                        className="text-xs font-bold text-primary hover:text-white"
+                                        className="text-xs font-bold text-primary hover:text-[#0F1210]"
                                     >
                                         + Agregar Opción
                                     </button>
@@ -1069,7 +1071,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             <div className="flex-1">
                                                 <input
                                                     {...modForm.register(`options.${index}.name`)}
-                                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary"
+                                                    className="w-full rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1] px-4 py-2 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary"
                                                     placeholder="Nombre (Ej: Doble Medallón)"
                                                 />
                                             </div>
@@ -1078,14 +1080,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                                     {...modForm.register(`options.${index}.additional_price`)}
                                                     type="number"
                                                     step="0.01"
-                                                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 outline-none transition focus:ring-2 focus:ring-primary font-mono"
+                                                    className="w-full rounded-xl border border-[rgba(15,18,16,.12)] bg-[#FBF8F1] px-4 py-2 text-sm text-[#0F1210] outline-none transition focus:ring-2 focus:ring-primary font-mono"
                                                     placeholder="+$ 0.00"
                                                 />
                                             </div>
                                             <label
                                                 className={`flex items-center gap-1.5 cursor-pointer rounded-lg px-2 py-2 transition-colors ${modForm.watch(`options.${index}.is_default`)
                                                     ? "text-amber-400 bg-amber-500/10"
-                                                    : "text-zinc-500 hover:text-zinc-300"
+                                                    : "text-[#575757] hover:text-[#0F1210]"
                                                     }`}
                                                 title="Opción predeterminada"
                                             >
@@ -1110,7 +1112,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             <label
                                                 className={`flex items-center gap-1.5 cursor-pointer rounded-lg px-2 py-2 transition-colors ${!modForm.watch(`options.${index}.is_available`)
                                                     ? "text-red-400 bg-red-500/10"
-                                                    : "text-zinc-500 hover:text-zinc-300"
+                                                    : "text-[#575757] hover:text-[#0F1210]"
                                                     }`}
                                                 title="Marcar como agotado"
                                             >
@@ -1126,7 +1128,7 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                             </label>
                                             <button
                                                 type="button"
-                                                className="p-2.5 rounded-lg text-zinc-500 hover:bg-red-500/20 hover:text-red-400 mt-px"
+                                                className="p-2.5 rounded-lg text-[#575757] hover:bg-red-500/20 hover:text-red-400 mt-px"
                                                 onClick={() => optionRemove(index)}
                                             >
                                                 <Trash2 size={16} />
@@ -1137,14 +1139,14 @@ export default function MenuBuilderPage({ params }: { params: Promise<{ tenant: 
                                         <p className="text-xs text-red-500 mt-2">{modForm.formState.errors.options.root.message}</p>
                                     )}
                                     {optionFields.length === 0 && (
-                                        <div className="rounded-xl border border-dashed border-zinc-800 p-4 text-center text-sm text-zinc-500">
+                                        <div className="rounded-xl border border-dashed border-[rgba(15,18,16,.12)] p-4 text-center text-sm text-[#575757]">
                                             No hay opciones. Hacé clic en "Agregar Opción" para comenzar.
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="border-t border-zinc-800 pb-20 pt-6">
+                            <div className="border-t border-[rgba(15,18,16,.12)] pb-20 pt-6">
                                 <button
                                     type="submit"
                                     disabled={saving}
