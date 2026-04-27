@@ -203,13 +203,14 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
 
     // Location bias: priorizar resultados cerca del local (radio 10km, estricto)
     const locationBias = React.useMemo(() => {
-        if (!storeCoords || typeof window === "undefined" || !window.google?.maps) return undefined;
-        const R = 0.09; // ~10km en grados
-        return new window.google.maps.LatLngBounds(
-            { lat: storeCoords.lat - R, lng: storeCoords.lng - R },
-            { lat: storeCoords.lat + R, lng: storeCoords.lng + R }
-        );
-    }, [storeCoords]);
+        if (!storeCoords || !isLoaded || typeof window === "undefined") return undefined;
+        try {
+            return new window.google.maps.LatLngBounds(
+                { lat: storeCoords.lat - 0.09, lng: storeCoords.lng - 0.09 },
+                { lat: storeCoords.lat + 0.09, lng: storeCoords.lng + 0.09 }
+            );
+        } catch { return undefined; }
+    }, [storeCoords, isLoaded]);
 
     const {
         ready,
