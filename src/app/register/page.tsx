@@ -86,7 +86,7 @@ export default function RegisterPage() {
       </header>
 
       {/* ── LAYOUT ── */}
-      <main className="mx-auto grid max-w-[1280px] items-start gap-16 px-7 py-12 lg:grid-cols-[1.05fr_1fr] lg:py-12">
+      <main className="mx-auto grid max-w-[1280px] items-start gap-16 px-4 py-8 sm:px-7 sm:py-12 lg:grid-cols-[1.05fr_1fr]">
 
         {/* ── LEFT: SELL ── */}
         <section className="hidden lg:block">
@@ -164,8 +164,17 @@ export default function RegisterPage() {
         </section>
 
         {/* ── RIGHT: FORM ── */}
-        <aside className="lg:sticky lg:top-6">
-          <div className="rounded-3xl border bg-white p-8 shadow-[0_30px_60px_-30px_rgba(0,0,0,.18)] sm:p-9" style={{ borderColor: "rgba(15,18,16,.12)" }}>
+        <aside className="mx-auto w-full max-w-md lg:mx-0 lg:max-w-none lg:sticky lg:top-6">
+          {/* Mobile-only header */}
+          <div className="mb-6 text-center lg:hidden">
+            <h1 className="font-['Archivo_Black',sans-serif] text-3xl uppercase tracking-tight">
+              Creá tu <span style={{ color: "#43926A" }}>local</span>
+            </h1>
+            <p className="mt-2 text-sm" style={{ color: "#575757" }}>
+              Setup en 2 minutos. Sin tarjeta. Sin permanencia.
+            </p>
+          </div>
+          <div className="rounded-2xl sm:rounded-3xl border bg-white p-5 sm:p-8 shadow-[0_30px_60px_-30px_rgba(0,0,0,.18)] lg:p-9" style={{ borderColor: "rgba(15,18,16,.12)" }}>
             {/* Card top */}
             <div className="mb-6 flex items-center justify-between">
               <span className="font-['JetBrains_Mono',monospace] text-[11px] font-bold uppercase tracking-[.12em]" style={{ color: "#2F6E4F" }}>
@@ -177,7 +186,7 @@ export default function RegisterPage() {
               </span>
             </div>
 
-            <h2 className="mb-2 font-['Archivo_Black',sans-serif] text-[32px] uppercase leading-[.95] tracking-[-0.025em]">
+            <h2 className="mb-2 font-['Archivo_Black',sans-serif] text-2xl sm:text-[32px] uppercase leading-[.95] tracking-[-0.025em]">
               Crear mi <span style={{ color: "#43926A" }}>local</span>
             </h2>
             <p className="mb-6 text-sm leading-relaxed" style={{ color: "#575757" }}>
