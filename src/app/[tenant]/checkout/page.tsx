@@ -653,7 +653,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         return <div className="min-h-screen bg-transparent" />;
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 && !isSubmitting) {
         return (
             <main className={`min-h-screen flex items-center justify-center ${t.bg} ${t.text}`} style={themeEngine.cssVars}>
                 <div className="text-center px-6">
