@@ -114,12 +114,12 @@ export default function ManagerShell({
                         <span className="ml-0.5 inline-block h-[7px] w-[7px] rounded-full bg-[#43926A]" />
                     </Link>
 
-                    {/* Store ID card */}
-                    <div className="mt-4 rounded-[10px] bg-[#0F1210] px-3 py-2.5 text-[#F6F2EA]">
-                        <div className="font-['Archivo_Black',sans-serif] text-sm tracking-tight">
-                            {(tenantData?.name || tenant).toUpperCase()}
+                    {/* Store name */}
+                    <div className="mt-4 px-1">
+                        <div className="font-['Archivo_Black',sans-serif] text-[15px] tracking-tight text-[#0F1210]">
+                            {tenantData?.name || tenant}
                         </div>
-                        <div className="font-mono text-[9px] uppercase tracking-[.12em] text-[#F6F2EA]/55 mt-0.5">
+                        <div className="font-mono text-[9px] uppercase tracking-[.12em] text-[#575757] mt-0.5">
                             Panel administrador
                         </div>
                     </div>
