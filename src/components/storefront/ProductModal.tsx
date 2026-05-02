@@ -110,13 +110,17 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
     };
 
     const handleAdd = () => {
-        // Build human-readable modifier summary for cart
+        // Build human-readable modifier summary + collect option IDs for server validation
         const modTexts: string[] = [];
+        const optionIds: string[] = [];
         (product.modifiers ?? []).forEach((mod) => {
             const sel = selectedOptions.get(mod.id);
             sel?.forEach((optId) => {
                 const opt = mod.options.find((o) => o.id === optId);
-                if (opt) modTexts.push(opt.name);
+                if (opt) {
+                    modTexts.push(opt.name);
+                    optionIds.push(opt.id);
+                }
             });
         });
 
@@ -128,6 +132,7 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
             quantity,
             imageUrl: product.imageUrl,
             modifiersText: modTexts.join(", ") || undefined,
+            selectedOptionIds: optionIds.length > 0 ? optionIds : undefined,
         });
 
         toast.success(`${product.name} agregado al carrito`, {

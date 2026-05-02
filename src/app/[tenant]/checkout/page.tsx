@@ -558,6 +558,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     unit_price: item.price,
                     total_price: item.price * item.quantity,
                     notes: item.modifiersText || null,
+                    selected_option_ids: item.selectedOptionIds || [],
                 })),
             };
 
