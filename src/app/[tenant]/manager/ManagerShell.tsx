@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     ListOrdered, Palette, LayoutDashboard, LogOut,
     Loader2, Settings, BarChart, Menu, X, ExternalLink,
-    CreditCard, AlertTriangle, Tag,
+    CreditCard, AlertTriangle, Tag, WifiOff, RefreshCw,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
@@ -28,11 +28,80 @@ export default function ManagerShell({
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null } | null>(null);
+    const [sessionLost, setSessionLost] = useState(false);
+    const [reconnecting, setReconnecting] = useState(false);
 
     useEffect(() => {
         supabase.from("tenants").select("name, logo_url").eq("slug", tenant).single()
             .then(({ data }: { data: any }) => { if (data) setTenantData(data); });
     }, [supabase, tenant]);
+
+    // ── Session keep-alive: refresh every 4 min + detect expiry ──
+    useEffect(() => {
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+            if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+                if (event === "SIGNED_OUT") setSessionLost(true);
+                if (event === "TOKEN_REFRESHED") setSessionLost(false);
+            }
+        });
+
+        // Periodic session refresh (every 4 min)
+        const interval = setInterval(async () => {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (!session || error) {
+                setSessionLost(true);
+            } else {
+                // Proactively refresh if expires in less than 5 min
+                const expiresAt = session.expires_at ?? 0;
+                const now = Math.floor(Date.now() / 1000);
+                if (expiresAt - now < 300) {
+                    const { error: refreshErr } = await supabase.auth.refreshSession();
+                    if (refreshErr) setSessionLost(true);
+                }
+            }
+        }, 4 * 60 * 1000);
+
+        // Also check on window focus (user comes back after leaving tab)
+        const handleFocus = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                setSessionLost(true);
+            } else {
+                const expiresAt = session.expires_at ?? 0;
+                const now = Math.floor(Date.now() / 1000);
+                if (expiresAt - now < 300) {
+                    const { error: refreshErr } = await supabase.auth.refreshSession();
+                    if (refreshErr) setSessionLost(true);
+                    else setSessionLost(false);
+                } else {
+                    setSessionLost(false);
+                }
+            }
+        };
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            subscription.unsubscribe();
+            clearInterval(interval);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [supabase]);
+
+    const handleReconnect = useCallback(async () => {
+        setReconnecting(true);
+        const { error } = await supabase.auth.refreshSession();
+        if (error) {
+            router.push(`/${tenant}/manager/login`);
+        } else {
+            setSessionLost(false);
+            setReconnecting(false);
+            toast.success("Conexión restaurada");
+            router.refresh();
+            return;
+        }
+        setReconnecting(false);
+    }, [supabase, router, tenant]);
 
     const handleSignOut = async () => {
         setIsLoggingOut(true);
@@ -258,6 +327,29 @@ export default function ManagerShell({
                         >
                             Suscribirme
                         </Link>
+                    </div>
+                )}
+
+                {/* ── Session lost banner ── */}
+                {sessionLost && (
+                    <div className="mb-6 rounded-2xl border border-[#E25A2B]/30 bg-white px-5 py-4 flex items-center gap-4 shadow-lg animate-in fade-in slide-in-from-top-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E25A2B]/10">
+                            <WifiOff size={20} className="text-[#E25A2B]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[#B9431C]">Conexión pausada</p>
+                            <p className="text-xs text-[#B9431C]/70 mt-0.5">
+                                Reconectá para actualizar el panel. No perdiste ningún pedido.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleReconnect}
+                            disabled={reconnecting}
+                            className="shrink-0 flex items-center gap-2 rounded-xl bg-[#E25A2B] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#B9431C] transition-colors disabled:opacity-50"
+                        >
+                            {reconnecting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                            Reconectar
+                        </button>
                     </div>
                 )}
 

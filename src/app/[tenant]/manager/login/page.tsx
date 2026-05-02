@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +33,6 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
     const onSubmit = async (data: LoginForm) => {
         setLoading(true);
 
-        // 1. Autenticar al usuario
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: data.email,
             password: data.password,
@@ -44,7 +44,6 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
             return;
         }
 
-        // 2. Consultar a qué tenant pertenece este usuario
         const { data: tenantData, error: tenantError } = await supabase
             .from("tenant_users")
             .select("tenants(slug)")
@@ -52,7 +51,6 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
             .single();
 
         if (tenantError || !tenantData?.tenants) {
-            // Usuario autenticado pero sin tenant asignado
             toast.error("Sin acceso a ningún local", {
                 description: "Tu cuenta no tiene un local asignado. Contactá al administrador.",
             });
@@ -61,7 +59,6 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
             return;
         }
 
-        // 3. Redirigir al dashboard del tenant real (no el de la URL)
         const tenantRel = tenantData.tenants as unknown as { slug: string } | { slug: string }[];
         const slug = Array.isArray(tenantRel) ? tenantRel[0]?.slug : tenantRel.slug;
 
@@ -80,58 +77,76 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
-            <Toaster position="top-center" toastOptions={{ style: { background: "#18181b", border: "1px solid #27272a", color: "#fafafa" } }} />
-            <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur-md relative overflow-hidden">
+        <main className="flex min-h-screen items-center justify-center bg-[var(--cream)] px-4 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-30" style={{ background: "radial-gradient(circle, var(--teal-soft), transparent 70%)" }} />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-20" style={{ background: "radial-gradient(circle, var(--teal-soft), transparent 70%)" }} />
+            </div>
 
-                {/* Glow effect */}
-                <div className="pointer-events-none absolute -top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/20 blur-[80px]" />
+            <Toaster
+                position="top-center"
+                toastOptions={{ style: { background: "var(--cream)", border: "1px solid var(--line)", color: "var(--ink)" } }}
+            />
 
-                <div className="relative z-10 mb-8 text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/80 text-primary shadow-inner ring-1 ring-zinc-700/50">
-                        <Lock className="h-7 w-7" />
-                    </div>
-                    <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-white">Manager Portal</h1>
-                    <p className="mt-2 text-sm text-zinc-400">Acceso exclusivo para dueños</p>
+            <div className="w-full max-w-sm relative z-10">
+                <div className="text-center mb-10">
+                    <Link href="/" className="inline-flex items-center">
+                        <span className="text-[28px] tracking-tight text-[var(--plomo)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Pedidos</span>
+                        <span className="text-[28px] tracking-tight text-[var(--ink)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Posta</span>
+                        <span className="inline-block w-3 h-3 rounded-full bg-[var(--teal)] ml-[2px]" />
+                    </Link>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="relative z-10 space-y-4">
-                    <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Email</label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500" />
-                            <input
-                                {...register("email")}
-                                type="email"
-                                placeholder="tunombre@restaurante.com"
-                                className={`w-full rounded-xl border bg-zinc-950/80 py-3 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition focus:ring-2 focus:ring-primary ${errors.email ? "border-red-500/50" : "border-zinc-800 focus:border-primary/50"}`}
-                            />
-                        </div>
-                        {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+                <div className="bg-white rounded-3xl border border-[var(--line)] p-8 shadow-[0_30px_60px_-20px_rgba(0,0,0,.08)]">
+                    <div className="text-center mb-7">
+                        <h1 className="text-2xl tracking-[-0.02em] text-[var(--ink)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Manager Portal</h1>
+                        <p className="mt-2 text-sm text-[var(--plomo)]">Acceso exclusivo para dueños</p>
                     </div>
 
-                    <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Contraseña</label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500" />
-                            <input
-                                {...register("password")}
-                                type="password"
-                                placeholder="••••••••"
-                                className={`w-full rounded-xl border bg-zinc-950/80 py-3 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition focus:ring-2 focus:ring-primary ${errors.password ? "border-red-500/50" : "border-zinc-800 focus:border-primary/50"}`}
-                            />
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                        <div>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Email</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
+                                <input
+                                    {...register("email")}
+                                    type="email"
+                                    placeholder="tunombre@restaurante.com"
+                                    className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.email ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
+                                />
+                            </div>
+                            {errors.email && <p className="mt-1 text-xs text-[var(--clay)]">{errors.email.message}</p>}
                         </div>
-                        {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-[0_0_20px_var(--brand-color)] shadow-primary/30 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
-                    >
-                        {loading ? <Loader2 className="h-5 w-5 animate-spin invert" /> : "INGRESAR AL PANEL"}
-                    </button>
-                </form>
+                        <div>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Contraseña</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
+                                <input
+                                    {...register("password")}
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.password ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
+                                />
+                            </div>
+                            {errors.password && <p className="mt-1 text-xs text-[var(--clay)]">{errors.password.message}</p>}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--teal)] py-3.5 font-bold text-white text-sm tracking-[.02em] shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] transition-all hover:translate-y-[-1px] hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_12px_26px_-10px_rgba(67,146,106,.8)] active:scale-[.98] disabled:opacity-50"
+                        >
+                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "INGRESAR AL PANEL"}
+                        </button>
+                    </form>
+                </div>
+
+                <div className="mt-6 text-center">
+                    <Link href="/" className="text-xs text-[var(--plomo)] hover:text-[var(--ink)] transition-colors">
+                        ← Volver al sitio
+                    </Link>
+                </div>
             </div>
         </main>
     );
