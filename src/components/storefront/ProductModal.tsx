@@ -54,6 +54,7 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
     const addItem = useCartStore((state) => state.addItem);
 
     const [quantity, setQuantity] = useState(1);
+    const [customerNote, setCustomerNote] = useState("");
     // Map: modifierId -> Set of selected optionIds
     const [selectedOptions, setSelectedOptions] = useState<Map<string, Set<string>>>(new Map());
 
@@ -132,6 +133,7 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
             quantity,
             imageUrl: product.imageUrl,
             modifiersText: modTexts.join(", ") || undefined,
+            customerNote: customerNote.trim() || undefined,
             selectedOptionIds: optionIds.length > 0 ? optionIds : undefined,
         });
 
@@ -142,6 +144,7 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
 
         // Reset and close
         setQuantity(1);
+        setCustomerNote("");
         setSelectedOptions(initDefaults());
         onOpenChange(false);
     };
@@ -149,6 +152,7 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
     const handleClose = (isOpen: boolean) => {
         if (!isOpen) {
             setQuantity(1);
+            setCustomerNote("");
             setSelectedOptions(initDefaults());
         } else {
             // Opening: set defaults
@@ -297,6 +301,24 @@ export function ProductModal({ product, open, onOpenChange, tokens: t, accentCol
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Customer note */}
+                    <div className={`px-5 pb-4 ${isLight ? "" : ""}`}>
+                        <label className={`block text-xs font-semibold mb-1.5 ${t.textMuted}`}>
+                            Comentario (opcional)
+                        </label>
+                        <textarea
+                            value={customerNote}
+                            onChange={(e) => setCustomerNote(e.target.value)}
+                            placeholder="Ej: Sin cebolla, sin cheddar..."
+                            maxLength={150}
+                            rows={2}
+                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm resize-none outline-none transition focus:ring-2 ${isLight
+                                ? "border-zinc-200 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 focus:ring-zinc-300 focus:border-zinc-300"
+                                : "border-zinc-800 bg-zinc-900/60 text-zinc-200 placeholder:text-zinc-600 focus:ring-zinc-700 focus:border-zinc-700"
+                            }`}
+                        />
                     </div>
 
                     {/* Sticky Footer */}

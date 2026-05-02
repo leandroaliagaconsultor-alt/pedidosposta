@@ -8,6 +8,7 @@ export interface CartItem {
     quantity: number;
     imageUrl?: string;
     modifiersText?: string;
+    customerNote?: string; // "sin cebolla", "sin cheddar", etc.
     selectedOptionIds?: string[]; // modifier_options IDs for server-side price validation
 }
 

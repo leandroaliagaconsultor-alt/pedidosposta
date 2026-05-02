@@ -87,7 +87,7 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
                                                 </button>
                                             </div>
                                             <p className={`mt-1 text-[11px] font-medium line-clamp-2 leading-relaxed ${t.textMuted}`}>
-                                                {item.modifiersText || "Original"}
+                                                {[item.modifiersText, item.customerNote].filter(Boolean).join(" · ") || "Original"}
                                             </p>
                                         </div>
                                         <div className="mt-3 flex items-center justify-between">

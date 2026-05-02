@@ -557,7 +557,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     quantity: item.quantity,
                     unit_price: item.price,
                     total_price: item.price * item.quantity,
-                    notes: item.modifiersText || null,
+                    notes: [item.modifiersText, item.customerNote].filter(Boolean).join(" | ") || null,
                     selected_option_ids: item.selectedOptionIds || [],
                 })),
             };
@@ -1019,9 +1019,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                                                 <span className="mr-1.5" style={{ color: accentColor }}>{item.quantity}x</span>
                                                 {item.name}
                                             </p>
-                                            {item.modifiersText && (
+                                            {(item.modifiersText || item.customerNote) && (
                                                 <p className={`mt-0.5 text-[11px] font-medium leading-relaxed ${t.textMuted}`}>
-                                                    {item.modifiersText}
+                                                    {[item.modifiersText, item.customerNote].filter(Boolean).join(" · ")}
                                                 </p>
                                             )}
                                         </div>
