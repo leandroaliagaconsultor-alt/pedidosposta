@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
-import { Lock, Mail, Loader2 } from "lucide-react";
+import { Lock, Mail, Loader2, ArrowLeft } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
 const loginSchema = z.object({
@@ -21,6 +21,9 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
     const router = useRouter();
     const supabase = createClient();
     const [loading, setLoading] = useState(false);
+    const [showForgot, setShowForgot] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+    const [forgotLoading, setForgotLoading] = useState(false);
 
     const {
         register,
@@ -98,48 +101,110 @@ export default function ManagerLoginPage({ params: _params }: { params: Promise<
                 </div>
 
                 <div className="bg-white rounded-3xl border border-[var(--line)] p-8 shadow-[0_30px_60px_-20px_rgba(0,0,0,.08)]">
-                    <div className="text-center mb-7">
-                        <h1 className="text-2xl tracking-[-0.02em] text-[var(--ink)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Manager Portal</h1>
-                        <p className="mt-2 text-sm text-[var(--plomo)]">Acceso exclusivo para dueños</p>
-                    </div>
-
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                        <div>
-                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Email</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
-                                <input
-                                    {...register("email")}
-                                    type="email"
-                                    placeholder="tunombre@restaurante.com"
-                                    className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.email ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
-                                />
+                    {!showForgot ? (
+                        <>
+                            <div className="text-center mb-7">
+                                <h1 className="text-2xl tracking-[-0.02em] text-[var(--ink)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Manager Portal</h1>
+                                <p className="mt-2 text-sm text-[var(--plomo)]">Acceso exclusivo para dueños</p>
                             </div>
-                            {errors.email && <p className="mt-1 text-xs text-[var(--clay)]">{errors.email.message}</p>}
-                        </div>
 
-                        <div>
-                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Contraseña</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
-                                <input
-                                    {...register("password")}
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.password ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
-                                />
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
+                                        <input
+                                            {...register("email")}
+                                            type="email"
+                                            placeholder="tunombre@restaurante.com"
+                                            className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.email ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
+                                        />
+                                    </div>
+                                    {errors.email && <p className="mt-1 text-xs text-[var(--clay)]">{errors.email.message}</p>}
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Contraseña</label>
+                                        <button type="button" onClick={() => setShowForgot(true)} className="text-[11px] font-semibold text-[var(--teal)] hover:text-[var(--teal-deep)] transition-colors">
+                                            Olvidé mi contraseña
+                                        </button>
+                                    </div>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
+                                        <input
+                                            {...register("password")}
+                                            type="password"
+                                            placeholder="••••••••"
+                                            className={`w-full rounded-xl border bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] ${errors.password ? "border-[var(--clay)]" : "border-[var(--line-strong)] focus:border-[var(--teal)]"}`}
+                                        />
+                                    </div>
+                                    {errors.password && <p className="mt-1 text-xs text-[var(--clay)]">{errors.password.message}</p>}
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--teal)] py-3.5 font-bold text-white text-sm tracking-[.02em] shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] transition-all hover:translate-y-[-1px] hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_12px_26px_-10px_rgba(67,146,106,.8)] active:scale-[.98] disabled:opacity-50"
+                                >
+                                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "INGRESAR AL PANEL"}
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setShowForgot(false)} className="flex items-center gap-1.5 text-sm text-[var(--plomo)] hover:text-[var(--ink)] transition-colors mb-5">
+                                <ArrowLeft size={14} /> Volver al login
+                            </button>
+
+                            <div className="text-center mb-6">
+                                <h1 className="text-2xl tracking-[-0.02em] text-[var(--ink)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Recuperar contraseña</h1>
+                                <p className="mt-2 text-sm text-[var(--plomo)]">Ingresá tu email y te enviamos un link para crear una nueva.</p>
                             </div>
-                            {errors.password && <p className="mt-1 text-xs text-[var(--clay)]">{errors.password.message}</p>}
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--teal)] py-3.5 font-bold text-white text-sm tracking-[.02em] shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] transition-all hover:translate-y-[-1px] hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_12px_26px_-10px_rgba(67,146,106,.8)] active:scale-[.98] disabled:opacity-50"
-                        >
-                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "INGRESAR AL PANEL"}
-                        </button>
-                    </form>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                const email = forgotEmail.trim().toLowerCase();
+                                if (!email) { toast.error("Ingresá tu email"); return; }
+                                setForgotLoading(true);
+
+                                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                                    redirectTo: `${window.location.origin}/reset-password`,
+                                });
+
+                                if (error) {
+                                    toast.error("No pudimos enviar el email. Verificá que sea correcto.");
+                                } else {
+                                    toast.success("Si el email está registrado, te enviamos un link para restablecer tu contraseña. Revisá tu bandeja de entrada y spam.", { duration: 8000 });
+                                    setShowForgot(false);
+                                    setForgotEmail("");
+                                }
+                                setForgotLoading(false);
+                            }} className="space-y-5">
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.1em] text-[var(--plomo)]">Email de tu cuenta</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3.5 h-4 w-4 text-[var(--plomo)]" />
+                                        <input
+                                            type="email"
+                                            value={forgotEmail}
+                                            onChange={(e) => setForgotEmail(e.target.value)}
+                                            placeholder="tunombre@restaurante.com"
+                                            className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--cream)] py-3 pl-10 pr-4 text-sm text-[var(--ink)] placeholder-[#a8a49a] outline-none transition focus:ring-2 focus:ring-[var(--teal)] focus:border-[var(--teal)]"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={forgotLoading}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--teal)] py-3.5 font-bold text-white text-sm tracking-[.02em] shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] transition-all hover:translate-y-[-1px] active:scale-[.98] disabled:opacity-50"
+                                >
+                                    {forgotLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "ENVIAR LINK DE RECUPERACIÓN"}
+                                </button>
+                            </form>
+                        </>
+                    )}
                 </div>
 
                 <div className="mt-6 text-center">
