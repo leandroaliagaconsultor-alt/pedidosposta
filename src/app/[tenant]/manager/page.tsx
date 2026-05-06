@@ -477,80 +477,82 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                             }`}
                         >
                             {/* Card Header */}
-                            <div className="flex items-center justify-between border-b border-[rgba(15,18,16,.12)]/50 bg-white px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                    <span className={`flex items-center justify-center rounded-lg px-3 py-1.5 font-mono text-lg font-black tracking-tight ring-1 ring-inset ${
-                                        order.status === "pending"
-                                            ? "bg-primary/10 text-primary ring-primary/20"
-                                            : "bg-[#E9E7E2]/80 text-[#0F1210] ring-[rgba(15,18,16,.12)]"
-                                    }`}>
-                                        #{order.order_number}
-                                    </span>
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#575757]">
-                                            {order.is_asap ? (
-                                            <>
-                                                <span className="relative flex h-2 w-2">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                                                </span>
-                                                <span className="text-red-400 ml-0.5">Lo antes posible</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Clock size={14} className="opacity-70" />
-                                                <span>
-                                                    🕒 {order.scheduled_time
-                                                        ? format(parseISO(order.scheduled_time), "HH:mm") + " hs"
-                                                        : "No especificado"}
-                                                </span>
-                                            </>
-                                        )}
+                            <div className="border-b border-[rgba(15,18,16,.12)]/50 bg-white px-5 py-3 space-y-2.5">
+                                {/* Row 1: Order number + delivery badge */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className={`flex items-center justify-center rounded-lg px-3 py-1.5 font-mono text-lg font-black tracking-tight ring-1 ring-inset ${
+                                            order.status === "pending"
+                                                ? "bg-primary/10 text-primary ring-primary/20"
+                                                : "bg-[#E9E7E2]/80 text-[#0F1210] ring-[rgba(15,18,16,.12)]"
+                                        }`}>
+                                            #{order.order_number}
+                                        </span>
+                                        <div
+                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                                                order.delivery_method === "DELIVERY"
+                                                    ? "bg-sky-500/10 text-sky-500 ring-1 ring-inset ring-sky-500/20"
+                                                    : "bg-amber-500/10 text-amber-500 ring-1 ring-inset ring-amber-500/20"
+                                            }`}
+                                        >
+                                            {order.delivery_method === "DELIVERY" ? <Truck size={12} /> : <Package size={12} />}
+                                            {order.delivery_method === "DELIVERY" ? "Delivery" : "Retiro"}
                                         </div>
-                                        <TimeAgo createdAt={order.created_at} />
                                     </div>
-                                </div>
-                                <div
-                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-                                        order.delivery_method === "DELIVERY"
-                                            ? "bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20"
-                                            : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
-                                        }`}
-                                >
-                                    {order.delivery_method === "DELIVERY" ? <Truck size={14} /> : <Package size={14} />}
-                                    {order.delivery_method}
-                                    <div className="flex gap-1 ml-auto">
+                                    {/* Action buttons */}
+                                    <div className="flex gap-1">
                                         {tenantSettings?.enable_kitchen_tickets && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handlePrint(order, 'kitchen'); }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-amber-500/10 hover:text-amber-500 transition-colors"
-                                                title="Imprimir Comanda Cocina"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-amber-500/10 hover:text-amber-500 transition-colors"
+                                                title="Comanda Cocina"
                                             >
-                                                <ChefHat size={14} />
+                                                <ChefHat size={13} />
                                             </button>
                                         )}
                                         {tenantSettings?.enable_delivery_tickets && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handlePrint(order, 'delivery'); }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-sky-500/10 hover:text-sky-500 transition-colors"
-                                                title="Imprimir Ticket Repartidor"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-sky-500/10 hover:text-sky-500 transition-colors"
+                                                title="Ticket Repartidor"
                                             >
-                                                <Bike size={14} />
+                                                <Bike size={13} />
                                             </button>
                                         )}
                                         {(order.status === "pending" || order.status === "preparing") && (
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setAdjustingOrder(order);
-                                                }}
-                                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition-colors"
+                                                onClick={(e) => { e.stopPropagation(); setAdjustingOrder(order); }}
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E9E7E2] text-[#575757] hover:text-[#0F1210] transition-colors"
                                                 title="Ajustar Pedido"
                                             >
-                                                <Edit3 size={14} />
+                                                <Edit3 size={13} />
                                             </button>
                                         )}
                                     </div>
+                                </div>
+                                {/* Row 2: Time info */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                        {order.is_asap ? (
+                                            <>
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                                                </span>
+                                                <span className="text-red-500">Lo antes posible</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Clock size={13} className="text-[#43926A]" />
+                                                <span className="text-[#0F1210]">
+                                                    {order.scheduled_time
+                                                        ? format(parseISO(order.scheduled_time), "HH:mm") + " hs"
+                                                        : "Sin horario"}
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <TimeAgo createdAt={order.created_at} />
                                 </div>
                             </div>
 
@@ -657,32 +659,54 @@ export default function LiveOrdersPage({ params }: { params: Promise<{ tenant: s
                                     <>
                                         {confirmingOrderId === order.id ? (
                                             <div className="flex flex-col gap-2 rounded-xl bg-white p-3 ring-1 ring-[rgba(15,18,16,.12)]">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#575757]">
-                                                    Tiempo estimado de entrega:
-                                                </span>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "20-30 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition">Rápido (20-30m)</button>
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "40-45 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition">Normal (40-45m)</button>
-                                                    <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "60-80 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#E9E7E2] hover:text-[#0F1210] transition col-span-2">Demorado (60-80m)</button>
-                                                </div>
-                                                <div className="flex gap-2 mt-1">
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        max="240"
-                                                        placeholder="Minutos (ej: 45)"
-                                                        value={customTime}
-                                                        onChange={(e) => setCustomTime(e.target.value)}
-                                                        className="flex-1 rounded-lg border border-[rgba(15,18,16,.15)] bg-white px-2 py-1 text-xs text-[#0F1210] outline-none focus:border-primary"
-                                                    />
-                                                    <button
-                                                        onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", `${customTime} min`)}
-                                                        disabled={!customTime}
-                                                        className="rounded-lg bg-primary px-3 text-xs font-bold text-[#09090b] disabled:opacity-50"
-                                                    >
-                                                        OK
-                                                    </button>
-                                                </div>
+                                                {/* Si tiene horario programado, mostrar el horario y confirmar directo */}
+                                                {!order.is_asap && order.scheduled_time ? (
+                                                    <>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <Clock size={14} className="text-[#43926A]" />
+                                                            <span className="text-xs font-bold text-[#0F1210]">
+                                                                Horario solicitado: {format(parseISO(order.scheduled_time), "HH:mm")} hs
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => updateOrderStatus(order.id, "pending", "preparing", `Para las ${format(parseISO(order.scheduled_time!), "HH:mm")} hs`)}
+                                                            className="rounded-lg bg-primary py-2.5 text-sm font-bold text-[#09090b] transition hover:brightness-110 active:scale-95"
+                                                        >
+                                                            Confirmar para las {format(parseISO(order.scheduled_time!), "HH:mm")} hs
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#575757]">
+                                                            Tiempo estimado de entrega:
+                                                        </span>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "20-30 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#d9d5cc] transition">Rápido (20-30m)</button>
+                                                            <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "40-45 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#d9d5cc] transition">Normal (40-45m)</button>
+                                                            <button onClick={() => updateOrderStatus(order.id, "pending", "preparing", "60-80 min")} className="rounded-lg bg-[#E9E7E2] p-2 text-xs font-bold text-[#0F1210] hover:bg-[#d9d5cc] transition col-span-2">Demorado (60-80m)</button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {(order.is_asap || !order.scheduled_time) && (
+                                                    <div className="flex gap-2 mt-1">
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            max="240"
+                                                            placeholder="Minutos (ej: 45)"
+                                                            value={customTime}
+                                                            onChange={(e) => setCustomTime(e.target.value)}
+                                                            className="flex-1 rounded-lg border border-[rgba(15,18,16,.15)] bg-white px-2 py-1 text-xs text-[#0F1210] outline-none focus:border-primary"
+                                                        />
+                                                        <button
+                                                            onClick={() => customTime && updateOrderStatus(order.id, "pending", "preparing", `${customTime} min`)}
+                                                            disabled={!customTime}
+                                                            className="rounded-lg bg-primary px-3 text-xs font-bold text-[#09090b] disabled:opacity-50"
+                                                        >
+                                                            OK
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <button onClick={() => { setConfirmingOrderId(null); setCustomTime(""); }} className="mt-1 text-center text-[10px] uppercase font-bold tracking-widest text-[#575757] hover:text-[#0F1210]">
                                                     Cancelar
                                                 </button>

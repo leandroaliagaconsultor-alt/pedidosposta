@@ -17,7 +17,7 @@ export function Footer() {
             </p>
             <div className="flex gap-[10px] mt-4">
               <a href="#" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">IG</a>
-              <a href="https://wa.me/542324627679" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">WA</a>
+              <a href="https://wa.me/541125077824" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">WA</a>
               <a href="mailto:hola@pedidosposta.com" className="w-9 h-9 rounded-[10px] bg-white/[.06] inline-flex items-center justify-center text-sm">@</a>
             </div>
           </div>
@@ -34,7 +34,7 @@ export function Footer() {
           <div>
             <h5 className="text-[13px] tracking-[.08em] uppercase m-0 mb-[14px]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Soporte</h5>
             <a href="mailto:hola@pedidosposta.com" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">hola@pedidosposta.com</a>
-            <a href="https://wa.me/542324627679" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">WhatsApp</a>
+            <a href="https://wa.me/541125077824" className="block text-sm text-[var(--cream)]/65 py-1 hover:text-white">WhatsApp</a>
           </div>
 
           {/* Legal */}

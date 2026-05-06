@@ -117,8 +117,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
         tenantAccountName: null as string | null,
         enableDelivery: true,
         enableTakeaway: true,
+        enableScheduledOrders: false,
     });
-    const { isMPActive, minOrder, tenantAlias, tenantAccountName, enableDelivery, enableTakeaway } = tenantConfig;
+    const { isMPActive, minOrder, tenantAlias, tenantAccountName, enableDelivery, enableTakeaway, enableScheduledOrders } = tenantConfig;
 
     // Grouped delivery config (1 setState instead of 8)
     const [deliveryConfig, setDeliveryConfig] = useState({
@@ -338,7 +339,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
             setIsLoadingSlots(true);
             const { data: tenantData } = await supabase
                 .from("tenants")
-                .select("id, city, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order, enable_delivery, enable_takeaway")
+                .select("id, city, schedule, max_orders_per_slot, is_mp_active, transfer_alias, transfer_account_name, store_address, store_lat, store_lng, delivery_pricing_type, delivery_radius_km, fixed_delivery_price, base_delivery_price, base_delivery_km, extra_price_per_km, color_hex, theme, min_order, enable_delivery, enable_takeaway, enable_scheduled_orders")
                 .eq("slug", tenantSlug)
                 .single();
 
@@ -356,6 +357,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                     tenantAccountName: tenantData.transfer_account_name || null,
                     enableDelivery: tenantEnableDelivery,
                     enableTakeaway: tenantEnableTakeaway,
+                    enableScheduledOrders: tenantData.enable_scheduled_orders ?? false,
                 });
 
                 // Set default delivery method based on what's enabled
@@ -934,9 +936,66 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                         )}
                     </section>
 
-                    {/* SECCIÓN 3: PAGO */}
+                    {/* SECCIÓN 3: HORARIO (solo si está habilitado) */}
+                    {enableScheduledOrders && (
                     <section className="space-y-3">
-                        <SectionHeader number="3" title="Pago" accentColor={accentColor} isLight={isLight} />
+                        <SectionHeader number="3" title="¿Cuándo lo querés?" accentColor={accentColor} isLight={isLight} />
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <MethodButton
+                                active={watch("is_asap")}
+                                onClick={() => { setValue("is_asap", true); setValue("deliveryTime", ""); }}
+                                icon={<Truck size={18} />}
+                                label="Lo antes posible"
+                                accentColor={accentColor}
+                                isLight={isLight}
+                            />
+                            <MethodButton
+                                active={!watch("is_asap")}
+                                onClick={() => setValue("is_asap", false)}
+                                icon={<Clock size={18} />}
+                                label="Programar horario"
+                                accentColor={accentColor}
+                                isLight={isLight}
+                            />
+                        </div>
+
+                        {!watch("is_asap") && (
+                            <div className="pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                                {timeSlots.length > 0 ? (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {timeSlots.map((slot) => (
+                                            <button
+                                                key={slot.time}
+                                                type="button"
+                                                disabled={!slot.available}
+                                                onClick={() => setValue("deliveryTime", slot.time)}
+                                                className={`rounded-xl border py-2.5 text-sm font-bold transition-all ${!slot.available
+                                                    ? `opacity-30 cursor-not-allowed ${isLight ? "border-zinc-200 bg-zinc-100 text-zinc-400" : "border-zinc-800 bg-zinc-900 text-zinc-600"}`
+                                                    : watch("deliveryTime") === slot.time
+                                                        ? "text-white"
+                                                        : isLight
+                                                            ? "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400"
+                                                            : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600"
+                                                }`}
+                                                style={watch("deliveryTime") === slot.time && slot.available ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}
+                                            >
+                                                {slot.time}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className={`text-xs text-center py-4 ${t.textMuted}`}>No hay horarios disponibles por ahora.</p>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    )}
+
+                    {/* SECCIÓN: PAGO */}
+                    <section className="space-y-3">
+                        <SectionHeader number={enableScheduledOrders ? "4" : "3"} title="Pago" accentColor={accentColor} isLight={isLight} />
                         <div className={`grid gap-3 ${tenantAlias ? "grid-cols-2" : "grid-cols-1"}`}>
                             <MethodButton
                                 active={selectedPayment === "CASH"}

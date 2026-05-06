@@ -228,7 +228,7 @@ export default function SubscriptionPage({ params }: { params: Promise<{ tenant:
                                 <button onClick={() => handleSubscribe("manual")} disabled={subscribing}
                                     className="flex flex-col items-center gap-1.5 rounded-[14px] bg-[#43926A] py-4 px-4 text-white hover:bg-[#2F6E4F] transition active:scale-[0.98] shadow-[0_6px_16px_-8px_rgba(67,146,106,.6)]">
                                     <Zap size={18} />
-                                    <span className="font-['Archivo_Black',sans-serif] text-sm uppercase tracking-[.04em]">Pagar este mes</span>
+                                    <span className="font-['Archivo_Black',sans-serif] text-sm uppercase tracking-[.04em]">{isAnnual ? "Pagar el año" : "Pagar este mes"}</span>
                                     <span className="text-[10px] opacity-80">Débito, crédito, MP o transferencia</span>
                                 </button>
                                 <button onClick={() => handleSubscribe("auto")} disabled={subscribing}

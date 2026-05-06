@@ -1,4 +1,4 @@
-import { addMinutes, format, isBefore, isAfter, set, parseISO, startOfMinute } from "date-fns";
+import { addMinutes, addDays, format, isBefore, isAfter, set } from "date-fns";
 
 type TimeRange = { start: string; end: string };
 type Schedule = Record<string, TimeRange[]>;
@@ -10,7 +10,8 @@ export function generateAvailableSlots(
 ): { time: string; available: boolean }[] {
     if (!schedule) return [];
 
-    const capacity = maxOrders || 10;
+    // 0 o null = sin límite
+    const capacity = maxOrders && maxOrders > 0 ? maxOrders : Infinity;
 
     // 1. Obtener rangos de hoy
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -31,7 +32,14 @@ export function generateAvailableSlots(
         const [endHours, endMins] = range.end.split(':').map(Number);
 
         let currentSlot = set(now, { hours: startHours, minutes: startMins, seconds: 0, milliseconds: 0 });
-        const endTime = set(now, { hours: endHours, minutes: endMins, seconds: 0, milliseconds: 0 });
+        let endTime = set(now, { hours: endHours, minutes: endMins, seconds: 0, milliseconds: 0 });
+
+        // Fix medianoche: si end <= start, el end es del día siguiente
+        // Ej: 19:00 - 00:00 → end debe ser mañana a las 00:00
+        // Ej: 20:00 - 02:00 → end debe ser mañana a las 02:00
+        if (!isAfter(endTime, currentSlot)) {
+            endTime = addDays(endTime, 1);
+        }
 
         while (isBefore(currentSlot, endTime)) {
             // Solo incluimos slots futuros
@@ -43,21 +51,14 @@ export function generateAvailableSlots(
     });
 
     // 3. Contar órdenes de hoy
-    // Bloque actual, para agrupar las ASAP
     const currentSlotString = format(earliestRealSlot, "HH:mm");
 
     const ordersCounts = todayOrders.reduce((acc: Record<string, number>, order: any) => {
-        // En base a is_asap o scheduled_time
         let slotTime = "";
         if (order.is_asap) {
-            // Asumimos que ASAP aplica al bloque siguiente a la hora actual (redondeado o no)
-            // Esto es simplificado, podríamos usar una variable global del bloque actual.
             slotTime = currentSlotString;
         } else if (order.scheduled_time) {
-            // Extraer HH:mm del TIMESTAMPTZ asumiendo que ya viene en la zona del local
-            // parseISO puede usarse si order.scheduled_time está en ISO string ISO
             const dateObj = new Date(order.scheduled_time);
-            // Esto tomará la zona horaria del navegador, lo cual es correcto si el cliente está en el mismo país.
             slotTime = format(dateObj, "HH:mm");
         }
 

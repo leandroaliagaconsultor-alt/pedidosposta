@@ -52,6 +52,7 @@ const settingsSchema = z.object({
     enable_delivery_tickets: z.boolean().default(false),
     enable_delivery: z.boolean().default(true),
     enable_takeaway: z.boolean().default(true),
+    enable_scheduled_orders: z.boolean().default(false),
     store_address: z.string().optional().nullable(),
     custom_domain: z.string().optional().nullable(),
     // Directory fields
@@ -129,6 +130,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
             enable_delivery_tickets: false,
             enable_delivery: true,
             enable_takeaway: true,
+            enable_scheduled_orders: false,
             store_address: "",
             custom_domain: "",
             city: "",
@@ -205,6 +207,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     enable_delivery_tickets: !!data.enable_delivery_tickets,
                     enable_delivery: data.enable_delivery ?? true,
                     enable_takeaway: data.enable_takeaway ?? true,
+                    enable_scheduled_orders: data.enable_scheduled_orders ?? false,
                     store_address: data.store_address || "",
                     custom_domain: data.custom_domain || "",
                     city: data.city || "",
@@ -268,6 +271,7 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                     enable_delivery_tickets: data.enable_delivery_tickets,
                     enable_delivery: data.enable_delivery,
                     enable_takeaway: data.enable_takeaway,
+                    enable_scheduled_orders: data.enable_scheduled_orders,
                     custom_domain: data.custom_domain,
                     city: data.city || null,
                     categories: data.categories?.length ? data.categories : null,
@@ -483,20 +487,6 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                                 </div>
                                 <p className="mt-1 text-xs text-[#575757]">Monto minimo para aceptar un pedido. Si el cliente no llega, le avisamos antes de pagar.</p>
                             </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Capacidad (Pedidos cada 30 min)</label>
-                                <div className="relative">
-                                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        {...form.register("max_orders_per_slot")}
-                                        placeholder="Ej: 15"
-                                        className={`w-full rounded-xl border bg-[#FBF8F1] pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A] ${form.formState.errors.max_orders_per_slot ? "border-red-500/50" : "border-zinc-800"}`}
-                                    />
-                                </div>
-                                <p className="mt-1 text-xs text-[#575757]">Evita la saturacion de tu cocina. Si se llena un horario, el cliente elige otro automaticamente.</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -708,6 +698,44 @@ export default function SettingsProPage({ params }: { params: Promise<{ tenant: 
                             </label>
                         </div>
                     </div>
+                </div>
+
+                {/* ── Pedidos Programados ── */}
+                <div className="rounded-3xl border border-[rgba(15,18,16,.1)] bg-white p-6 xl:p-8 mt-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[rgba(15,18,16,.1)] pb-4">
+                        <h2 className="flex items-center gap-3 text-xl font-bold text-[#0F1210]">
+                            <Clock className="text-[#43926A]" size={24} /> Pedidos Programados
+                        </h2>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={watchValues.enable_scheduled_orders} onChange={e => form.setValue("enable_scheduled_orders", e.target.checked)} />
+                            <div className="w-11 h-6 bg-[#E9E7E2] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#43926A]"></div>
+                        </label>
+                    </div>
+
+                    <p className="text-sm text-[#575757] -mt-2 mb-5">
+                        Si lo activás, tus clientes podrán elegir un horario de entrega en el checkout en vez de solo "Lo antes posible". Los horarios se generan cada 30 minutos dentro de tus franjas horarias configuradas arriba.
+                    </p>
+
+                    {watchValues.enable_scheduled_orders && (
+                        <div className="rounded-xl border border-[rgba(15,18,16,.1)] bg-[#FBF8F1] p-5 space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-[#0F1210]">Límite de pedidos por franja (opcional)</label>
+                                <div className="relative max-w-xs">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#575757]" size={18} />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        {...form.register("max_orders_per_slot")}
+                                        placeholder="Sin límite"
+                                        className="w-full rounded-xl border border-[rgba(15,18,16,.18)] bg-white pl-10 pr-4 py-3 text-[#0F1210] outline-none transition focus:ring-2 focus:ring-[rgba(67,146,106,.3)] focus:border-[#43926A]"
+                                    />
+                                </div>
+                                <p className="mt-2 text-xs text-[#575757] leading-relaxed">
+                                    Dejalo en 0 o vacío para no tener límite. Si ponés un número (ej: 10), cuando una franja se llene el cliente elige otra automáticamente.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Visibilidad en el Directorio ── */}
