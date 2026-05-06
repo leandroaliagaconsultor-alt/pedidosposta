@@ -6,9 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     ListOrdered, Palette, LayoutDashboard, LogOut,
     Loader2, Settings, BarChart, Menu, X, ExternalLink,
-    CreditCard, AlertTriangle, Tag, WifiOff, RefreshCw,
+    CreditCard, AlertTriangle, Tag, WifiOff, RefreshCw, MessageCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { trackRegistrationComplete } from "@/lib/analytics/meta-pixel";
 import { toast, Toaster } from "sonner";
 
 export default function ManagerShell({
@@ -35,6 +36,16 @@ export default function ManagerShell({
         supabase.from("tenants").select("name, logo_url").eq("slug", tenant).single()
             .then(({ data }: { data: any }) => { if (data) setTenantData(data); });
     }, [supabase, tenant]);
+
+    // CompleteRegistration — dispara el evento si viene de /register exitoso
+    useEffect(() => {
+        try {
+            if (sessionStorage.getItem("px_registration_pending") === "1") {
+                trackRegistrationComplete();
+                sessionStorage.removeItem("px_registration_pending");
+            }
+        } catch {}
+    }, []);
 
     // ── Session keep-alive: refresh every 4 min + detect expiry ──
     useEffect(() => {
@@ -210,6 +221,15 @@ export default function ManagerShell({
                 </nav>
 
                 <div className="border-t border-[rgba(15,18,16,.1)] p-[18px] space-y-2.5">
+                    <a
+                        href="https://wa.me/541125077824?text=Hola!%20Necesito%20ayuda%20con%20mi%20tienda%20en%20PedidosPosta"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 rounded-[9px] border border-[rgba(15,18,16,.1)] px-3 py-2.5 text-[12px] font-semibold text-[#575757] transition-all hover:border-[#25d366] hover:bg-[#25d366]/5 hover:text-[#0F1210]"
+                    >
+                        <MessageCircle size={15} className="text-[#25d366]" />
+                        Soporte PedidosPosta
+                    </a>
                     <div className="flex items-center gap-2.5 px-1.5 py-1">
                         <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#43926A] text-white font-['Archivo_Black',sans-serif] text-xs">
                             {(tenantData?.name || tenant).charAt(0).toUpperCase()}

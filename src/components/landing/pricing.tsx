@@ -1,13 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import { trackPricingView, trackLead } from "@/lib/analytics/meta-pixel"
 
 export function Pricing() {
   const [billing, setBilling] = useState<"m" | "a">("m")
+  const sectionRef = useRef<HTMLElement>(null)
+
+  // ViewContent — se dispara una sola vez cuando pricing entra al viewport
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const fired = sessionStorage.getItem("px_pricing_viewed")
+    if (fired) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          trackPricingView()
+          sessionStorage.setItem("px_pricing_viewed", "1")
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.3 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <section className="bg-[var(--teal)] text-white py-[110px] max-sm:py-[80px] relative overflow-hidden" id="pricing">
+    <section ref={sectionRef} className="bg-[var(--teal)] text-white py-[110px] max-sm:py-[80px] relative overflow-hidden" id="pricing">
       <div className="max-w-[1280px] mx-auto px-7 max-sm:px-[18px] text-center">
         <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[.14em] text-[#D7E9DE] uppercase" style={{ fontFamily: "var(--font-display), sans-serif" }}>
           <span className="w-6 h-[2px] bg-white" />
@@ -75,7 +98,7 @@ export function Pricing() {
             ))}
           </ul>
 
-          <Link href="/register" className="mt-[26px] block w-full bg-[var(--ink)] text-[var(--cream)] p-[18px] rounded-[14px] text-center font-black text-[15px] tracking-[.06em] uppercase">
+          <Link href="/register" onClick={() => trackLead("pricing")} className="mt-[26px] block w-full bg-[var(--ink)] text-[var(--cream)] p-[18px] rounded-[14px] text-center font-black text-[15px] tracking-[.06em] uppercase">
             Empezar mis 10 días gratis →
           </Link>
 

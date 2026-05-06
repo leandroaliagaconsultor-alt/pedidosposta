@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useActionState, useState, useTransition, useMemo } from "react";
+import React, { useActionState, useState, useTransition, useMemo, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { registerTenant, type RegisterState } from "./actions";
 import { slugify } from "@/utils/slugify";
+import { trackLead, trackRegistrationComplete } from "@/lib/analytics/meta-pixel";
 import Link from "next/link";
 import {
   Store, Mail, Lock, Loader2, ArrowRight, CheckCircle2,
@@ -18,6 +19,12 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
+      onClick={() => {
+        // Lead — clic en submit del registro
+        trackLead("register");
+        // Flag para disparar CompleteRegistration en el manager tras redirect exitoso
+        sessionStorage.setItem("px_registration_pending", "1");
+      }}
       className="mt-2 flex w-full items-center justify-center gap-2.5 rounded-[14px] py-4 font-['Archivo_Black',sans-serif] text-[15px] uppercase tracking-[.06em] text-white shadow-[0_1px_0_rgba(0,0,0,.08),0_14px_30px_-10px_rgba(67,146,106,.7)] transition-all hover:-translate-y-px hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_18px_36px_-10px_rgba(67,146,106,.85)] active:scale-[0.98] disabled:opacity-60"
       style={{ background: "#43926A" }}
     >
@@ -58,6 +65,16 @@ export default function RegisterPage() {
 
   const slug = slugify(localName);
   const pwdStrength = useMemo(() => getPasswordStrength(password), [password]);
+
+  // CompleteRegistration — el server action hace redirect al éxito,
+  // así que si el form se submitteó y no hay error, el registro fue exitoso.
+  // Guardamos un flag en sessionStorage antes del submit y lo chequeamos en el manager.
+  useEffect(() => {
+    // Si hay error en state, limpiamos el flag
+    if (state.error || state.fieldError) {
+      sessionStorage.removeItem("px_registration_pending");
+    }
+  }, [state]);
 
   const segColor = (level: number) => {
     if (pwdStrength >= level) {
@@ -330,7 +347,7 @@ export default function RegisterPage() {
 
               {/* WhatsApp CTA */}
               <a
-                href="https://wa.me/542324627679?text=Hola!%20Quiero%20crear%20mi%20local%20en%20PedidosPosta"
+                href="https://wa.me/541125077824?text=Hola!%20Quiero%20crear%20mi%20local%20en%20PedidosPosta"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border-[1.5px] bg-white text-sm font-bold transition-all hover:border-[#43926A] hover:bg-[#D7E9DE]"

@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { trackLead } from "@/lib/analytics/meta-pixel"
 
 export function CTA() {
   return (
@@ -18,10 +21,10 @@ export function CTA() {
           10 días gratis. Sin tarjeta. Te cargamos el menú nosotros. En 5 minutos estás vendiendo.
         </p>
         <div className="flex gap-[14px] justify-center mt-10 flex-wrap">
-          <Link href="/register" className="inline-flex items-center px-7 py-4 rounded-full font-bold text-[15px] bg-[var(--teal)] text-white shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] hover:translate-y-[-1px] transition-all">
+          <Link href="/register" onClick={() => trackLead("footer")} className="inline-flex items-center px-7 py-4 rounded-full font-bold text-[15px] bg-[var(--teal)] text-white shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] hover:translate-y-[-1px] transition-all">
             Crear mi tienda gratis →
           </Link>
-          <a href="https://wa.me/542324627679" className="inline-flex items-center px-7 py-4 rounded-full font-bold text-[15px] bg-[var(--cream)]/[.08] text-[var(--cream)] border border-[var(--cream)]/20">
+          <a href="https://wa.me/541125077824" onClick={() => trackLead("whatsapp")} className="inline-flex items-center px-7 py-4 rounded-full font-bold text-[15px] bg-[var(--cream)]/[.08] text-[var(--cream)] border border-[var(--cream)]/20">
             Hablar por WhatsApp
           </a>
         </div>

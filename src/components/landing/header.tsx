@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { trackLead } from "@/lib/analytics/meta-pixel"
 
 export function Header() {
   return (
@@ -23,7 +24,7 @@ export function Header() {
           <Link href="/login" className="hidden sm:inline-flex text-sm font-bold text-[var(--ink)] opacity-70 hover:opacity-100 px-5 py-3">
             Iniciar sesión
           </Link>
-          <Link href="/register" className="inline-flex items-center px-5 py-3 rounded-full font-bold text-sm bg-[var(--teal)] text-white shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] hover:translate-y-[-1px] hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_12px_26px_-10px_rgba(67,146,106,.8)] transition-all">
+          <Link href="/register" onClick={() => trackLead("navbar")} className="inline-flex items-center px-5 py-3 rounded-full font-bold text-sm bg-[var(--teal)] text-white shadow-[0_1px_0_rgba(0,0,0,.08),0_8px_22px_-10px_rgba(67,146,106,.7)] hover:translate-y-[-1px] hover:shadow-[0_2px_0_rgba(0,0,0,.08),0_12px_26px_-10px_rgba(67,146,106,.8)] transition-all">
             Empezar ahora
           </Link>
         </div>
