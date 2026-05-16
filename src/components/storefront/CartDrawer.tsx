@@ -50,10 +50,19 @@ export function CartDrawer({ open, onOpenChange, isStoreOpen = true, tokens: t, 
             <SheetContent className={`flex w-full flex-col p-0 sm:max-w-md shadow-2xl overflow-hidden ${t.bg} ${t.surfaceBorder}`}>
                 {/* ── Header ── */}
                 <SheetHeader className={`border-b p-5 relative z-10 shrink-0 ${t.navBorder} ${t.navBg}`}>
-                    <SheetTitle className={`flex items-center gap-2 text-xl tracking-tight ${t.text}`}>
-                        <ShoppingBag className="h-5 w-5" style={{ color: accentColor }} />
-                        Tu Orden
-                    </SheetTitle>
+                    <div className="flex items-center justify-between">
+                        <SheetTitle className={`flex items-center gap-2 text-xl tracking-tight ${t.text}`}>
+                            <ShoppingBag className="h-5 w-5" style={{ color: accentColor }} />
+                            Tu Orden
+                        </SheetTitle>
+                        <button
+                            onClick={() => onOpenChange(false)}
+                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${t.surfaceBorder} ${t.textMuted} hover:opacity-80`}
+                        >
+                            <X size={14} />
+                            Seguir comprando
+                        </button>
+                    </div>
                 </SheetHeader>
 
                 {/* ── Cart Items ── */}

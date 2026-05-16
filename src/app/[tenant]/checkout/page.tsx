@@ -1130,7 +1130,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tenant: str
                             </div>
 
                             {/* Totales */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-3 mt-3 border-t" style={{ borderColor: isLight ? "#e4e4e7" : "#27272a" }}>
                                 <div className={`flex justify-between font-medium text-xs ${t.textMuted}`}>
                                     <span>Subtotal</span>
                                     <span className={t.text}>${subtotal.toLocaleString("es-AR")}</span>
