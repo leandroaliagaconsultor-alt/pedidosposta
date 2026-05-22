@@ -24,8 +24,8 @@ export function generateAvailableSlots(
     const slots: string[] = [];
     const now = new Date();
 
-    // earliestRealSlot: 30 minutos desde la hora actual para dar margen a preparación
-    const earliestRealSlot = addMinutes(now, 30);
+    // earliestRealSlot: 5 minutos desde la hora actual (margen mínimo de preparación)
+    const earliestRealSlot = addMinutes(now, 5);
 
     ranges.forEach(range => {
         const [startHours, startMins] = range.start.split(':').map(Number);
@@ -41,13 +41,20 @@ export function generateAvailableSlots(
             endTime = addDays(endTime, 1);
         }
 
+        // Generar slots cada 30 min + incluir explícitamente el slot del cierre
+        // (ej. si abre 19:00 y cierra 23:00 → slots: 19:00, 19:30, ..., 22:30, 23:00)
+        const slotsForRange = new Set<string>();
         while (isBefore(currentSlot, endTime)) {
-            // Solo incluimos slots futuros
-            if (isAfter(currentSlot, earliestRealSlot)) {
-                slots.push(format(currentSlot, "HH:mm"));
+            if (!isBefore(currentSlot, earliestRealSlot)) {
+                slotsForRange.add(format(currentSlot, "HH:mm"));
             }
             currentSlot = addMinutes(currentSlot, 30);
         }
+        // Slot final = hora de cierre (selectable hasta 5 min antes)
+        if (!isBefore(endTime, earliestRealSlot)) {
+            slotsForRange.add(format(endTime, "HH:mm"));
+        }
+        slotsForRange.forEach(s => slots.push(s));
     });
 
     // 3. Contar órdenes de hoy
